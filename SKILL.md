@@ -1,3 +1,9 @@
+---
+name: Netresearch Branding
+description: Apply Netresearch brand identity and design standards to web projects, documentation, presentations, and digital content. Use when creating branded materials, designing web interfaces, building presentations, or ensuring brand consistency. Covers: color system (turquoise #40B4B4, orange #F08C1F), typography (Raleway, Open Sans, Calibri), logo usage, web design patterns, social media templates, and image guidelines. Ensures professional, unified Netresearch appearance across all digital touchpoints.
+license: Complete terms in LICENSE.txt
+---
+
 # Netresearch Brand Guidelines
 
 **Purpose:** Apply Netresearch brand identity and design standards to web projects, documentation, presentations, and digital content.
