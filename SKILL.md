@@ -842,6 +842,27 @@ These guidelines apply to all written content: code, documentation, presentation
 - Frame (brackets): Turquoise `#2999A4`
 - Letter "n": Anthracite Grey `#595A62`
 
+### Description Field Requirements
+
+**CRITICAL:** Both `composer.json` and `ext_emconf.php` description fields MUST mention the company name.
+
+**Format:** `<What extension does> - by Netresearch` or include "Netresearch" naturally in the description.
+
+**Examples:**
+```
+✅ "Adds image support to CKEditor5 - by Netresearch"
+✅ "Netresearch extension for image handling in CKEditor5"
+✅ "Image support for CKEditor5 RTE. Developed and maintained by Netresearch DTT GmbH."
+
+❌ "Adds image support to CKEditor5"  (missing company name)
+❌ "Image extension"  (too vague, missing company name)
+```
+
+**Why this matters:**
+- Brand visibility in extension listings
+- Clear attribution in TYPO3 Extension Repository (TER)
+- Professional identification in Packagist search results
+
 ### composer.json Requirements
 
 **All Netresearch extensions MUST include:**
@@ -850,7 +871,7 @@ These guidelines apply to all written content: code, documentation, presentation
 {
     "name": "netresearch/<extension-name>",
     "type": "typo3-cms-extension",
-    "description": "<Clear, concise description>",
+    "description": "<Clear description> - by Netresearch",
     "homepage": "https://github.com/netresearch/<repo-name>",
     "license": "AGPL-3.0-or-later",
     "authors": [
@@ -873,6 +894,7 @@ These guidelines apply to all written content: code, documentation, presentation
 | Field | Format | Example |
 |-------|--------|---------|
 | `name` | `netresearch/<dashed-extension-key>` | `netresearch/rte-ckeditor-image` |
+| `description` | Must mention "Netresearch" | `Image support for CKEditor5 - by Netresearch` |
 | `homepage` | GitHub repository URL | `https://github.com/netresearch/t3x-rte_ckeditor_image` |
 | `license` | SPDX identifier | `AGPL-3.0-or-later` or `GPL-2.0-or-later` |
 | `authors[].email` | Netresearch email | `developer@netresearch.de` |
@@ -886,7 +908,7 @@ These guidelines apply to all written content: code, documentation, presentation
 <?php
 $EM_CONF[$_EXTKEY] = [
     'title'          => '<Extension Title>',
-    'description'    => '<Clear, concise description>',
+    'description'    => '<Clear description> - by Netresearch',
     'category'       => '<be|fe|plugin|misc>',
     'author'         => '<Developer Name(s)>',
     'author_email'   => '<developer>@netresearch.de',
@@ -907,6 +929,7 @@ $EM_CONF[$_EXTKEY] = [
 **Mandatory Fields:**
 | Field | Value | Notes |
 |-------|-------|-------|
+| `description` | Must mention "Netresearch" | Include company name in description text |
 | `author_company` | `Netresearch DTT GmbH` | **Exact spelling required** |
 | `author_email` | `*@netresearch.de` | Must use Netresearch email domain |
 | `author` | Developer name(s) | Comma-separated for multiple |
@@ -922,12 +945,14 @@ $EM_CONF[$_EXTKEY] = [
 
 2. **composer.json**
    - [ ] `name` starts with `netresearch/`
+   - [ ] `description` mentions "Netresearch"
    - [ ] `homepage` points to GitHub repository
    - [ ] `authors[].homepage` is `https://www.netresearch.de/`
    - [ ] `authors[].email` uses `@netresearch.de` domain
    - [ ] `license` is specified (AGPL-3.0-or-later recommended)
 
 3. **ext_emconf.php**
+   - [ ] `description` mentions "Netresearch"
    - [ ] `author_company` is exactly `Netresearch DTT GmbH`
    - [ ] `author_email` uses `@netresearch.de` domain
    - [ ] `author` lists developer name(s)
@@ -947,8 +972,14 @@ $EM_CONF[$_EXTKEY] = [
 # Check composer.json vendor
 jq -r '.name' composer.json | grep -q "^netresearch/" && echo "✅ Correct vendor" || echo "❌ Wrong vendor"
 
+# Check composer.json description mentions Netresearch
+jq -r '.description' composer.json | grep -qi "netresearch" && echo "✅ Description mentions Netresearch" || echo "❌ Description missing Netresearch"
+
 # Check author homepage
 jq -r '.authors[].homepage' composer.json | grep -q "netresearch.de" && echo "✅ Correct homepage" || echo "❌ Wrong homepage"
+
+# Check ext_emconf.php description mentions Netresearch
+grep "'description' =>" ext_emconf.php | grep -qi "netresearch" && echo "✅ Description mentions Netresearch" || echo "❌ Description missing Netresearch"
 
 # Check ext_emconf.php author_company
 grep -q "'author_company' => 'Netresearch DTT GmbH'" ext_emconf.php && echo "✅ Correct company" || echo "❌ Wrong company"
