@@ -1,12 +1,12 @@
 {
   "name": "netresearch/agent-netresearch-branding",
-  "description": "Apply Netresearch brand identity and design standards to web projects, documentation, presentations, and digital content. This skill should be used when creating branded materials, designing web inter",
+  "description": "Netresearch AI skill for brand identity and design standards in web projects",
   "type": "ai-agent-skill",
   "license": "MIT",
   "authors": [
     {
       "name": "Netresearch DTT GmbH",
-      "email": "plugins@netresearch.de",
+      "email": "info@netresearch.de",
       "homepage": "https://www.netresearch.de/",
       "role": "Manufacturer"
     }
