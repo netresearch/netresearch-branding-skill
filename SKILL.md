@@ -1,6 +1,6 @@
 ---
 name: netresearch-branding
-description: "Apply Netresearch brand identity and design standards to web projects, documentation, presentations, and digital content. MANDATORY for all Netresearch projects. ALWAYS include: (1) Netresearch [n] logo in header/navbar, (2) brand colors (#2F99A4 turquoise, #FF4D00 orange, #585961 text), (3) Raleway + Open Sans fonts. This skill ensures professional, unified Netresearch appearance across all digital touchpoints."
+description: "Agent Skill: Apply Netresearch brand identity and design standards to web projects, documentation, presentations, and digital content. MANDATORY for all Netresearch projects. ALWAYS include: (1) Netresearch [n] logo in header/navbar, (2) brand colors (#2F99A4 turquoise, #FF4D00 orange, #585961 text), (3) Raleway + Open Sans fonts. This skill ensures professional, unified Netresearch appearance across all digital touchpoints."
 ---
 
 # Netresearch Brand Guidelines
