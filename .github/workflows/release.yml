@@ -29,13 +29,15 @@ jobs:
       - name: Create skill package
         run: |
           mkdir -p dist
-          cp SKILL.md dist/
+          # Copy skill files from new structure
+          cp skills/netresearch-branding/SKILL.md dist/
           cp LICENSE dist/
-          [ -d "references" ] && cp -r references dist/
-          [ -d "scripts" ] && cp -r scripts dist/
-          [ -d "assets" ] && cp -r assets dist/
-          [ -d "templates" ] && cp -r templates dist/
-          [ -d "skills" ] && cp -r skills dist/
+          [ -d "skills/netresearch-branding/references" ] && cp -r skills/netresearch-branding/references dist/
+          [ -d "skills/netresearch-branding/scripts" ] && cp -r skills/netresearch-branding/scripts dist/
+          [ -d "skills/netresearch-branding/assets" ] && cp -r skills/netresearch-branding/assets dist/
+          [ -d "skills/netresearch-branding/templates" ] && cp -r skills/netresearch-branding/templates dist/
+          # Include plugin manifest
+          [ -d ".claude-plugin" ] && cp -r .claude-plugin dist/
           cd dist
           zip -r ../netresearch-branding-${{ steps.version.outputs.version }}.zip .
           tar -czvf ../netresearch-branding-${{ steps.version.outputs.version }}.tar.gz .
