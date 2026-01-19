@@ -1,0 +1,18 @@
+{
+  "name": "netresearch-branding",
+  "version": "2.0.0",
+  "description": "Netresearch brand guidelines with branded output styles",
+  "repository": "https://github.com/netresearch/netresearch-branding-skill",
+  "license": "MIT",
+  "author": {
+    "name": "Netresearch DTT GmbH",
+    "url": "https://www.netresearch.de"
+  },
+  "skills": [
+    "./skills/netresearch-branding"
+  ],
+  "outputStyles": [
+    "./outputStyles/branded-report.md",
+    "./outputStyles/branded-docs.md"
+  ]
+}
