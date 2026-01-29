@@ -157,6 +157,100 @@ $EM_CONF[$_EXTKEY] = [
 5. **README.md**
    - [ ] Mentions "Netresearch DTT GmbH" in credits/author section
    - [ ] Links to https://www.netresearch.de/
+   - [ ] Follows badge ordering standard (see below)
+   - [ ] Includes required security badges
+
+## README Badge Standards
+
+**All Netresearch TYPO3 extension READMEs MUST follow this badge ordering:**
+
+### Badge Order Template
+
+```markdown
+<!-- Row 1: CI/Quality badges -->
+[![CI](https://github.com/netresearch/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/netresearch/REPO/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/netresearch/REPO/graph/badge.svg)](https://codecov.io/gh/netresearch/REPO)
+
+<!-- Row 2: Security badges (REQUIRED for production extensions) -->
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/netresearch/REPO/badge)](https://securityscorecards.dev/viewer/?uri=github.com/netresearch/REPO)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/PROJECT_ID/badge)](https://www.bestpractices.dev/projects/PROJECT_ID)
+[![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
+
+<!-- Row 3: Standards badges -->
+[![PHPStan](https://img.shields.io/badge/PHPStan-level%2010-brightgreen.svg)](https://phpstan.org/)
+[![PHP 8.x+](https://img.shields.io/badge/PHP-8.5%2B-blue.svg)](https://www.php.net/)
+[![TYPO3 v14](https://img.shields.io/badge/TYPO3-v14-orange.svg)](https://typo3.org/)
+[![License](https://img.shields.io/github/license/netresearch/REPO)](https://github.com/netresearch/REPO/blob/main/LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/netresearch/REPO)](https://github.com/netresearch/REPO/releases)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
+
+<!-- Row 4: TYPO3 TER badges (if published to TER) -->
+![Composer](https://typo3-badges.dev/badge/EXT_KEY/composer/shields.svg)
+![Downloads](https://typo3-badges.dev/badge/EXT_KEY/downloads/shields.svg)
+![Extension](https://typo3-badges.dev/badge/EXT_KEY/extension/shields.svg)
+![Stability](https://typo3-badges.dev/badge/EXT_KEY/stability/shields.svg)
+![TYPO3](https://typo3-badges.dev/badge/EXT_KEY/typo3/shields.svg)
+![Version](https://typo3-badges.dev/badge/EXT_KEY/version/shields.svg)
+<!-- Generated with 🧡 at typo3-badges.dev -->
+```
+
+### Badge Categories
+
+| Category | Badges | Required |
+|----------|--------|----------|
+| **CI/Quality** | CI workflow, codecov | ✅ Yes |
+| **Security** | OpenSSF Scorecard, Best Practices, SLSA | ✅ Production |
+| **Standards** | PHPStan, PHP version, TYPO3 version, License | ✅ Yes |
+| **TER** | typo3-badges.dev badges | If on TER |
+
+### Security Badge Requirements
+
+**Production-ready extensions MUST have:**
+
+| Badge | Source | How to Get |
+|-------|--------|------------|
+| OpenSSF Scorecard | Auto-generated | Enable `.github/workflows/scorecard.yml` |
+| OpenSSF Best Practices | Manual registration | Register at bestpractices.dev |
+| SLSA 3 | CI workflow | Enable `.github/workflows/slsa-provenance.yml` |
+
+**Getting OpenSSF Best Practices Badge:**
+1. Go to https://www.bestpractices.dev/
+2. Sign in with GitHub
+3. Add your project
+4. Complete the questionnaire
+5. Copy the badge URL with your PROJECT_ID
+
+### TYPO3 TER Badges
+
+**For extensions published to TYPO3 Extension Repository:**
+
+Generate badges at https://typo3-badges.dev/ using your extension key.
+
+```markdown
+![Composer](https://typo3-badges.dev/badge/rte_ckeditor_image/composer/shields.svg)
+![Downloads](https://typo3-badges.dev/badge/rte_ckeditor_image/downloads/shields.svg)
+![Extension](https://typo3-badges.dev/badge/rte_ckeditor_image/extension/shields.svg)
+![Stability](https://typo3-badges.dev/badge/rte_ckeditor_image/stability/shields.svg)
+![TYPO3](https://typo3-badges.dev/badge/rte_ckeditor_image/typo3/shields.svg)
+![Version](https://typo3-badges.dev/badge/rte_ckeditor_image/version/shields.svg)
+<!-- Generated with 🧡 at typo3-badges.dev -->
+```
+
+### Real-World Examples
+
+**t3x-rte_ckeditor_image (gold standard):**
+- All 4 badge rows present
+- OpenSSF Scorecard + Best Practices + SLSA
+- 6 TYPO3 TER badges
+
+**t3x-nr-llm (good):**
+- 3 badge rows (no TER badges - not published to TER)
+- OpenSSF Scorecard + Best Practices + SLSA
+
+**t3x-cowriter (needs update):**
+- Missing security badges ❌
+- Missing TER badges ❌
+- Inconsistent ordering ❌
 
 ## Validation Commands
 
