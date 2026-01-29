@@ -182,7 +182,7 @@ $EM_CONF[$_EXTKEY] = [
 [![TYPO3 v14](https://img.shields.io/badge/TYPO3-v14-orange.svg)](https://typo3.org/)
 [![License](https://img.shields.io/github/license/netresearch/REPO)](https://github.com/netresearch/REPO/blob/main/LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/netresearch/REPO)](https://github.com/netresearch/REPO/releases)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-3.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 <!-- Row 4: TYPO3 TER badges (if published to TER) -->
 ![Composer](https://typo3-badges.dev/badge/EXT_KEY/composer/shields.svg)
@@ -247,10 +247,10 @@ Generate badges at https://typo3-badges.dev/ using your extension key.
 - 3 badge rows (no TER badges - not published to TER)
 - OpenSSF Scorecard + Best Practices + SLSA
 
-**t3x-cowriter (needs update):**
-- Missing security badges ❌
-- Missing TER badges ❌
-- Inconsistent ordering ❌
+**t3x-cowriter (good):**
+- 3 badge rows (CI/Quality, Standards, TER)
+- Missing security badges (backlog - requires enrollment)
+- TER badges present ✅
 
 ## Validation Commands
 
