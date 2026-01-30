@@ -1,0 +1,195 @@
+# Checkpoints for netresearch-branding skill
+# Validates Netresearch brand compliance for extensions
+
+version: 1
+skill_id: netresearch-branding
+
+mechanical:
+  # === EXTENSION ICON CHECKS ===
+  - id: NB-01
+    type: file_exists
+    target: Resources/Public/Icons/Extension.svg
+    severity: error
+    desc: "Extension icon (SVG) must exist"
+
+  - id: NB-02
+    type: contains
+    target: Resources/Public/Icons/Extension.svg
+    pattern: "#2F99A4"
+    severity: error
+    desc: "Extension icon must use Netresearch teal (#2F99A4)"
+
+  - id: NB-03
+    type: file_exists
+    target: Resources/Public/Icons/Extension.png
+    severity: warning
+    desc: "Extension icon (PNG) should exist as fallback"
+
+  # === README BRANDING CHECKS ===
+  - id: NB-04
+    type: regex
+    target: README.md
+    pattern: "[Nn]etresearch"
+    severity: error
+    desc: "README must credit Netresearch"
+
+  - id: NB-05
+    type: contains
+    target: README.md
+    pattern: "netresearch.de"
+    severity: warning
+    desc: "README should link to netresearch.de"
+
+  # === BRAND COLOR CHECKS (in CSS/SCSS files) ===
+  - id: NB-06
+    type: not_contains
+    target: Resources/Public/Css/*.css
+    pattern: "#2f99a4"
+    severity: info
+    desc: "CSS should use uppercase brand color #2F99A4 (not lowercase)"
+
+  - id: NB-07
+    type: not_contains
+    target: Resources/Public/Css/*.css
+    pattern: "#ff4d00"
+    severity: info
+    desc: "CSS should use uppercase brand color #FF4D00 (not lowercase)"
+
+  - id: NB-08
+    type: not_contains
+    target: Resources/Public/Css/*.css
+    pattern: "#585961"
+    severity: info
+    desc: "CSS should use uppercase brand color #585961 (not lowercase)"
+
+  # === COMPOSER.JSON BRANDING ===
+  - id: NB-09
+    type: regex
+    target: composer.json
+    pattern: '"name"\\s*:\\s*"netresearch/'
+    severity: error
+    desc: "Composer package name must use netresearch/ vendor prefix"
+
+  - id: NB-10
+    type: json_path
+    target: composer.json
+    pattern: '.authors[] | select(.name == "Netresearch DTT GmbH")'
+    severity: warning
+    desc: "Composer should list Netresearch DTT GmbH as author"
+
+  # === NETRESEARCH LOGO ([n]) CHECKS ===
+  - id: NB-11
+    type: file_exists
+    target: Resources/Public/Images/netresearch-logo.svg
+    severity: info
+    desc: "Netresearch [n] logo should be present for branding"
+
+  - id: NB-12
+    type: file_exists
+    target: Resources/Public/Images/netresearch-logo.png
+    severity: info
+    desc: "Netresearch [n] logo (PNG) should be present as fallback"
+
+llm_reviews:
+  # === REPOSITORY DESCRIPTION CHECK ===
+  - id: NB-20
+    domain: branding
+    prompt: |
+      Check the GitHub repository description (via gh api repos/{owner}/{repo} --jq '.description').
+
+      The description MUST end with "- by Netresearch".
+
+      Examples of COMPLIANT descriptions:
+      - "TYPO3 extension for newsletter management - by Netresearch"
+      - "Modern address validation service integration - by Netresearch"
+
+      Examples of NON-COMPLIANT descriptions:
+      - "TYPO3 extension for newsletters" (missing suffix)
+      - "by Netresearch - Newsletter extension" (suffix not at end)
+      - null or empty description
+
+      Report PASS if compliant, FAIL if not.
+    severity: error
+    desc: "Repository description must end with '- by Netresearch'"
+
+  # === EXTENSION ICON VISUAL CHECK ===
+  - id: NB-21
+    domain: branding
+    prompt: |
+      Visually inspect the extension icon at Resources/Public/Icons/Extension.svg or Extension.png.
+
+      Check for:
+      1. Primary color is Netresearch teal (#2F99A4)
+      2. Icon is clean and professional
+      3. Icon represents the extension's purpose
+      4. Icon works at small sizes (16x16, 32x32)
+
+      The icon should be immediately recognizable as a Netresearch product
+      through its use of the brand teal color.
+    severity: warning
+    desc: "Extension icon should visually reflect Netresearch branding"
+
+  # === BRAND COLORS CONSISTENCY ===
+  - id: NB-22
+    domain: branding
+    prompt: |
+      Review CSS, SCSS, and template files for brand color usage.
+
+      Netresearch brand colors:
+      - Primary Teal: #2F99A4 (main brand color)
+      - Accent Orange: #FF4D00 (highlights, CTAs)
+      - Neutral Gray: #585961 (text, secondary elements)
+
+      Check for:
+      1. Brand colors used consistently (not random colors)
+      2. Correct hex values (case-insensitive match is OK)
+      3. No conflicting brand colors from other organizations
+      4. Appropriate color contrast for accessibility
+
+      Report any incorrect or inconsistent brand color usage.
+    severity: warning
+    desc: "Brand colors should be used consistently (#2F99A4, #FF4D00, #585961)"
+
+  # === README CREDITS SECTION ===
+  - id: NB-23
+    domain: branding
+    prompt: |
+      Check the README.md for proper Netresearch credits.
+
+      The README should include:
+      1. Mention of "Netresearch" or "Netresearch DTT GmbH"
+      2. Link to https://www.netresearch.de
+      3. Ideally a "Credits" or "About" section at the bottom
+
+      Example acceptable credits:
+      - "Developed by [Netresearch DTT GmbH](https://www.netresearch.de)"
+      - "This extension is maintained by Netresearch."
+      - A footer with Netresearch logo and link
+
+      Report PASS if adequately credited, FAIL if not.
+    severity: error
+    desc: "README must properly credit Netresearch"
+
+  # === [n] LOGO PLACEMENT ===
+  - id: NB-24
+    domain: branding
+    prompt: |
+      Check if the Netresearch [n] logo is appropriately used where applicable.
+
+      Appropriate placements:
+      1. Backend module headers (if extension has backend modules)
+      2. Documentation pages
+      3. README footer
+      4. Configuration screens (if applicable)
+
+      The [n] logo should be:
+      - Used sparingly (not overwhelming)
+      - Properly sized and positioned
+      - Linking to netresearch.de when clickable
+
+      Note: Not all extensions need the [n] logo. This is more
+      relevant for user-facing features.
+
+      Report appropriate usage or suggest improvements.
+    severity: info
+    desc: "Netresearch [n] logo should be used where appropriate"
