@@ -66,7 +66,7 @@ mechanical:
   - id: NB-09
     type: regex
     target: composer.json
-    pattern: '"name"\\s*:\\s*"netresearch/'
+    pattern: '"name"\s*:\s*"netresearch/'
     severity: error
     desc: "Composer package name must use netresearch/ vendor prefix"
 
