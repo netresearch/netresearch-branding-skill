@@ -43,6 +43,46 @@ Apply when:
 - `author_company`: `Netresearch DTT GmbH`
 - Vendor: `netresearch/` prefix
 
+## Pre-Launch QA Tools
+
+Before launching branded content, verify compliance with automated audit tools:
+
+| Tool | Purpose | Check |
+|------|---------|-------|
+| **axe DevTools** | WCAG accessibility | Color contrast, ARIA labels, keyboard navigation |
+| **WAVE** | Accessibility evaluation | Missing alt text, heading structure, form labels |
+| **Chrome Lighthouse** | Performance + accessibility | Contrast ratios, SEO, performance scores |
+| **WebAIM Contrast Checker** | Color verification | Ensure #2F99A4/#FF4D00 on backgrounds meet AA |
+
+**Minimum requirements:**
+- Lighthouse Accessibility score: 90+
+- Zero critical axe violations
+- All WAVE errors resolved
+
+See `references/web-design.md` for the complete pre-launch checklist.
+
+## Brand Debt
+
+Brand inconsistencies accumulate over time ("brand debt"). Identify and remediate:
+
+**Detection signals:**
+- Hardcoded hex values instead of CSS variables (`#2f99a4` vs `var(--nr-primary)`)
+- Inline styles overriding brand colors
+- Non-standard fonts (Arial, Helvetica instead of Raleway/Open Sans)
+- Logo variations (wrong aspect ratio, missing SVG, rasterized versions)
+- Inconsistent button styles across pages
+
+**Remediation workflow:**
+1. **Audit**: Run `grep -r "#[0-9a-fA-F]{6}" --include="*.css" --include="*.scss"` to find hardcoded colors
+2. **Centralize**: Move all brand values to CSS custom properties
+3. **Document**: Track deviations in a `BRAND_DEBT.md` file with fix priority
+4. **Monitor**: Schedule quarterly brand audits using the QA tools above
+
+**Prevention:**
+- Use CSS variables exclusively: `var(--nr-primary)`, `var(--nr-accent)`, `var(--nr-text)`
+- Lint for hardcoded brand colors in CI/CD
+- Include brand review in PR checklists for UI changes
+
 ---
 
 > **Contributing:** https://github.com/netresearch/netresearch-branding-skill
