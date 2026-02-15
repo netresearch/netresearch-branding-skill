@@ -1,6 +1,6 @@
 ---
 name: netresearch-branding
-description: "Use when creating web pages, dashboards, or visual content for Netresearch projects. Apply [n] logo, brand colors (#2F99A4/#FF4D00/#585961), and Raleway+Open Sans typography."
+description: "Use when creating web pages, dashboards, or visual content for Netresearch projects. Apply [n] logo, brand colors (#2F99A4, #FF4D00, #585961), and Raleway+Open Sans typography."
 ---
 
 # Netresearch Brand Guidelines
