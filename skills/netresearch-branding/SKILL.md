@@ -1,6 +1,6 @@
 ---
 name: netresearch-branding
-description: "Agent Skill: Apply Netresearch brand identity. MANDATORY for Netresearch projects. Include: (1) [n] logo, (2) colors #2F99A4/#FF4D00/#585961, (3) Raleway+Open Sans fonts."
+description: "Use when creating web pages, dashboards, or visual content for Netresearch projects. Apply [n] logo, brand colors (#2F99A4, #FF4D00, #585961), and Raleway+Open Sans typography."
 ---
 
 # Netresearch Brand Guidelines
