@@ -341,7 +341,7 @@ This skill is licensed under GPL-2.0-or-later, matching the TYPO3 project licens
 
 **Netresearch Contact:**
 - **Website:** https://www.netresearch.de
-- **Email:** info@netresearch.de
+- **Issues:** [https://github.com/netresearch/netresearch-branding-skill/issues](https://github.com/netresearch/netresearch-branding-skill/issues)
 - **Phone:** +49 341 49288-0
 - **Address:** Nonnenstraße 11d, 04229 Leipzig, Germany
 
