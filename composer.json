@@ -1,5 +1,8 @@
 {
-  "name": "netresearch/agent-netresearch-branding",
+  "name": "netresearch/netresearch-branding-skill",
+  "replace": {
+    "netresearch/agent-netresearch-branding": "self.version"
+  },
   "description": "Netresearch AI skill for brand identity and design standards in web projects",
   "type": "ai-agent-skill",
   "license": "MIT",
