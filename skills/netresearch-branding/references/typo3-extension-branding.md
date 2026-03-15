@@ -252,6 +252,83 @@ Generate badges at https://typo3-badges.dev/ using your extension key.
 - Missing security badges (backlog - requires enrollment)
 - TER badges present ✅
 
+## Documentation Branding (docs.typo3.org)
+
+Subtle branding elements for rendered TYPO3 extension documentation:
+
+### Required Elements
+
+1. **Teal underline SVG** below the main heading:
+   ```rst
+   .. image:: /Images/netresearch-underline.svg
+      :alt:
+      :width: 200px
+      :class: no-border
+   ```
+   SVG source (200x4px teal rounded rectangle):
+   ```xml
+   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="4" viewBox="0 0 200 4">
+     <rect width="200" height="4" rx="2" fill="#2F99A4"/>
+   </svg>
+   ```
+
+2. **Emoji icons** on card-grid navigation cards (plain UTF-8, not RST substitutions):
+   ```rst
+   .. card:: 📘 Introduction
+   .. card:: 🛠️ Administration guide
+   .. card:: 🚀 Integration guide
+   ```
+   Note: RST `|substitution|` references do NOT work inside directive arguments.
+
+3. **Footer card** with [n] brand identity:
+   ```rst
+   .. card:: [n] A Netresearch extension
+
+      .. image:: /Images/netresearch-underline.svg
+         :alt:
+         :width: 120px
+         :class: no-border
+
+      Professional TYPO3 development, AI integration,
+      and enterprise consulting since 2002.
+
+      .. card-footer:: `netresearch.de <https://www.netresearch.de>`__
+         :button-style: btn btn-secondary stretched-link
+   ```
+
+4. **Documentation license**: CC BY 4.0 (separate from code license)
+
+### guides.xml Required Attributes
+
+All Netresearch extensions MUST configure these in `Documentation/guides.xml`:
+
+```xml
+<extension
+    class="\T3Docs\Typo3DocsTheme\DependencyInjection\Typo3DocsThemeExtension"
+    project-home="https://github.com/netresearch/REPO"
+    project-contact="https://github.com/netresearch/REPO/discussions"
+    project-repository="https://github.com/netresearch/REPO"
+    project-issues="https://github.com/netresearch/REPO/issues"
+    project-discussions="https://github.com/netresearch/REPO/discussions"
+    edit-on-github="netresearch/REPO"
+    edit-on-github-branch="main"
+    edit-on-github-directory="Documentation"
+    interlink-shortcode="netresearch/PACKAGE"
+/>
+```
+
+**NEVER** use `mailto:` for `project-contact`. Use GitHub Discussions or Issues.
+
+### RST card-footer Syntax
+
+The link text MUST be on the same line as `.. card-footer::`:
+```rst
+.. card-footer:: `Link text <URL>`__
+   :button-style: btn btn-secondary stretched-link
+```
+
+A line break before `:button-style:` causes it to render as literal text.
+
 ## Validation Commands
 
 ```bash
