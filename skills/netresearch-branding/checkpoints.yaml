@@ -90,6 +90,45 @@ mechanical:
     severity: info
     desc: "Netresearch [n] logo (PNG) should be present as fallback"
 
+  # === EXT_EMCONF BRANDING ===
+  - id: NB-13
+    type: contains
+    target: ext_emconf.php
+    pattern: "Netresearch DTT GmbH"
+    severity: error
+    desc: "ext_emconf.php author_company must be 'Netresearch DTT GmbH'"
+
+  - id: NB-14
+    type: regex
+    target: ext_emconf.php
+    pattern: "- by Netresearch"
+    severity: warning
+    desc: "ext_emconf.php description should end with '- by Netresearch'"
+
+  # === TYPOGRAPHY CHECK ===
+  - id: NB-15
+    type: regex
+    target: "Resources/Public/Css/*.css"
+    pattern: "Raleway|Open.Sans"
+    severity: info
+    desc: "CSS should reference Raleway and/or Open Sans fonts per brand guidelines"
+
+  # === CSS VARIABLES ===
+  - id: NB-16
+    type: regex
+    target: "Resources/Public/Css/*.css"
+    pattern: "--nr-(primary|accent|text)"
+    severity: info
+    desc: "CSS should use brand CSS variables (--nr-primary, --nr-accent, --nr-text)"
+
+  # === FOOTER LINK ===
+  - id: NB-17
+    type: regex
+    target: "Resources/Private/Templates/**/*.html"
+    pattern: "netresearch\\.de"
+    severity: info
+    desc: "Templates with footer should link to netresearch.de"
+
 llm_reviews:
   # === REPOSITORY DESCRIPTION CHECK ===
   - id: NB-20
