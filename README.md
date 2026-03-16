@@ -64,30 +64,40 @@ This skill provides complete brand guidelines, reference documentation, and read
 
 ## Installation
 
-### Option 1: Via Netresearch Marketplace (Recommended)
+### Marketplace (Recommended)
+
+Add the [Netresearch marketplace](https://github.com/netresearch/claude-code-marketplace) once, then browse and install skills:
 
 ```bash
+# Claude Code
 /plugin marketplace add netresearch/claude-code-marketplace
 ```
 
-Then browse skills with `/plugin`.
+### npx ([skills.sh](https://skills.sh))
 
-### Option 2: Download Release
-
-Download the [latest release](https://github.com/netresearch/netresearch-branding-skill/releases/latest) and extract to `~/.claude/skills/netresearch-branding/`
-
-### Option 3: Manual Installation
+Install with any [Agent Skills](https://agentskills.io)-compatible agent:
 
 ```bash
-# Using curl
-curl -L https://github.com/netresearch/netresearch-branding-skill/archive/refs/heads/main.zip -o netresearch-branding.zip
-unzip netresearch-branding.zip -d ~/.claude/skills/
-mv ~/.claude/skills/netresearch-branding-skill-main ~/.claude/skills/netresearch-branding
-
-# Or using git
-git clone https://github.com/netresearch/netresearch-branding-skill.git ~/.claude/skills/netresearch-branding
+npx skills add https://github.com/netresearch/netresearch-branding-skill --skill netresearch-branding
 ```
 
+### Download Release
+
+Download the [latest release](https://github.com/netresearch/netresearch-branding-skill/releases/latest) and extract to your agent's skills directory.
+
+### Git Clone
+
+```bash
+git clone https://github.com/netresearch/netresearch-branding-skill.git
+```
+
+### Composer (PHP Projects)
+
+```bash
+composer require netresearch/netresearch-branding-skill
+```
+
+Requires [netresearch/composer-agent-skill-plugin](https://github.com/netresearch/composer-agent-skill-plugin).
 ## Usage
 
 ### Automatic Activation
