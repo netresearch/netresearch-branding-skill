@@ -1,0 +1,34 @@
+[
+  {
+    "name": "apply-branding-readme",
+    "prompt": "Apply Netresearch branding to this README",
+    "assertions": [
+      {
+        "type": "tool_use",
+        "tool": "Read",
+        "description": "Reads existing README to apply branding"
+      },
+      {
+        "type": "content_contains",
+        "value": "Netresearch",
+        "description": "Includes Netresearch brand identity"
+      }
+    ]
+  },
+  {
+    "name": "check-brand-color-compliance",
+    "prompt": "Check brand color compliance in this CSS file",
+    "assertions": [
+      {
+        "type": "tool_use",
+        "tool": "Grep",
+        "description": "Searches for hardcoded color values"
+      },
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "References primary brand color"
+      }
+    ]
+  }
+]
