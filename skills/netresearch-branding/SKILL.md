@@ -10,83 +10,74 @@ metadata:
 
 # Netresearch Brand Guidelines
 
-Apply Netresearch brand identity to web projects, documentation, and digital content.
+Apply Netresearch brand identity to web projects, documentation, and TYPO3 extensions.
 
 ## Auto-Trigger Conditions
 
 Apply when:
 - GitHub org is `netresearch` or composer.json has `netresearch/` vendor
-- Creating HTML pages, dashboards, landing pages
+- Creating HTML pages, dashboards, reports, or landing pages
 - Another skill generates visual content
 
 ## MANDATORY Requirements
 
-1. **Logo**: `assets/logos/netresearch-symbol-only.svg` in header (min 32×32px)
+1. **Logo**: `assets/logos/netresearch-symbol-only.svg` in header (min 32x32px)
 2. **Colors**: `#2F99A4` (primary), `#FF4D00` (accent only), `#585961` (text)
-3. **Typography**: Raleway (headlines), Open Sans (body)
+3. **Typography**: Raleway (headlines, buttons, nav), Open Sans (body, forms)
 4. **Footer**: Link to https://www.netresearch.de/ + "Netresearch DTT GmbH"
 
-## Quick Reference
+## Color System
 
-**Colors**: `#2F99A4` turquoise · `#FF4D00` orange · `#585961` text · `#CCCDCC` grey
+| Role | Hex | CSS Variable | Usage |
+|------|-----|-------------|-------|
+| Primary | `#2F99A4` | `--nr-primary` | Headers, CTAs, links |
+| Accent | `#FF4D00` | `--nr-accent` | Highlights only, never dominant |
+| Text | `#585961` | `--nr-text` | Body text, headings |
+| Grey | `#CCCDCC` | `--nr-border` | Borders, disabled states |
+| Background | `#FFFFFF` | `--nr-bg` | Page background |
 
-**Fonts**: Raleway (h1-h6) · Open Sans (body) · Calibri (docs fallback)
-
-**Logo**: Min 120px digital · Min 32×32 icon
-
-## References
-
-- `references/colors.md` - Complete color specifications, CSS variables
-- `references/typography.md` - Font weights, sizes, scale
-- `references/web-design.md` - Component styles, layouts
-- `references/typo3-extension-branding.md` - Extension requirements
+**Forbidden combinations**: Orange on turquoise, grey text on white, turquoise text <18px on white (fails WCAG AA: 3.8:1 ratio).
 
 ## TYPO3 Extensions
 
-- Extension icon: `Resources/Public/Icons/Extension.svg` (symbol-only logo)
-- Description: `<What> - by Netresearch`
-- `author_company`: `Netresearch DTT GmbH`
-- Vendor: `netresearch/` prefix
+- **Icon**: `Resources/Public/Icons/Extension.svg` (symbol-only logo, teal `#2F99A4`)
+- **Description**: `<What> - by Netresearch` in both `composer.json` and `ext_emconf.php`
+- **`author_company`**: `Netresearch DTT GmbH` (exact)
+- **Vendor**: `netresearch/` prefix in composer name
+- **Email**: `typo3@netresearch.de`
+- **Badges**: CI/Quality > Security (OpenSSF, SLSA) > Standards > TER
 
-## Pre-Launch QA Tools
+See `references/typo3-extension-branding.md` for full checklist, badge templates, and validation commands.
 
-Before launching branded content, verify compliance with automated audit tools:
+## TYPO3 Documentation Branding
 
-| Tool | Purpose | Check |
-|------|---------|-------|
-| **axe DevTools** | WCAG accessibility | Color contrast, ARIA labels, keyboard navigation |
-| **WAVE** | Accessibility evaluation | Missing alt text, heading structure, form labels |
-| **Chrome Lighthouse** | Performance + accessibility | Contrast ratios, SEO, performance scores |
-| **WebAIM Contrast Checker** | Color verification | Ensure #2F99A4/#FF4D00 on backgrounds meet AA |
+- Teal underline SVG (`netresearch-underline.svg`) below main heading
+- Footer card: `[n] A Netresearch extension` with `card-footer` linking to netresearch.de
+- `guides.xml`: set `project-repository`, `edit-on-github` to `netresearch/REPO`
 
-**Minimum requirements:**
-- Lighthouse Accessibility score: 90+
-- Zero critical axe violations
-- All WAVE errors resolved
+## Web Components
 
-See `references/web-design.md` for the complete pre-launch checklist.
+Use `templates/styles.css` for the complete design system. Key patterns:
 
-## Brand Debt
+- **Buttons**: `.btn-primary` (turquoise), `.btn-secondary` (orange), `.btn-outline`
+- **Cards**: `.card` with shadow, hover lift, Raleway titles
+- **Hero**: Turquoise gradient background, white text
+- **Footer**: Anthracite (`#585961`) background, white text
+- **Breakpoints**: Mobile-first at 600px / 768px / 1024px / 1440px
 
-Brand inconsistencies accumulate over time ("brand debt"). Identify and remediate:
+## Brand Debt Prevention
 
-**Detection signals:**
-- Hardcoded hex values instead of CSS variables (`#2f99a4` vs `var(--nr-primary)`)
-- Inline styles overriding brand colors
-- Non-standard fonts (Arial, Helvetica instead of Raleway/Open Sans)
-- Logo variations (wrong aspect ratio, missing SVG, rasterized versions)
-- Inconsistent button styles across pages
+Use CSS variables exclusively (`var(--nr-primary)`, not hardcoded hex). Detect debt with:
+```bash
+grep -r "#[0-9a-fA-F]{6}" --include="*.css" --include="*.scss"
+```
 
-**Remediation workflow:**
-1. **Audit**: Run `grep -r "#[0-9a-fA-F]{6}" --include="*.css" --include="*.scss"` to find hardcoded colors
-2. **Centralize**: Move all brand values to CSS custom properties
-3. **Document**: Track deviations in a `BRAND_DEBT.md` file with fix priority
-4. **Monitor**: Schedule quarterly brand audits using the QA tools above
+## References
 
-**Prevention:**
-- Use CSS variables exclusively: `var(--nr-primary)`, `var(--nr-accent)`, `var(--nr-text)`
-- Lint for hardcoded brand colors in CI/CD
-- Include brand review in PR checklists for UI changes
+- `references/colors.md` - Full palette, WCAG contrast ratios, approved combinations
+- `references/typography.md` - Font weights, sizes, responsive scale
+- `references/web-design.md` - Component library, layout patterns, pre-launch checklist
+- `references/typo3-extension-branding.md` - Extension metadata, badge standards
 
 ---
 

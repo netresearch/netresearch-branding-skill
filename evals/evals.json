@@ -1,33 +1,437 @@
 [
   {
-    "name": "apply-branding-readme",
-    "prompt": "Apply Netresearch branding to this README",
+    "name": "apply-branding-html-page",
+    "prompt": "Create a branded landing page for a Netresearch project called 'DataSync'",
     "assertions": [
       {
-        "type": "tool_use",
-        "tool": "Read",
-        "description": "Reads existing README to apply branding"
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Uses primary turquoise brand color"
+      },
+      {
+        "type": "content_contains",
+        "value": "Raleway",
+        "description": "Uses Raleway for headlines"
+      },
+      {
+        "type": "content_contains",
+        "value": "Open Sans",
+        "description": "Uses Open Sans for body text"
       },
       {
         "type": "content_contains",
         "value": "Netresearch",
-        "description": "Includes Netresearch brand identity"
+        "description": "Includes Netresearch brand name"
+      },
+      {
+        "type": "content_contains",
+        "value": "netresearch.de",
+        "description": "Links to netresearch.de in footer"
       }
     ]
   },
   {
-    "name": "check-brand-color-compliance",
-    "prompt": "Check brand color compliance in this CSS file",
+    "name": "brand-color-compliance-audit",
+    "prompt": "Audit this CSS file for Netresearch brand color compliance:\n\n```css\n.header { background: #3498db; color: white; }\n.btn { background: #e74c3c; }\n.text { color: #333333; }\n.accent { border: 2px solid #ff6600; }\n```",
     "assertions": [
       {
-        "type": "tool_use",
-        "tool": "Grep",
-        "description": "Searches for hardcoded color values"
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Recommends replacing non-brand blue with #2F99A4"
+      },
+      {
+        "type": "content_contains",
+        "value": "#FF4D00",
+        "description": "Recommends replacing non-brand accent with #FF4D00"
+      },
+      {
+        "type": "content_contains",
+        "value": "#585961",
+        "description": "Recommends replacing non-brand text color with #585961"
+      }
+    ]
+  },
+  {
+    "name": "typo3-extension-icon-setup",
+    "prompt": "Set up the Netresearch extension icon for a new TYPO3 extension called 'nr_scheduler'",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "Resources/Public/Icons/Extension.svg",
+        "description": "Uses correct TYPO3 icon path"
       },
       {
         "type": "content_contains",
         "value": "#2F99A4",
-        "description": "References primary brand color"
+        "description": "Icon uses Netresearch teal color"
+      }
+    ]
+  },
+  {
+    "name": "typo3-ext-emconf-branding",
+    "prompt": "Write the ext_emconf.php for a Netresearch TYPO3 extension 'nr_newsletter' that handles newsletter management",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "Netresearch DTT GmbH",
+        "description": "Sets author_company to exact Netresearch DTT GmbH"
+      },
+      {
+        "type": "content_contains",
+        "value": "netresearch.de",
+        "description": "Uses Netresearch email domain"
+      },
+      {
+        "type": "content_contains",
+        "value": "Netresearch",
+        "description": "Description mentions Netresearch"
+      }
+    ]
+  },
+  {
+    "name": "composer-json-branding",
+    "prompt": "Create composer.json for a Netresearch TYPO3 extension that provides image support for CKEditor5",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "netresearch/",
+        "description": "Uses netresearch/ vendor prefix"
+      },
+      {
+        "type": "content_contains",
+        "value": "netresearch.de",
+        "description": "Author homepage or email uses netresearch.de"
+      },
+      {
+        "type": "content_contains",
+        "value": "Netresearch",
+        "description": "Description mentions Netresearch"
+      }
+    ]
+  },
+  {
+    "name": "css-variables-brand-system",
+    "prompt": "Create CSS custom properties for a Netresearch web project's design system",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Defines primary turquoise color"
+      },
+      {
+        "type": "content_contains",
+        "value": "#FF4D00",
+        "description": "Defines accent orange color"
+      },
+      {
+        "type": "content_contains",
+        "value": "#585961",
+        "description": "Defines text anthracite color"
+      },
+      {
+        "type": "content_contains",
+        "value": ":root",
+        "description": "Uses CSS custom properties in :root"
+      }
+    ]
+  },
+  {
+    "name": "typography-hierarchy-setup",
+    "prompt": "Set up the typography CSS for a Netresearch project following brand guidelines",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "Raleway",
+        "description": "Uses Raleway for headlines"
+      },
+      {
+        "type": "content_contains",
+        "value": "Open Sans",
+        "description": "Uses Open Sans for body text"
+      },
+      {
+        "type": "content_contains",
+        "value": "font-weight",
+        "description": "Specifies font weights per brand guidelines"
+      }
+    ]
+  },
+  {
+    "name": "readme-branding-netresearch",
+    "prompt": "Create a README.md for a Netresearch open-source project called 'nr-cache-warmup' that pre-warms TYPO3 caches",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "Netresearch",
+        "description": "Credits Netresearch in README"
+      },
+      {
+        "type": "content_contains",
+        "value": "netresearch.de",
+        "description": "Links to netresearch.de"
+      },
+      {
+        "type": "content_contains",
+        "value": "netresearch/",
+        "description": "Uses netresearch vendor in composer require"
+      }
+    ]
+  },
+  {
+    "name": "brand-debt-detection",
+    "prompt": "Scan this SCSS file for brand debt and suggest fixes:\n\n```scss\n$primary: #2e98a3;\n.header { background: $primary; font-family: Arial, sans-serif; }\n.btn { background-color: #ff4e01; color: white; }\n.footer { color: #666; font-family: Helvetica, sans-serif; }\n```",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Identifies wrong primary color and suggests #2F99A4"
+      },
+      {
+        "type": "content_contains",
+        "value": "Raleway",
+        "description": "Flags non-brand fonts and recommends Raleway"
+      },
+      {
+        "type": "content_contains",
+        "value": "Open Sans",
+        "description": "Recommends Open Sans for body text"
+      }
+    ]
+  },
+  {
+    "name": "wcag-contrast-guidance",
+    "prompt": "I want to use Netresearch turquoise (#2F99A4) as text color on a white background for small paragraph text. Is this accessible?",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "3.8",
+        "description": "Cites the 3.8:1 contrast ratio for turquoise on white"
+      },
+      {
+        "type": "content_contains",
+        "value": "large text",
+        "description": "Notes it only passes for large text, not small"
+      }
+    ]
+  },
+  {
+    "name": "hero-section-branded",
+    "prompt": "Create a hero section for a Netresearch project page with a headline, subtitle, and two CTA buttons",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "hero",
+        "description": "Uses hero section pattern"
+      },
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Hero uses primary brand color"
+      },
+      {
+        "type": "content_contains",
+        "value": "Raleway",
+        "description": "Hero title uses Raleway font"
+      }
+    ]
+  },
+  {
+    "name": "footer-component-branded",
+    "prompt": "Create a branded footer for a Netresearch web page",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "Netresearch DTT GmbH",
+        "description": "Footer includes full company name"
+      },
+      {
+        "type": "content_contains",
+        "value": "netresearch.de",
+        "description": "Footer links to company website"
+      },
+      {
+        "type": "content_contains",
+        "value": "#585961",
+        "description": "Footer uses anthracite background"
+      }
+    ]
+  },
+  {
+    "name": "button-styles-branded",
+    "prompt": "Create branded button CSS for a Netresearch project with primary, secondary, and outline variants",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Primary button uses turquoise"
+      },
+      {
+        "type": "content_contains",
+        "value": "#FF4D00",
+        "description": "Secondary button uses orange accent"
+      },
+      {
+        "type": "content_contains",
+        "value": "Raleway",
+        "description": "Buttons use Raleway font family"
+      }
+    ]
+  },
+  {
+    "name": "orange-accent-only-rule",
+    "prompt": "I'm building a Netresearch dashboard. Can I use the orange (#FF4D00) as the main background color for the header?",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "accent",
+        "description": "Explains orange is accent only, not for dominant use"
+      },
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Recommends turquoise as the primary/dominant color"
+      }
+    ]
+  },
+  {
+    "name": "responsive-breakpoints-brand",
+    "prompt": "What are the responsive breakpoints for Netresearch web projects?",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "768",
+        "description": "Mentions tablet breakpoint at 768px"
+      },
+      {
+        "type": "content_contains",
+        "value": "1024",
+        "description": "Mentions desktop breakpoint at 1024px"
+      },
+      {
+        "type": "content_contains",
+        "value": "mobile",
+        "description": "References mobile-first approach"
+      }
+    ]
+  },
+  {
+    "name": "form-styling-branded",
+    "prompt": "Style a contact form following Netresearch brand guidelines",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Focus state uses primary turquoise"
+      },
+      {
+        "type": "content_contains",
+        "value": "Open Sans",
+        "description": "Form inputs use Open Sans"
+      },
+      {
+        "type": "content_contains",
+        "value": "#CCCDCC",
+        "description": "Input borders use brand grey"
+      }
+    ]
+  },
+  {
+    "name": "typo3-docs-branding",
+    "prompt": "Add Netresearch branding to a TYPO3 extension's RST documentation index page",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "netresearch-underline.svg",
+        "description": "Includes teal underline SVG"
+      },
+      {
+        "type": "content_contains",
+        "value": "Netresearch",
+        "description": "Footer card mentions Netresearch"
+      },
+      {
+        "type": "content_contains",
+        "value": "card-footer",
+        "description": "Uses card-footer RST directive"
+      }
+    ]
+  },
+  {
+    "name": "readme-badge-ordering",
+    "prompt": "Add the correct badges to a Netresearch TYPO3 extension README for the 'rte_ckeditor_image' extension",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "OpenSSF",
+        "description": "Includes OpenSSF security badges"
+      },
+      {
+        "type": "content_contains",
+        "value": "PHPStan",
+        "description": "Includes PHPStan standards badge"
+      },
+      {
+        "type": "content_contains",
+        "value": "typo3-badges.dev",
+        "description": "Includes TYPO3 TER badges"
+      }
+    ]
+  },
+  {
+    "name": "brand-color-forbidden-combos",
+    "prompt": "I want to put orange (#FF4D00) text on a turquoise (#2F99A4) background. Is that OK per Netresearch guidelines?",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "contrast",
+        "description": "Mentions poor contrast ratio"
+      },
+      {
+        "type": "content_regex",
+        "value": "[Nn]ever|[Aa]void|[Dd]o not|[Nn]ot recommended|poor",
+        "description": "Warns against this combination"
+      }
+    ]
+  },
+  {
+    "name": "guides-xml-netresearch",
+    "prompt": "Create the Documentation/guides.xml for a Netresearch TYPO3 extension called 't3x-rte_ckeditor_image'",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "netresearch",
+        "description": "References netresearch GitHub org"
+      },
+      {
+        "type": "content_contains",
+        "value": "edit-on-github",
+        "description": "Includes edit-on-github attribute"
+      },
+      {
+        "type": "content_contains",
+        "value": "project-repository",
+        "description": "Includes project-repository attribute"
+      }
+    ]
+  },
+  {
+    "name": "card-component-branded",
+    "prompt": "Create a card component in HTML/CSS following Netresearch brand guidelines, with title, description, and a link",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "card",
+        "description": "Uses card component pattern"
+      },
+      {
+        "type": "content_contains",
+        "value": "Raleway",
+        "description": "Card title uses Raleway"
+      },
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Card uses brand primary color for accents"
       }
     ]
   }
