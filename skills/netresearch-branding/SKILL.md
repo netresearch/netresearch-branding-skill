@@ -3,7 +3,7 @@ name: netresearch-branding
 description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, extension icons, README badges, or CSS theming. Apply logo, brand colors (#2F99A4, #FF4D00, #585961), Raleway+Open Sans typography. Triggers on: Netresearch branding, brand colors, logo, extension icon, branded page, style guide."
 license: "(MIT AND CC-BY-SA-4.0)"
 metadata:
-  version: "2.6.0"
+  version: "2.6.1"
   repository: "https://github.com/netresearch/netresearch-branding-skill"
   author: "Netresearch DTT GmbH"
 ---
