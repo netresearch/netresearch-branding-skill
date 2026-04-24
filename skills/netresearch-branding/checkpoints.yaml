@@ -19,11 +19,16 @@ mechanical:
     severity: error
     desc: "Extension icon must use Netresearch teal (#2F99A4)"
 
+  # PNG fallback was needed for TYPO3 v11 and earlier. v12+ renders SVG
+  # icons natively in the BE; PNG is dead weight on modern projects.
+  # Pass when PNG is ABSENT (recommended for v12+ projects). If a project
+  # also targets v11 or older, it can opt-in to keep the PNG by ignoring
+  # this rule.
   - id: NB-03
-    type: file_exists
+    type: file_not_exists
     target: Resources/Public/Icons/Extension.png
-    severity: warning
-    desc: "Extension icon (PNG) should exist as fallback"
+    severity: info
+    desc: "Extension.png should NOT exist for TYPO3 v12+ projects (SVG renders natively in BE; PNG is dead weight). Only keep PNG if extension targets TYPO3 v11 or older."
 
   # === README BRANDING CHECKS ===
   - id: NB-04
@@ -78,17 +83,20 @@ mechanical:
     desc: "Composer should list Netresearch DTT GmbH as author"
 
   # === NETRESEARCH LOGO ([n]) CHECKS ===
+  # SVG-only on TYPO3 v12+. The brand asset gives extensions visual
+  # identity in About pages, README rendering, and any custom UI.
   - id: NB-11
     type: file_exists
     target: Resources/Public/Images/netresearch-logo.svg
     severity: info
-    desc: "Netresearch [n] logo should be present for branding"
+    desc: "Netresearch [n] logo (SVG) should be present for brand identity"
 
+  # PNG fallback obsolete on v12+ (same logic as NB-03). Pass when absent.
   - id: NB-12
-    type: file_exists
+    type: file_not_exists
     target: Resources/Public/Images/netresearch-logo.png
     severity: info
-    desc: "Netresearch [n] logo (PNG) should be present as fallback"
+    desc: "Netresearch logo PNG fallback should NOT exist on v12+ projects (SVG renders natively). Only keep PNG if targeting v11 or older."
 
   # === EXT_EMCONF BRANDING ===
   - id: NB-13
