@@ -140,9 +140,9 @@ mechanical:
   - id: NB-18
     type: regex
     target: "Resources/Private/Templates/**/*.html"
-    pattern: "netresearch-symbol-only\\.svg|<svg"
+    pattern: "netresearch-symbol-only\\.svg|Netresearch symbol logo|Netresearch DTT GmbH"
     severity: warning
-    desc: "Branded templates should include Netresearch logo SVG in header/nav"
+    desc: "Branded templates should include the Netresearch logo (asset or inline SVG with brand labeling)"
 
   - id: NB-19
     type: regex
