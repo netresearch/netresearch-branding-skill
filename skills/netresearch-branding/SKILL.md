@@ -1,30 +1,79 @@
 ---
 name: netresearch-branding
-description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, extension icons, README badges, or CSS theming. Apply logo, brand colors (#2F99A4, #FF4D00, #585961), Raleway+Open Sans typography. Triggers on: Netresearch branding, brand colors, logo, extension icon, branded page, style guide."
+description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, extension icons, README badges, or CSS theming. Enforces strict brand compliance with hard output validity rules, mandatory logo usage, and reference-driven rendering behavior. Triggers on: Netresearch branding, brand colors, logo, extension icon, branded page, style guide."
 license: "(MIT AND CC-BY-SA-4.0)"
 metadata:
-  version: "2.6.2"
+  version: "2.7.0"
   repository: "https://github.com/netresearch/netresearch-branding-skill"
   author: "Netresearch DTT GmbH"
 ---
 
-# Netresearch Brand Guidelines
+# Netresearch Brand Guidelines (Strict Mode)
 
 Apply Netresearch brand identity to web projects, documentation, and TYPO3 extensions.
 
 ## Auto-Trigger Conditions
 
-Apply when:
-- GitHub org is `netresearch` or composer.json has `netresearch/` vendor
-- Creating HTML pages, dashboards, reports, or landing pages
-- Another skill generates visual content
+Apply this skill automatically when **any** of the following is true:
 
-## MANDATORY Requirements
+- GitHub org is `netresearch` or `composer.json` has `netresearch/` vendor
+- Creating/modifying HTML pages, dashboards, reports, landing pages, docs pages, component demos
+- Creating extension icons or branding assets
+- Another skill generates user-facing visual content
+- Prompt includes: "branding", "logo", "style", "design system", "corporate design", "brand colors"
+
+## Hard Output Validity Rules (Non-Negotiable)
+
+An output is **invalid** if one of these is missing or violated:
+
+1. Header logo is missing (`assets/logos/netresearch-symbol-only.svg` or inline SVG from `references/logo-svg.md`)
+2. Brand colors are not enforced (`#2F99A4`, `#FF4D00`, `#585961`)
+3. Typography does not use Raleway (headlines/ui emphasis) + Open Sans (body/forms)
+4. Footer does not contain link to `https://www.netresearch.de/` and text `Netresearch DTT GmbH`
+5. Accent orange is used as dominant primary surface color
+
+If constraints conflict with a user request, keep branding rules and explain the constraint.
+
+## Mandatory Rendering Behavior
+
+### Logo source priority
+
+1. `assets/logos/netresearch-symbol-only.svg` (preferred)
+2. `references/logo-svg.md` (inline SVG fallback for agents that cannot access assets)
+3. `references/logo.md` (textual reconstruction fallback for SVG-limited agents)
+
+### Logo inclusion rules
+
+- Must be present exactly once in top header/nav for branded pages
+- Minimum size `32×32px`, recommended `40–56px` in header
+- Keep aspect ratio; no distortion, effects, recoloring, stroke, glow, or shadow
+- If logo is clickable, link to `https://www.netresearch.de/`
+
+### Allowed formats
+
+- Preferred: inline SVG or linked SVG asset
+- Optional fallback: PNG only when SVG rendering is impossible
+- Never replace with generic placeholders
+
+## Mandatory Requirements
 
 1. **Logo**: `assets/logos/netresearch-symbol-only.svg` in header (min 32x32px)
 2. **Colors**: `#2F99A4` (primary), `#FF4D00` (accent only), `#585961` (text)
 3. **Typography**: Raleway (headlines, buttons, nav), Open Sans (body, forms)
-4. **Footer**: Link to https://www.netresearch.de/ + "Netresearch DTT GmbH"
+4. **Footer**: Link to https://www.netresearch.de/ + `Netresearch DTT GmbH`
+5. **Accessibility**: WCAG AA minimum contrast and semantic structure
+
+## Active Reference Workflow (Operationalized)
+
+Do not treat `references/` as passive documentation. Use this workflow for every branded output:
+
+1. Load `references/colors.md` and map all UI tokens to brand palette
+2. Load `references/typography.md` and apply font stacks + scale
+3. Load `references/web-design.md` and choose component patterns/layout spacing
+4. Load `references/logo.md` and `references/logo-svg.md` for logo rendering and fallback
+5. If TYPO3 extension context is detected, load `references/typo3-extension-branding.md`
+
+Outputs that skip this workflow are non-compliant.
 
 ## Color System
 
@@ -82,6 +131,8 @@ grep -r "#[0-9a-fA-F]{6}" --include="*.css" --include="*.scss"
 - `references/colors.md` - Full palette, WCAG contrast ratios, approved combinations
 - `references/typography.md` - Font weights, sizes, responsive scale
 - `references/web-design.md` - Component library, layout patterns, pre-launch checklist
+- `references/logo.md` - Text-first logo specification for SVG-limited agents
+- `references/logo-svg.md` - Inline SVG copy for asset-limited agents
 - `references/typo3-extension-branding.md` - Extension metadata, badge standards
 
 ---

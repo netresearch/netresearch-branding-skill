@@ -137,6 +137,20 @@ mechanical:
     severity: info
     desc: "Templates with footer should link to netresearch.de"
 
+  - id: NB-18
+    type: regex
+    target: "Resources/Private/Templates/**/*.html"
+    pattern: "netresearch-symbol-only\\.svg|<svg"
+    severity: warning
+    desc: "Branded templates should include Netresearch logo SVG in header/nav"
+
+  - id: NB-19
+    type: regex
+    target: "Resources/Private/Templates/**/*.html"
+    pattern: "Netresearch DTT GmbH"
+    severity: warning
+    desc: "Footer should include exact company name 'Netresearch DTT GmbH'"
+
 llm_reviews:
   # === REPOSITORY DESCRIPTION CHECK ===
   - id: NB-20
@@ -240,3 +254,36 @@ llm_reviews:
       Report appropriate usage or suggest improvements.
     severity: info
     desc: "Netresearch [n] logo should be used where appropriate"
+
+  # === HARD VALIDITY ENFORCEMENT ===
+  - id: NB-25
+    domain: branding
+    prompt: |
+      Validate generated user-facing visual outputs against strict Netresearch requirements.
+
+      Mark FAIL if ANY of the following are missing:
+      1. Header logo (symbol-only [n], SVG preferred)
+      2. Brand colors #2F99A4, #FF4D00 (accent only), #585961
+      3. Typography intent: Raleway for headlines/UI emphasis, Open Sans for body
+      4. Footer containing both "Netresearch DTT GmbH" and link to https://www.netresearch.de/
+
+      This is a hard validity gate: partial compliance is FAIL.
+    severity: error
+    desc: "Outputs are invalid unless core brand constraints are all satisfied"
+
+  # === REFERENCE WORKFLOW ENFORCEMENT ===
+  - id: NB-26
+    domain: branding
+    prompt: |
+      Check whether the implementation actively followed brand references instead of treating them as passive docs.
+
+      Required references for branded web output:
+      - references/colors.md
+      - references/typography.md
+      - references/web-design.md
+      - references/logo.md or references/logo-svg.md
+
+      PASS only if output decisions clearly align with these references
+      (color tokens, typography roles, component patterns, logo behavior).
+    severity: warning
+    desc: "Brand references must be operationalized in implementation decisions"
