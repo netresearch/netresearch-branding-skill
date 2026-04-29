@@ -1,3 +1,34 @@
+/*
+ * Netresearch markdown-to-PDF brand stylesheet.
+ *
+ * Pair with the public markdown-to-pdf-skill via:
+ *   convert.py doc.md --css path/to/this/markdown-pdf.css
+ *
+ * Brand colors are exposed as CSS custom properties for easy override
+ * (per skill rule "Brand Debt Prevention" — use var(--nr-*) over hardcoded hex).
+ */
+
+:root {
+    /* Brand palette */
+    --nr-primary: #2F99A4;          /* Turquoise — primary, links, headings */
+    --nr-primary-dark: #257880;     /* Darker turquoise — h3 */
+    --nr-accent: #FF4D00;           /* Orange — emphasis, accents */
+    --nr-text: #585961;             /* Anthracite — body text */
+    --nr-text-strong: #3D3D45;      /* Strong text */
+    --nr-text-muted: #999;          /* Muted/secondary text — page footer */
+    --nr-border: #CCCDCC;           /* Light grey — borders */
+    --nr-row-alt: #F5F5F5;          /* Even-row table background */
+    --nr-bg-quote: #EFF9FA;         /* Blockquote background */
+    --nr-bg: #FFFFFF;               /* Page / odd-row background */
+    --nr-code-bg: #1a202c;          /* Code block background */
+    --nr-code-fg: #e2e8f0;          /* Code block foreground */
+
+    /* Typography */
+    --nr-font-headline: 'Raleway', Helvetica, Arial, sans-serif;
+    --nr-font-body: 'Open Sans', Helvetica, Arial, sans-serif;
+    --nr-font-mono: monospace;
+}
+
 @font-face {
     font-family: 'Raleway';
     font-style: normal;
@@ -26,13 +57,13 @@
 /* ── Running header element ── */
 .page-header {
     position: running(pageHeader);
-    background: #2F99A4;
-    color: #ffffff;
-    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    background: var(--nr-primary);
+    color: var(--nr-bg);
+    font-family: var(--nr-font-headline);
     font-size: 14px;
     font-weight: 700;
     padding: 0.3cm 2cm;
-    border-bottom: 3px solid #FF4D00;
+    border-bottom: 3px solid var(--nr-accent);
     margin: 0;
     line-height: 1;
 }
@@ -47,12 +78,12 @@
 /* ── Running footer element ── */
 .page-footer {
     position: running(pageFooter);
-    border-top: 1px solid #CCCDCC;
+    border-top: 1px solid var(--nr-border);
     padding: 0.3cm 2cm 0;
     margin: 0;
-    font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+    font-family: var(--nr-font-body);
     font-size: 8px;
-    color: #999;
+    color: var(--nr-text-muted);
     display: flex;
     justify-content: space-between;
 }
@@ -62,8 +93,13 @@
     text-align: center;
 }
 
+/*
+ * Page label is intentionally English ("Page N").
+ * For German output, override after this stylesheet:
+ *   .footer-page::after { content: "Seite " counter(page); }
+ */
 .footer-page::after {
-    content: "Seite " counter(page);
+    content: "Page " counter(page);
 }
 
 @page {
@@ -89,23 +125,23 @@
 }
 
 body {
-    font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+    font-family: var(--nr-font-body);
     font-size: 11px;
     line-height: 1.5;
-    color: #585961;
+    color: var(--nr-text);
     /* Horizontal padding replaces zero page side margins; top adds header gap */
     padding: 0.4cm 2cm 0;
 }
 
 h1, h2, h3, h4 {
-    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    font-family: var(--nr-font-headline);
 }
 
 h1 {
     font-size: 22px;
     font-weight: 700;
-    color: #2F99A4;
-    border-bottom: 2px solid #FF4D00;
+    color: var(--nr-primary);
+    border-bottom: 2px solid var(--nr-accent);
     padding-bottom: 6px;
     margin-top: 24px;
     margin-bottom: 12px;
@@ -114,8 +150,8 @@ h1 {
 h2 {
     font-size: 17px;
     font-weight: 600;
-    color: #2F99A4;
-    border-bottom: 1px solid #CCCDCC;
+    color: var(--nr-primary);
+    border-bottom: 1px solid var(--nr-border);
     padding-bottom: 4px;
     margin-top: 20px;
     margin-bottom: 10px;
@@ -124,7 +160,7 @@ h2 {
 h3 {
     font-size: 14px;
     font-weight: 600;
-    color: #257880;
+    color: var(--nr-primary-dark);
     margin-top: 16px;
     margin-bottom: 8px;
 }
@@ -132,7 +168,7 @@ h3 {
 h4 {
     font-size: 12px;
     font-weight: 600;
-    color: #585961;
+    color: var(--nr-text);
     margin-top: 12px;
     margin-bottom: 6px;
 }
@@ -151,60 +187,69 @@ thead { display: table-header-group; }
 tr { page-break-inside: avoid; }
 
 th {
-    background-color: #2F99A4;
-    color: #ffffff;
+    background-color: var(--nr-primary);
+    color: var(--nr-bg);
     font-weight: 600;
     padding: 6px 8px;
     text-align: left;
-    border: 1px solid #2F99A4;
+    border: 1px solid var(--nr-primary);
 }
 
 td {
     padding: 5px 8px;
-    border: 1px solid #CCCDCC;
+    border: 1px solid var(--nr-border);
 }
 
 tr:nth-child(even) td {
-    background-color: #F5F5F5;
+    background-color: var(--nr-row-alt);
 }
 
 tr:nth-child(odd) td {
-    background-color: #FFFFFF;
+    background-color: var(--nr-bg);
 }
 
 code {
-    background-color: #F5F5F5;
+    background-color: var(--nr-row-alt);
     padding: 1px 4px;
     border-radius: 3px;
-    font-family: monospace;
+    font-family: var(--nr-font-mono);
     font-size: 10px;
-    color: #FF4D00;
+    color: var(--nr-accent);
 }
 
+/*
+ * pre: wrap long lines instead of clipping with overflow:hidden, which
+ * silently drops content past the right margin in PDF output.
+ * white-space: pre-wrap preserves indentation and line breaks while
+ * wrapping long lines. overflow-wrap: anywhere handles tokens longer
+ * than the printable width (standard CSS3 property; replaces the
+ * non-standard word-break: break-word).
+ */
 pre {
-    background-color: #1a202c;
-    color: #e2e8f0;
+    background-color: var(--nr-code-bg);
+    color: var(--nr-code-fg);
     padding: 12px;
     border-radius: 4px;
     font-size: 10px;
     line-height: 1.4;
-    overflow: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
     margin: 10px 0;
     page-break-inside: avoid;
 }
 
 pre code {
     background-color: transparent;
-    color: #e2e8f0;
+    color: var(--nr-code-fg);
     padding: 0;
 }
 
 blockquote {
-    border-left: 3px solid #2F99A4;
+    border-left: 3px solid var(--nr-primary);
     margin: 10px 0;
     padding: 8px 12px;
-    background-color: #EFF9FA;
-    color: #585961;
+    background-color: var(--nr-bg-quote);
+    color: var(--nr-text);
     font-style: italic;
     page-break-inside: avoid;
 }
@@ -215,23 +260,29 @@ img {
 }
 
 strong {
-    color: #3D3D45;
+    color: var(--nr-text-strong);
 }
 
 hr {
     border: none;
-    border-top: 1px solid #CCCDCC;
+    border-top: 1px solid var(--nr-border);
     margin: 16px 0;
 }
 
 ul, ol {
     margin: 6px 0;
     padding-left: 20px;
-    page-break-inside: avoid;
 }
-
-p { page-break-inside: avoid; }
 
 li {
     margin-bottom: 3px;
 }
+
+/*
+ * Note: deliberately do NOT apply page-break-inside: avoid to <p> or
+ * <ul>/<ol>. Forcing every paragraph and list to stay on one page causes
+ * large unsightly empty gaps at the bottom of pages when the next
+ * paragraph is long. Let WeasyPrint break naturally inside body prose;
+ * keep page-break-inside only on visually-bounded blocks (tables, pre,
+ * blockquote, img) where mid-element breaks are jarring.
+ */
