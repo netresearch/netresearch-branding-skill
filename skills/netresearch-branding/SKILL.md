@@ -75,7 +75,7 @@ grep -r "#[0-9a-fA-F]{6}" --include="*.css" --include="*.scss"
 ## Brand Assets
 
 - `assets/markdown-pdf.css` — branded stylesheet for `markdown-to-pdf-skill`; apply via `--css` for branded PDFs.
-- `assets/markdown-pdf-logo.svg` — white logo embedded by `markdown-pdf.css`.
+- `assets/markdown-pdf-logo.svg` — standalone Netresearch logo (brand-teal/grey); for the running header against the teal background, the CSS expects a white-fill variant supplied via the calling skill's HTML or as a base64 data URI.
 
 ## References
 
