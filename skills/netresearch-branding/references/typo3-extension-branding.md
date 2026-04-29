@@ -14,8 +14,8 @@
      xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 300 300">
     <defs>
         <style>
-            .nr-frame{fill:#2999a4;}
-            .nr-letter{fill:#595a62;}
+            .nr-frame{fill:#2F99A4;}
+            .nr-letter{fill:#585961;}
         </style>
     </defs>
     <title>Netresearch DTT GmbH</title>
@@ -31,8 +31,8 @@
 ```
 
 **Color Values:**
-- Frame (brackets): Turquoise `#2999A4`
-- Letter "n": Anthracite Grey `#595A62`
+- Frame (brackets): Turquoise `#2F99A4`
+- Letter "n": Anthracite Grey `#585961`
 
 ## Description Field Requirements
 
@@ -133,7 +133,7 @@ $EM_CONF[$_EXTKEY] = [
 1. **Extension Icon**
    - [ ] `Resources/Public/Icons/Extension.svg` exists
    - [ ] Uses official Netresearch symbol-only logo
-   - [ ] Colors: Frame `#2999A4`, Letter `#595A62`
+   - [ ] Colors: Frame `#2F99A4`, Letter `#585961`
 
 2. **composer.json**
    - [ ] `name` starts with `netresearch/`

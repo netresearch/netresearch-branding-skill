@@ -35,9 +35,7 @@ Use exact brand colors:
 - Outer frame: `#2F99A4` (Primary Turquoise)
 - Inner "n": `#585961` (Brand Text Gray)
 
-Implementation note:
-- The source SVG uses very close values (`#2999A4` and `#595A62`).
-- For new generated UI output, enforce the canonical brand values above.
+These are the **only** valid brand color values for the symbol. Any rendered output that uses different hex codes — even close approximations — is a brand-debt violation; correct it before shipping.
 
 ## Geometry and Proportions
 

@@ -140,9 +140,9 @@ mechanical:
   - id: NB-18
     type: regex
     target: "Resources/Private/Templates/**/*.html"
-    pattern: "netresearch-symbol-only\\.svg|Netresearch symbol logo|Netresearch DTT GmbH"
+    pattern: "netresearch-(symbol-only|logo)\\.svg|aria-label=\"Netresearch symbol logo\"|<title>Netresearch DTT GmbH</title>"
     severity: warning
-    desc: "Branded templates should include the Netresearch logo (asset or inline SVG with brand labeling)"
+    desc: "Branded templates should include the Netresearch logo (NB-11 SVG asset path or an inline SVG with the brand-labeled aria-label/title)"
 
   - id: NB-19
     type: regex
@@ -265,7 +265,9 @@ llm_reviews:
       1. Header logo (symbol-only [n], SVG preferred)
       2. Brand colors #2F99A4, #FF4D00 (accent only), #585961
       3. Typography intent: Raleway for headlines/UI emphasis, Open Sans for body
-      4. Footer containing both "Netresearch DTT GmbH" and link to https://www.netresearch.de/
+      4. Footer containing both "Netresearch DTT GmbH" and a link to the
+         Netresearch website. Accept either `https://www.netresearch.de/`
+         or `https://www.netresearch.de` (trailing slash optional).
 
       This is a hard validity gate: partial compliance is FAIL.
     severity: error

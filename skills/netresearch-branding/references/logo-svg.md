@@ -10,12 +10,8 @@ Use this file when agents cannot open files from `assets/` directly.
 ## Inline SVG (brand-normalized colors)
 
 ```svg
-<?xml version="1.0" encoding="UTF-8"?>
 <svg
   viewBox="-75 -75 440 440"
-  zoomAndPan="disable"
-  version="1.2"
-  baseProfile="tiny-ps"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
   aria-label="Netresearch symbol logo">
