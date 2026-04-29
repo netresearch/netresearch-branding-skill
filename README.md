@@ -4,7 +4,7 @@ A comprehensive Claude Code skill for implementing Netresearch brand guidelines 
 
 ## Why this skill is public
 
-Brand guidelines (logo, colours, typography, voice) are intentionally **publicly available** so external partners, contractors, and contributors can apply them when working on Netresearch-affiliated projects without needing internal-system access. This mirrors how most agencies publish their brand identity. The skill ships only published brand collateral; nothing under it is internal-only.
+Brand guidelines (logo, colors, typography, voice) are intentionally **publicly available** so external partners, contractors, and contributors can apply them when working on Netresearch-affiliated projects without needing internal-system access. This mirrors how most agencies publish their brand identity. The skill ships only published brand collateral; nothing under it is internal-only.
 
 ## 🔌 Compatibility
 
