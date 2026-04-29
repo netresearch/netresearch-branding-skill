@@ -2,6 +2,10 @@
 
 A comprehensive Claude Code skill for implementing Netresearch brand guidelines in web projects. Ensures consistent brand application across all digital touchpoints.
 
+## Why this skill is public
+
+Brand guidelines (logo, colors, typography, voice) are intentionally **publicly available** so external partners, contractors, and contributors can apply them when working on Netresearch-affiliated projects without needing internal-system access. This mirrors how most agencies publish their brand identity. The skill ships only published brand collateral; nothing under it is internal-only.
+
 ## 🔌 Compatibility
 
 This is an **Agent Skill** following the [open standard](https://agentskills.io) originally developed by Anthropic and released for cross-platform use.
