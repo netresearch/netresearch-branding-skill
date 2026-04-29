@@ -72,6 +72,21 @@ Use CSS variables exclusively (`var(--nr-primary)`, not hardcoded hex). Detect d
 grep -r "#[0-9a-fA-F]{6}" --include="*.css" --include="*.scss"
 ```
 
+## Brand Assets (consumable by other skills)
+
+Pre-built brand collateral lives under `assets/` for direct consumption by other skills:
+
+- `assets/markdown-pdf.css` — branded stylesheet for `markdown-to-pdf-skill`. Apply via `--css` to produce Netresearch-branded PDFs (running header with brand-teal background, brand-orange accent, Raleway/Open Sans, page numbers).
+- `assets/markdown-pdf-logo.svg` — white Netresearch logo embedded by `markdown-pdf.css`.
+
+Usage from `markdown-to-pdf-skill`:
+
+```bash
+uv run --with markdown --with weasyprint python3 \
+  "${MD_PDF_SKILL_DIR}/scripts/convert.py" doc.md \
+  --css "${BRANDING_SKILL_DIR}/assets/markdown-pdf.css"
+```
+
 ## References
 
 - `references/colors.md` - Full palette, WCAG contrast ratios, approved combinations
