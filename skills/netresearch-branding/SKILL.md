@@ -1,6 +1,6 @@
 ---
 name: netresearch-branding
-description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, extension icons, README badges, or CSS theming. Apply logo, brand colors (#2F99A4, #FF4D00, #585961), Raleway+Open Sans typography. Triggers on: Netresearch branding, brand colors, logo, extension icon, branded page, style guide."
+description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, extension icons, README badges, or CSS theming. Enforce strict brand compliance with mandatory logo usage, brand colors, typography, footer, and reference-driven implementation."
 license: "(MIT AND CC-BY-SA-4.0)"
 metadata:
   version: "2.6.2"
@@ -8,69 +8,66 @@ metadata:
   author: "Netresearch DTT GmbH"
 ---
 
-# Netresearch Brand Guidelines
+# Netresearch Brand Guidelines (Strict)
 
-Apply Netresearch brand identity to web projects, documentation, and TYPO3 extensions.
+Apply Netresearch brand identity to web outputs, documentation, and TYPO3 extensions.
 
 ## Auto-Trigger Conditions
 
-Apply when:
-- GitHub org is `netresearch` or composer.json has `netresearch/` vendor
-- Creating HTML pages, dashboards, reports, or landing pages
-- Another skill generates visual content
+Apply automatically when any of the following is true:
+- GitHub org is `netresearch` or composer vendor is `netresearch/`
+- Creating/modifying HTML pages, dashboards, reports, docs pages, or component demos
+- Creating extension icons or branded UI assets
+- Prompt contains branding terms (e.g. logo, style guide, brand colors)
+- Another skill generates user-facing visual content
 
-## MANDATORY Requirements
+## Hard Validity Rules
 
-1. **Logo**: `assets/logos/netresearch-symbol-only.svg` in header (min 32x32px)
-2. **Colors**: `#2F99A4` (primary), `#FF4D00` (accent only), `#585961` (text)
-3. **Typography**: Raleway (headlines, buttons, nav), Open Sans (body, forms)
-4. **Footer**: Link to https://www.netresearch.de/ + "Netresearch DTT GmbH"
+Output is invalid if any item is missing:
+1. Header logo (`assets/logos/netresearch-symbol-only.svg`, or fallback from `references/logo-svg.md`)
+2. Brand colors: `#2F99A4` (primary), `#FF4D00` (accent only), `#585961` (text)
+3. Typography intent: Raleway for headlines/UI emphasis, Open Sans for body/forms
+4. Footer includes link to `https://www.netresearch.de/` and text `Netresearch DTT GmbH`
 
-## Color System
+If user instructions conflict, keep these rules and explain constraints.
 
-| Role | Hex | CSS Variable | Usage |
-|------|-----|-------------|-------|
-| Primary | `#2F99A4` | `--nr-primary` | Headers, CTAs, links |
-| Accent | `#FF4D00` | `--nr-accent` | Highlights only, never dominant |
-| Text | `#585961` | `--nr-text` | Body text, headings |
-| Grey | `#CCCDCC` | `--nr-border` | Borders, disabled states |
-| Background | `#FFFFFF` | `--nr-bg` | Page background |
+## Mandatory Logo Rendering Behavior
 
-**Forbidden combinations**: Orange on turquoise, grey text on white, turquoise text <18px on white (fails WCAG AA: 3.8:1 ratio).
+Logo source priority:
+1. `assets/logos/netresearch-symbol-only.svg`
+2. `references/logo-svg.md` (inline SVG fallback)
+3. `references/logo.md` (text fallback for SVG-limited agents)
 
-## TYPO3 Extensions
+Rules:
+- Include logo exactly once in top header/nav for branded pages
+- Minimum size `32x32px`; recommended `40–56px` in headers
+- Preserve aspect ratio
+- No recolor, distortion, filters, shadows, outlines, or substitutions
+- If clickable, link to `https://www.netresearch.de/`
 
-- **Icon**: `Resources/Public/Icons/Extension.svg` (symbol-only logo, teal `#2F99A4`)
-- **Description**: `<What> - by Netresearch` in both `composer.json` and `ext_emconf.php`
-- **`author_company`**: `Netresearch DTT GmbH` (exact)
-- **Vendor**: `netresearch/` prefix in composer name
-- **Email**: `typo3@netresearch.de`
-- **Badges**: CI/Quality > Security (OpenSSF, SLSA) > Standards > TER
+## Active Reference Workflow
 
-See `references/typo3-extension-branding.md` for full checklist, badge templates, and validation commands.
+Operationalize references in every branded output:
+1. `references/colors.md` for palette/token mapping
+2. `references/typography.md` for font roles and scale
+3. `references/web-design.md` for layout/components/spacing
+4. `references/logo.md` and `references/logo-svg.md` for logo fallback behavior
+5. `references/typo3-extension-branding.md` for TYPO3 context
 
-## TYPO3 Documentation Branding
+## Core Brand System
 
-- Teal underline SVG (`netresearch-underline.svg`) below main heading
-- Footer card: `[n] A Netresearch extension` with `card-footer` linking to netresearch.de
-- `guides.xml`: set `project-repository`, `edit-on-github` to `netresearch/REPO`
+- CSS variables preferred: `--nr-primary`, `--nr-accent`, `--nr-text`, `--nr-border`, `--nr-bg`
+- Accent orange is highlight-only and must not dominate surfaces
+- Accessibility: WCAG AA minimum contrast and semantic structure
+- Footer branding is mandatory in user-facing branded pages
 
-## Web Components
+## TYPO3 Extension Requirements
 
-Use `templates/styles.css` for the complete design system. Key patterns:
-
-- **Buttons**: `.btn-primary` (turquoise), `.btn-secondary` (orange), `.btn-outline`
-- **Cards**: `.card` with shadow, hover lift, Raleway titles
-- **Hero**: Turquoise gradient background, white text
-- **Footer**: Anthracite (`#585961`) background, white text
-- **Breakpoints**: Mobile-first at 600px / 768px / 1024px / 1440px
-
-## Brand Debt Prevention
-
-Use CSS variables exclusively (`var(--nr-primary)`, not hardcoded hex). Detect debt with:
-```bash
-grep -r "#[0-9a-fA-F]{6}" --include="*.css" --include="*.scss"
-```
+- Icon path: `Resources/Public/Icons/Extension.svg` (teal `#2F99A4`)
+- Composer vendor prefix: `netresearch/`
+- `author_company`: `Netresearch DTT GmbH`
+- Description suffix: `- by Netresearch`
+- Contact: `typo3@netresearch.de`
 
 ## Brand Assets
 
@@ -79,11 +76,9 @@ grep -r "#[0-9a-fA-F]{6}" --include="*.css" --include="*.scss"
 
 ## References
 
-- `references/colors.md` - Full palette, WCAG contrast ratios, approved combinations
-- `references/typography.md` - Font weights, sizes, responsive scale
-- `references/web-design.md` - Component library, layout patterns, pre-launch checklist
-- `references/typo3-extension-branding.md` - Extension metadata, badge standards
-
----
-
-> **Contributing:** https://github.com/netresearch/netresearch-branding-skill
+- `references/colors.md`
+- `references/typography.md`
+- `references/web-design.md`
+- `references/logo.md`
+- `references/logo-svg.md`
+- `references/typo3-extension-branding.md`
