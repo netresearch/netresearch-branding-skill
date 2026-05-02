@@ -1,0 +1,35 @@
+{
+  "name": "@netresearch/netresearch-branding-skill",
+  "version": "0.0.0-source",
+  "description": "Netresearch AI skill for brand identity and design standards in web projects.",
+  "license": "(MIT AND CC-BY-SA-4.0)",
+  "author": "Netresearch DTT GmbH (https://www.netresearch.de/)",
+  "homepage": "https://github.com/netresearch/netresearch-branding-skill",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/netresearch/netresearch-branding-skill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/netresearch/netresearch-branding-skill/issues"
+  },
+  "keywords": [
+    "ai-agent-skill",
+    "branding",
+    "design-system",
+    "netresearch",
+    "anthropic",
+    "claude-code"
+  ],
+  "aiAgentSkill": "skills/netresearch-branding/SKILL.md",
+  "files": [
+    "skills/netresearch-branding/",
+    "scripts/",
+    "assets/",
+    "LICENSE-MIT",
+    "LICENSE-CC-BY-SA-4.0",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@netresearch/agent-skill-coordinator": "^0.1"
+  }
+}
