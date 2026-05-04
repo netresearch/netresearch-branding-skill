@@ -133,7 +133,7 @@ mechanical:
 
   - id: NB-14
     type: command
-    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} grep -qE "- by Netresearch" ext_emconf.php'
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} grep -qE -- "- by Netresearch" ext_emconf.php'
     severity: warning
     desc: "ext_emconf.php description should end with '- by Netresearch' (TYPO3 extensions only)"
 
@@ -185,32 +185,38 @@ mechanical:
   # human-readable spec, examples, and rationale.
 
   # === README HEADLINE ===
+  # Case-insensitive match. Accepts:
+  #   - a `netresearch.de` link
+  #   - the company name "Netresearch DTT"
+  #   - the TYPO3 ext_emconf convention "by Netresearch" (description suffix)
   - id: NB-30
     type: command
-    pattern: "head -30 README.md | grep -qE 'netresearch\\.de|Netresearch DTT'"
+    pattern: "head -30 README.md | grep -qiE 'netresearch\\.de|Netresearch DTT|by Netresearch'"
     severity: warning
-    desc: "README headline references Netresearch (link to netresearch.de or 'Netresearch DTT' in first 30 lines)"
+    desc: "README headline references Netresearch in first 30 lines (netresearch.de link, 'Netresearch DTT', or 'by Netresearch')"
 
   # === README FOOTER: COMPANY NAME ===
   - id: NB-31
     type: command
-    pattern: "tail -20 README.md | grep -qE 'Netresearch DTT'"
+    pattern: "tail -20 README.md | grep -qiE 'Netresearch DTT'"
     severity: warning
     desc: "README footer credits Netresearch DTT GmbH (last 20 lines)"
 
   # === README FOOTER: WEBSITE LINK ===
   - id: NB-32
     type: command
-    pattern: "tail -20 README.md | grep -qE 'netresearch\\.de'"
+    pattern: "tail -20 README.md | grep -qiE 'netresearch\\.de'"
     severity: info
     desc: "README footer links to https://www.netresearch.de/ (last 20 lines)"
 
   # === README LICENSE MENTION ===
+  # Case-insensitive — accepts "License", "LICENSE", "licensed under",
+  # SPDX badges with `/license/` in the URL, etc.
   - id: NB-33
     type: command
-    pattern: "grep -qE 'License|LICENSE' README.md"
+    pattern: "grep -qi 'license' README.md"
     severity: info
-    desc: "README mentions licensing"
+    desc: "README mentions licensing (case-insensitive — accepts License/LICENSE heading, 'licensed under', SPDX license badge URLs, etc.)"
 
 llm_reviews:
   # === REPOSITORY DESCRIPTION CHECK ===

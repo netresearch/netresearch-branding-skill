@@ -34,6 +34,11 @@ The first 30 lines must contain at least one of:
    and bare `netresearch.de` all qualify).
 2. The string `Netresearch DTT` (the company short-name, with or
    without the `GmbH` suffix).
+3. The phrase `by Netresearch` — the suffix used by the TYPO3
+   extension `ext_emconf.php` description convention (`... - by
+   Netresearch`).
+
+Match is case-insensitive.
 
 In practice this means one of:
 
@@ -44,11 +49,12 @@ In practice this means one of:
   `> Maintained by [Netresearch DTT GmbH](https://www.netresearch.de/).`
 - The project description itself naming the company:
   `# rte-ckeditor-image — by Netresearch DTT GmbH`.
+- TYPO3 extension descriptions ending with `- by Netresearch`.
 
 The check is a single pipeline:
 
 ```bash
-head -30 README.md | grep -qE 'netresearch\.de|Netresearch DTT'
+head -30 README.md | grep -qiE 'netresearch\.de|Netresearch DTT|by Netresearch'
 ```
 
 ### Footer (last 20 lines) — NB-31, NB-32
@@ -77,11 +83,11 @@ license heading two lines up) NB-33 in one place.
 ### License mention — NB-33 (info)
 
 The README must reference licensing somewhere. The check is
-case-insensitive enough to match `License`, `LICENSE`, `## License`,
-`Licensed under`, etc.:
+case-insensitive — matches `License`, `LICENSE`, `## License`,
+`Licensed under`, SPDX badge URLs containing `/license/`, etc.:
 
 ```bash
-grep -qE 'License|LICENSE' README.md
+grep -qi 'license' README.md
 ```
 
 Real Netresearch repos use one of:

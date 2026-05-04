@@ -1,0 +1,11 @@
+extends: default
+rules:
+  # Bumped to 280 to accommodate single-line `pattern:` fields in
+  # checkpoints.yaml. The checkpoint runner does not unfold YAML folded
+  # scalars (`>-`) for `pattern:` fields — its parser is bash regex,
+  # not a real YAML parser — so inline TYPO3-detection guards
+  # (`cat composer.json ext_emconf.php 2>/dev/null | grep ... | xargs -r -I{} ...`)
+  # cannot be wrapped without breaking the runner.
+  line-length: {max: 280}
+  truthy: {allowed-values: ['true', 'false', 'on']}
+  document-start: disable
