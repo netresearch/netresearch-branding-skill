@@ -175,6 +175,43 @@ mechanical:
     severity: warning
     desc: "Footer should include exact company name 'Netresearch DTT GmbH'"
 
+  # ============================================================
+  # README HEADLINE & FOOTER BRANDING (universal, non-TYPO3 too)
+  # ============================================================
+  # These apply to ANY Netresearch repo (TYPO3 extension, Claude skill,
+  # internal tool, etc.). Implemented as `type: command` single
+  # pipelines that pass the runner allowlist (no `;`, `&&`, `||`,
+  # `$()`, backticks). See references/README-branding.md for the
+  # human-readable spec, examples, and rationale.
+
+  # === README HEADLINE ===
+  - id: NB-30
+    type: command
+    pattern: "head -30 README.md | grep -qE 'netresearch\\.de|Netresearch DTT'"
+    severity: warning
+    desc: "README headline references Netresearch (link to netresearch.de or 'Netresearch DTT' in first 30 lines)"
+
+  # === README FOOTER: COMPANY NAME ===
+  - id: NB-31
+    type: command
+    pattern: "tail -20 README.md | grep -qE 'Netresearch DTT'"
+    severity: warning
+    desc: "README footer credits Netresearch DTT GmbH (last 20 lines)"
+
+  # === README FOOTER: WEBSITE LINK ===
+  - id: NB-32
+    type: command
+    pattern: "tail -20 README.md | grep -qE 'netresearch\\.de'"
+    severity: info
+    desc: "README footer links to https://www.netresearch.de/ (last 20 lines)"
+
+  # === README LICENSE MENTION ===
+  - id: NB-33
+    type: command
+    pattern: "grep -qE 'License|LICENSE' README.md"
+    severity: info
+    desc: "README mentions licensing"
+
 llm_reviews:
   # === REPOSITORY DESCRIPTION CHECK ===
   - id: NB-20
