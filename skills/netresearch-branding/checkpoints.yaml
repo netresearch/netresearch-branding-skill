@@ -5,32 +5,59 @@ version: 1
 skill_id: netresearch-branding
 
 mechanical:
-  # === EXTENSION ICON CHECKS ===
+  # ============================================================
+  # TYPO3-EXTENSION-SPECIFIC CHECKS (NB-01..NB-03, NB-09..NB-14)
+  # ============================================================
+  # The runner only supports a single top-level `preconditions:` block,
+  # which would gate the entire skill (including the universal README
+  # checks below). To keep the README checks running on ALL Netresearch
+  # repos while skipping TYPO3 plumbing on non-TYPO3 ones, each TYPO3
+  # check below is rewritten as a `type: command` with an inline guard
+  # pipeline of the form:
+  #
+  #   cat composer.json ext_emconf.php 2>/dev/null \
+  #     | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" \
+  #     | head -1 \
+  #     | xargs -r -I{} <actual-check>
+  #
+  # Detection logic (matches user spec):
+  #   - composer.json containing the substring `typo3-cms-extension` or
+  #     `typo3-cms-framework` (only TYPO3 composer types use that prefix), OR
+  #   - ext_emconf.php existing (every ext_emconf.php contains `EM_CONF[`).
+  #
+  # Behaviour on non-TYPO3 repos: the grep produces no output, xargs -r
+  # runs nothing, the pipeline exits 0, the checkpoint passes trivially
+  # (= correctly N/A). On TYPO3 repos, the actual check runs and its
+  # exit code drives pass/fail.
+  #
+  # Single-pipeline construction is required by the runner allowlist
+  # (no `;`, `&&`, `||`, `$()`, or backticks).
+
+  # === EXTENSION ICON CHECKS (TYPO3-only) ===
   - id: NB-01
-    type: file_exists
-    target: Resources/Public/Icons/Extension.svg
+    type: command
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} test -f Resources/Public/Icons/Extension.svg'
     severity: error
-    desc: "Extension icon (SVG) must exist"
+    desc: "Extension icon (SVG) must exist (TYPO3 extensions only)"
 
   - id: NB-02
-    type: contains
-    target: Resources/Public/Icons/Extension.svg
-    pattern: "#2F99A4"
+    type: command
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} grep -qF "#2F99A4" Resources/Public/Icons/Extension.svg'
     severity: error
-    desc: "Extension icon must use Netresearch teal (#2F99A4)"
+    desc: "Extension icon must use Netresearch teal #2F99A4 (TYPO3 extensions only)"
 
   # PNG fallback was needed for TYPO3 v11 and earlier. v12+ renders SVG
   # icons natively in the BE; PNG is dead weight on modern projects.
   # Pass when PNG is ABSENT (recommended for v12+ projects). If a project
   # also targets v11 or older, it can opt-in to keep the PNG by ignoring
-  # this rule.
+  # this rule. Skipped on non-TYPO3 repos.
   - id: NB-03
-    type: file_not_exists
-    target: Resources/Public/Icons/Extension.png
+    type: command
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} test ! -f Resources/Public/Icons/Extension.png'
     severity: info
-    desc: "Extension.png should NOT exist for TYPO3 v12+ projects (SVG renders natively in BE; PNG is dead weight). Only keep PNG if extension targets TYPO3 v11 or older."
+    desc: "Extension.png should NOT exist for TYPO3 v12+ projects (SVG renders natively; PNG is dead weight). Only keep PNG if extension targets TYPO3 v11 or older."
 
-  # === README BRANDING CHECKS ===
+  # === README BRANDING CHECKS (universal) ===
   - id: NB-04
     type: regex
     target: README.md
@@ -46,6 +73,7 @@ mechanical:
     desc: "README should link to netresearch.de"
 
   # === BRAND COLOR CHECKS (in CSS/SCSS files) ===
+  # Glob-based; auto-skips with status=skip when no CSS files match.
   - id: NB-06
     type: not_contains
     target: Resources/Public/Css/*.css
@@ -67,51 +95,47 @@ mechanical:
     severity: info
     desc: "CSS should use uppercase brand color #585961 (not lowercase)"
 
-  # === COMPOSER.JSON BRANDING ===
+  # === COMPOSER.JSON BRANDING (TYPO3-only) ===
   - id: NB-09
-    type: regex
-    target: composer.json
-    pattern: '"name".*"netresearch/'
+    type: command
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} grep -qE "\"name\".*\"netresearch/" composer.json'
     severity: error
-    desc: "Composer package name must use netresearch/ vendor prefix"
+    desc: "Composer package name must use netresearch/ vendor prefix (TYPO3 extensions only)"
 
   - id: NB-10
-    type: json_path
-    target: composer.json
-    pattern: '.authors[] | select(.name == "Netresearch DTT GmbH")'
+    type: command
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} jq -e ".authors[] | select(.name == \"Netresearch DTT GmbH\")" composer.json'
     severity: warning
-    desc: "Composer should list Netresearch DTT GmbH as author"
+    desc: "Composer should list Netresearch DTT GmbH as author (TYPO3 extensions only)"
 
-  # === NETRESEARCH LOGO ([n]) CHECKS ===
+  # === NETRESEARCH LOGO ([n]) CHECKS (TYPO3-only) ===
   # SVG-only on TYPO3 v12+. The brand asset gives extensions visual
   # identity in About pages, README rendering, and any custom UI.
   - id: NB-11
-    type: file_exists
-    target: Resources/Public/Images/netresearch-logo.svg
+    type: command
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} test -f Resources/Public/Images/netresearch-logo.svg'
     severity: info
-    desc: "Netresearch [n] logo (SVG) should be present for brand identity"
+    desc: "Netresearch [n] logo (SVG) should be present for brand identity (TYPO3 extensions only)"
 
   # PNG fallback obsolete on v12+ (same logic as NB-03). Pass when absent.
   - id: NB-12
-    type: file_not_exists
-    target: Resources/Public/Images/netresearch-logo.png
+    type: command
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} test ! -f Resources/Public/Images/netresearch-logo.png'
     severity: info
-    desc: "Netresearch logo PNG fallback should NOT exist on v12+ projects (SVG renders natively). Only keep PNG if targeting v11 or older."
+    desc: "Netresearch logo PNG fallback should NOT exist on TYPO3 v12+ projects (SVG renders natively). Only keep PNG if targeting v11 or older."
 
-  # === EXT_EMCONF BRANDING ===
+  # === EXT_EMCONF BRANDING (TYPO3-only) ===
   - id: NB-13
-    type: contains
-    target: ext_emconf.php
-    pattern: "Netresearch DTT GmbH"
+    type: command
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} grep -qF "Netresearch DTT GmbH" ext_emconf.php'
     severity: error
-    desc: "ext_emconf.php author_company must be 'Netresearch DTT GmbH'"
+    desc: "ext_emconf.php author_company must be 'Netresearch DTT GmbH' (TYPO3 extensions only)"
 
   - id: NB-14
-    type: regex
-    target: ext_emconf.php
-    pattern: "- by Netresearch"
+    type: command
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} grep -qE "- by Netresearch" ext_emconf.php'
     severity: warning
-    desc: "ext_emconf.php description should end with '- by Netresearch'"
+    desc: "ext_emconf.php description should end with '- by Netresearch' (TYPO3 extensions only)"
 
   # === TYPOGRAPHY CHECK ===
   - id: NB-15
