@@ -82,3 +82,4 @@ Operationalize references in every branded output:
 - `references/logo.md`
 - `references/logo-svg.md`
 - `references/typo3-extension-branding.md`
+- `references/README-branding.md`
