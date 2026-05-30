@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Netresearch Branding Skill — Living Style Guide &amp; Compliance Demo</title>
+  <meta name="description" content="A self-verifying showcase of every Netresearch brand rule defined by the netresearch-branding Agent Skill — colors, typography, components, logo, TYPO3 extension branding, checkpoints, and the ambiguous rules that still need resolving.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       Netresearch brand tokens.
+       Canonical names follow SKILL.md:59 (--nr-*). The reference
+       files use --color-* instead — that divergence is documented
+       as Finding F1 below. We follow the SKILL (and checkpoint
+       NB-16) here so this page is itself brand-compliant.
+       ============================================================ */
+    :root {
+      --nr-primary: #2F99A4;
+      --nr-primary-dark: #257880;
+      --nr-accent: #FF4D00;
+      --nr-accent-dark: #CC3D00;
+      --nr-text: #585961;
+      --nr-text-secondary: #8A8B93;
+      --nr-border: #CCCDCC;
+      --nr-border-light: #E5E5E5;
+      --nr-bg: #FFFFFF;
+      --nr-bg-alt: #F5F5F5;
+
+      --nr-success: #28A745;
+      --nr-warning: #FFC107;
+      --nr-error: #DC3545;
+
+      --font-headline: 'Raleway', 'Helvetica Neue', Arial, sans-serif;
+      --font-body: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+      --space-xs: 8px;
+      --space-sm: 12px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+      --space-4xl: 96px;
+
+      --radius: 8px;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--nr-text);
+      background: var(--nr-bg);
+    }
+
+    h1, h2, h3, h4, h5 {
+      font-family: var(--font-headline);
+      color: var(--nr-text);
+      line-height: 1.2;
+      margin: 0 0 var(--space-md);
+    }
+    h1 { font-size: 48px; font-weight: 700; }
+    h2 { font-size: 36px; font-weight: 700; }
+    h3 { font-size: 24px; font-weight: 600; line-height: 1.3; }
+    h4 { font-size: 18px; font-weight: 600; }
+    p { margin: 0 0 var(--space-md); }
+    a { color: var(--nr-primary); text-decoration: none; transition: color .2s ease; }
+    a:hover { color: var(--nr-primary-dark); }
+    code, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.875em;
+      background: var(--nr-bg-alt);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--nr-text);
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 var(--space-lg); }
+
+    /* --- Skip link (a11y) --- */
+    .skip-link {
+      position: absolute; left: -9999px; top: 0; z-index: 2000;
+      background: var(--nr-primary); color: #fff; padding: 12px 20px;
+      font-family: var(--font-headline); font-weight: 600;
+    }
+    .skip-link:focus { left: 0; color: #fff; }
+
+    /* ============================== NAV ============================== */
+    .navbar {
+      position: sticky; top: 0; z-index: 1000;
+      background: var(--nr-bg);
+      box-shadow: var(--shadow-sm);
+    }
+    .navbar-inner {
+      display: flex; align-items: center; gap: var(--space-lg);
+      max-width: 1200px; margin: 0 auto; padding: 12px var(--space-lg);
+    }
+    .navbar-logo { display: inline-flex; align-items: center; gap: var(--space-sm); }
+    .navbar-logo svg { width: 44px; height: 44px; display: block; }
+    .navbar-wordmark {
+      font-family: var(--font-headline); font-weight: 700; font-size: 18px;
+      color: var(--nr-text); white-space: nowrap;
+    }
+    .navbar-menu {
+      display: flex; gap: 4px; list-style: none; margin: 0; padding: 0;
+      margin-left: auto; flex-wrap: wrap;
+    }
+    .navbar-menu a {
+      font-family: var(--font-headline); font-weight: 400; font-size: 15px;
+      color: var(--nr-text); padding: 8px 12px; border-radius: 6px; display: block;
+    }
+    .navbar-menu a:hover { color: var(--nr-primary); font-weight: 600; background: var(--nr-bg-alt); }
+    @media (max-width: 880px) {
+      .navbar-wordmark { display: none; }
+      .navbar-menu { font-size: 13px; }
+    }
+
+    /* ============================== HERO ============================== */
+    .hero {
+      background: linear-gradient(135deg, var(--nr-primary) 0%, var(--nr-primary-dark) 100%);
+      color: #fff; text-align: center;
+      padding: var(--space-4xl) var(--space-lg);
+    }
+    .hero h1 { color: #fff; font-size: 52px; max-width: 18ch; margin: 0 auto var(--space-lg); }
+    .hero p { color: rgba(255,255,255,.92); font-size: 20px; max-width: 60ch; margin: 0 auto var(--space-xl); }
+    .hero .badges { display: flex; gap: var(--space-sm); justify-content: center; flex-wrap: wrap; }
+    .hero .pill {
+      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+      color: #fff; padding: 6px 14px; border-radius: 999px; font-size: 14px;
+      font-family: var(--font-headline); font-weight: 600;
+    }
+    @media (max-width: 768px) { .hero h1 { font-size: 34px; } .hero p { font-size: 18px; } }
+
+    /* ============================== SECTIONS ============================== */
+    section.block { padding: var(--space-3xl) 0; border-bottom: 1px solid var(--nr-border-light); }
+    section.block.alt { background: var(--nr-bg-alt); }
+    .section-head { margin-bottom: var(--space-2xl); max-width: 70ch; }
+    .section-head .eyebrow {
+      font-family: var(--font-headline); font-weight: 700; font-size: 13px;
+      letter-spacing: 1px; text-transform: uppercase; color: var(--nr-primary);
+      margin-bottom: var(--space-xs);
+    }
+    .section-head p { font-size: 18px; color: var(--nr-text); }
+
+    /* --- Rule card: every showcased item is a .rule with an issue link --- */
+    .rule {
+      position: relative;
+      background: var(--nr-bg); border: 1px solid var(--nr-border-light);
+      border-radius: var(--radius); padding: var(--space-lg);
+      box-shadow: var(--shadow-sm); margin-bottom: var(--space-lg);
+    }
+    .rule > h3, .rule > h4 { margin-top: 0; }
+    .rule-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
+    .rule-id {
+      font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600;
+      color: #fff; background: var(--nr-primary); padding: 2px 8px; border-radius: 4px;
+      white-space: nowrap;
+    }
+    .src {
+      display: inline-block; font-family: ui-monospace, monospace; font-size: 12px;
+      color: var(--nr-text-secondary); margin-top: var(--space-xs);
+    }
+
+    /* --- Issue button (injected by JS for every [data-issue-title]) --- */
+    .issue-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-headline); font-weight: 600; font-size: 13px;
+      color: var(--nr-primary); border: 1px solid var(--nr-border);
+      padding: 5px 12px; border-radius: 999px; white-space: nowrap;
+      background: var(--nr-bg); transition: all .2s ease; cursor: pointer;
+    }
+    .issue-link:hover { background: var(--nr-primary); color: #fff; border-color: var(--nr-primary); }
+
+    .grid { display: grid; gap: var(--space-lg); }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 1024px) { .grid-4 { grid-template-columns: repeat(2,1fr);} .grid-3 { grid-template-columns: repeat(2,1fr);} }
+    @media (max-width: 680px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+    /* ============================== COLOR SWATCHES ============================== */
+    .swatch { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--nr-border-light); box-shadow: var(--shadow-sm); background:#fff; }
+    .swatch .chip { height: 120px; display: flex; align-items: flex-end; padding: var(--space-sm); }
+    .swatch .chip .sample { font-family: var(--font-headline); font-weight: 700; font-size: 15px; }
+    .swatch .meta { padding: var(--space-md); }
+    .swatch .meta .name { font-family: var(--font-headline); font-weight: 700; margin-bottom: 4px; }
+    .swatch .meta .hex { font-family: ui-monospace, monospace; font-size: 14px; color: var(--nr-text); }
+    .swatch .meta .role { font-size: 13px; color: var(--nr-text-secondary); margin-top: 6px; }
+    .swatch .issue-link { margin: 0 var(--space-md) var(--space-md); }
+
+    /* --- contrast verifier table --- */
+    .contrast-table, .demo-table, .cp-table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: var(--shadow-sm); border-radius: var(--radius); overflow: hidden; }
+    .contrast-table th { background: var(--nr-primary); color: #fff; font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 12px 16px; font-size: 14px; }
+    .contrast-table td { padding: 10px 16px; border-bottom: 1px solid var(--nr-border-light); font-size: 14px; vertical-align: middle; }
+    .contrast-table tr:last-child td { border-bottom: none; }
+    .sw-dot { display: inline-block; width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(0,0,0,.12); vertical-align: middle; margin-right: 6px; }
+    .ratio { font-family: ui-monospace, monospace; font-weight: 600; }
+    .badge { display: inline-block; font-family: var(--font-headline); font-weight: 600; font-size: 12px; padding: 2px 9px; border-radius: 999px; }
+    .badge.pass { background: rgba(40,167,69,.14); color: #1c7430; }
+    .badge.fail { background: rgba(220,53,69,.14); color: #b21f2d; }
+    .doc-claim { font-style: italic; color: var(--nr-text-secondary); }
+    .mismatch { color: var(--nr-error); font-weight: 600; font-style: normal; }
+
+    /* ============================== COMPONENTS ============================== */
+    .btn { display: inline-block; font-family: var(--font-headline); font-weight: 600; font-size: 16px; line-height: 1; letter-spacing: .5px; text-align: center; padding: 12px 32px; border: none; border-radius: 4px; cursor: pointer; transition: all .3s ease; }
+    .btn-primary { background: var(--nr-primary); color: #fff; }
+    .btn-primary:hover { background: var(--nr-primary-dark); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(47,153,164,.3); }
+    .btn-secondary { background: var(--nr-accent); color: #fff; }
+    .btn-secondary:hover { background: var(--nr-accent-dark); color: #fff; box-shadow: 0 4px 12px rgba(255,77,0,.3); }
+    .btn-outline { background: transparent; color: var(--nr-primary); border: 2px solid var(--nr-primary); }
+    .btn-outline:hover { background: var(--nr-primary); color: #fff; }
+    .btn-small { padding: 8px 20px; font-size: 14px; }
+    .btn-large { padding: 16px 44px; font-size: 18px; }
+    .btn:disabled, .btn[disabled] { opacity: .5; cursor: not-allowed; }
+    .btn-row { display: flex; gap: var(--space-md); flex-wrap: wrap; align-items: center; }
+
+    .demo-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; transition: all .3s ease; }
+    .demo-card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px); }
+    .demo-card .cc { padding: var(--space-lg); }
+    .demo-card .ct { font-family: var(--font-headline); font-weight: 600; font-size: 20px; margin-bottom: var(--space-xs); }
+    .demo-card .cf { padding: var(--space-sm) var(--space-lg); border-top: 1px solid var(--nr-border-light); background: var(--nr-bg-alt); font-size: 13px; color: var(--nr-text-secondary); }
+
+    .form-group { margin-bottom: var(--space-md); }
+    .form-label { display: block; font-family: var(--font-body); font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+    .form-input, .form-textarea { width: 100%; font-family: var(--font-body); font-size: 16px; color: var(--nr-text); padding: 12px 16px; border: 1px solid var(--nr-border); border-radius: 4px; background: #fff; transition: all .2s ease; }
+    .form-input:focus, .form-textarea:focus { outline: none; border-color: var(--nr-primary); box-shadow: 0 0 0 3px rgba(47,153,164,.1); }
+    .form-input::placeholder { color: var(--nr-text-secondary); }
+    .form-help { font-size: 13px; color: var(--nr-text-secondary); margin-top: 6px; }
+
+    blockquote.brand { font-family: var(--font-headline); font-size: 22px; font-weight: 400; font-style: italic; line-height: 1.5; color: var(--nr-primary); border-left: 4px solid var(--nr-accent); padding-left: var(--space-lg); margin: 0; }
+    blockquote.brand cite { display: block; font-family: var(--font-body); font-size: 14px; font-weight: 600; font-style: normal; color: var(--nr-text); margin-top: var(--space-sm); }
+
+    .demo-table thead { background: var(--nr-primary); color: #fff; }
+    .demo-table th { font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 14px 16px; }
+    .demo-table td { padding: 12px 16px; border-bottom: 1px solid var(--nr-border-light); }
+    .demo-table tbody tr:hover { background: var(--nr-bg-alt); }
+    .demo-table tbody tr:last-child td { border-bottom: none; }
+
+    .alert { border-radius: var(--radius); padding: var(--space-md) var(--space-lg); margin-bottom: var(--space-md); border-left: 4px solid; }
+    .alert-info { background: rgba(47,153,164,.08); border-color: var(--nr-primary); }
+    .alert-accent { background: rgba(255,77,0,.07); border-color: var(--nr-accent); }
+    .alert h4 { margin: 0 0 4px; }
+
+    /* --- DO / DON'T framing for intentional anti-pattern demos --- */
+    .dodont { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); }
+    @media (max-width: 680px) { .dodont { grid-template-columns: 1fr; } }
+    .do, .dont { border-radius: var(--radius); padding: var(--space-lg); border: 2px solid; }
+    .do { border-color: var(--nr-success); background: rgba(40,167,69,.05); }
+    .dont { border-color: var(--nr-error); background: rgba(220,53,69,.05); }
+    .do .tag, .dont .tag { font-family: var(--font-headline); font-weight: 700; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; display: inline-block; margin-bottom: var(--space-sm); }
+    .do .tag { color: #1c7430; }
+    .dont .tag { color: #b21f2d; }
+    .anti { background: #fff; border: 1px dashed var(--nr-error); border-radius: 6px; padding: var(--space-md); }
+
+    /* --- logo clear-space demo --- */
+    .logo-demo { display: flex; gap: var(--space-2xl); flex-wrap: wrap; align-items: stretch; }
+    .logo-frame { background: #fff; border: 1px solid var(--nr-border-light); border-radius: var(--radius); padding: var(--space-lg); text-align: center; }
+    .logo-frame .clear { display: inline-block; padding: 25%; outline: 1px dashed var(--nr-border); }
+    .logo-frame svg { display: block; }
+    .logo-sizes { display: flex; gap: var(--space-lg); align-items: flex-end; flex-wrap: wrap; }
+    .logo-sizes figure { margin: 0; text-align: center; }
+    .logo-sizes figcaption { font-size: 12px; color: var(--nr-text-secondary); margin-top: 6px; font-family: ui-monospace, monospace; }
+
+    /* --- checkpoints table --- */
+    .cp-table { font-size: 14px; }
+    .cp-table th { background: var(--nr-text); color: #fff; font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 12px 14px; }
+    .cp-table td { padding: 10px 14px; border-bottom: 1px solid var(--nr-border-light); vertical-align: top; }
+    .cp-table tbody tr:hover { background: var(--nr-bg-alt); }
+    .sev { font-family: var(--font-headline); font-weight: 600; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+    .sev.error { background: rgba(220,53,69,.14); color: #b21f2d; }
+    .sev.warning { background: rgba(255,193,7,.22); color: #856404; }
+    .sev.info { background: rgba(47,153,164,.14); color: var(--nr-primary-dark); }
+    .cp-id { font-family: ui-monospace, monospace; font-weight: 600; white-space: nowrap; }
+
+    /* --- findings --- */
+    .finding { border-left: 4px solid var(--nr-accent); }
+    .finding .kind { font-family: var(--font-headline); font-weight: 700; font-size: 12px; letter-spacing: .5px; text-transform: uppercase; color: var(--nr-accent); }
+    .finding .cite { font-family: ui-monospace, monospace; font-size: 13px; color: var(--nr-text-secondary); margin-top: var(--space-sm); }
+    .finding details { margin-top: var(--space-sm); }
+    .finding summary { cursor: pointer; font-weight: 600; color: var(--nr-primary); font-family: var(--font-headline); }
+    .finding details[open] summary { margin-bottom: var(--space-sm); }
+
+    /* ============================== FOOTER ============================== */
+    .footer { background: var(--nr-text); color: #fff; padding: var(--space-3xl) 0 var(--space-lg); }
+    .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-xl); margin-bottom: var(--space-xl); }
+    .footer h4 { color: #fff; }
+    .footer a { color: rgba(255,255,255,.85); }
+    .footer a:hover { color: var(--nr-primary); }
+    .footer ul { list-style: none; padding: 0; margin: 0; }
+    .footer li { margin-bottom: var(--space-xs); }
+    .footer-brand { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); }
+    .footer-brand svg { width: 40px; height: 40px; background: #fff; border-radius: 6px; padding: 4px; }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,.15); padding-top: var(--space-lg); text-align: center; color: rgba(255,255,255,.7); font-size: 14px; }
+    .footer-bottom a { color: rgba(255,255,255,.9); }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- ===================== NAV (mandatory header logo, brand-normalized) ===================== -->
+  <nav class="navbar" aria-label="Primary">
+    <div class="navbar-inner">
+      <a class="navbar-logo" href="https://www.netresearch.de/" aria-label="Netresearch DTT GmbH">
+        <!-- Brand-NORMALIZED logo: #2F99A4 / #585961 per references/logo-svg.md. -->
+        <svg viewBox="-75 -75 440 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Netresearch symbol logo">
+          <title>Netresearch DTT GmbH</title>
+          <g>
+            <path fill="#2F99A4" d="M209.6,0V31.62h32.77a26.38,26.38,0,0,1,26.44,26.43V242a26.38,26.38,0,0,1-26.44,26.44H209.6V300h47.93a42.77,42.77,0,0,0,42.86-42.86V42.89A42.76,42.76,0,0,0,257.53,0ZM43.25,0A42.76,42.76,0,0,0,.39,42.89V257.18A42.76,42.76,0,0,0,43.25,300H91.18V268.46H58.4A26.38,26.38,0,0,1,32,242v-184A26.37,26.37,0,0,1,58.4,31.62H91.18V0Z" transform="translate(-0.39 -0.04)"/>
+            <path fill="#585961" d="M221.44,120.41c0-34.48-13.94-57.82-48.93-57.82-26.62,0-48.54,7.74-64.17,26.56l-.7-22.06-28.31.06V232.94h31.59V124.69c7.14-18.38,32.14-34.8,53-34.5,27.38.4,25.2,26.24,26,45.81v96.94h31.58" transform="translate(-0.39 -0.04)"/>
+          </g>
+        </svg>
+        <span class="navbar-wordmark">Branding Skill</span>
+      </a>
+      <ul class="navbar-menu">
+        <li><a href="#validity">Validity</a></li>
+        <li><a href="#colors">Colors</a></li>
+        <li><a href="#type">Type</a></li>
+        <li><a href="#components">Components</a></li>
+        <li><a href="#logo">Logo</a></li>
+        <li><a href="#typo3">TYPO3</a></li>
+        <li><a href="#readme">README</a></li>
+        <li><a href="#checkpoints">Checkpoints</a></li>
+        <li><a href="#findings">Open Questions</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ===================== HERO ===================== -->
+  <header class="hero">
+    <h1>The Netresearch Branding Skill, made visible</h1>
+    <p>A living style guide that renders every brand rule from the <code style="background:rgba(255,255,255,.18);color:#fff">netresearch-branding</code> Agent Skill — and verifies them against itself. Each item has a one-click button to open a GitHub issue about that rule.</p>
+    <div class="badges">
+      <span class="pill">Colors · Type · Components</span>
+      <span class="pill">Logo &amp; TYPO3 rules</span>
+      <span class="pill">30 checkpoints</span>
+      <span class="pill">Live WCAG contrast</span>
+      <span class="pill">11 open questions</span>
+    </div>
+  </header>
+
+  <main id="main">
+
+  <!-- ===================== INTRO / HARD VALIDITY ===================== -->
+  <section class="block" id="validity">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Hard validity rules</div>
+        <h2>Four things that make a branded page valid</h2>
+        <p>From <code>SKILL.md</code> “Hard Validity Rules” and checkpoint <strong>NB-25</strong>: a Netresearch visual output is <em>invalid</em> if any of these is missing. Partial compliance is a FAIL. This very page satisfies all four — the header logo above, the tokens below, Raleway/Open Sans throughout, and the footer.</p>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="rule" data-issue-title="[Branding] Hard rule 1 — header logo" data-issue-body="Re: SKILL.md Hard Validity Rule 1 (header logo, symbol-only [n], SVG preferred).%0A%0AContext: demo page, Validity section.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h3>1 · Header logo</h3><span class="rule-id">NB-25</span></div>
+          <p>The symbol-only <span class="mono">[n]</span> mark appears exactly once in the top header, ≥32×32px, aspect ratio preserved, no recolor/filter/shadow. Clickable → <code>netresearch.de</code>.</p>
+          <span class="src">SKILL.md:38–43 · references/logo.md</span>
+        </div>
+        <div class="rule" data-issue-title="[Branding] Hard rule 2 — brand colors" data-issue-body="Re: SKILL.md Hard Validity Rule 2 (brand colors #2F99A4 / #FF4D00 accent-only / #585961).%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h3>2 · Brand colors</h3><span class="rule-id">NB-25</span></div>
+          <p><span class="mono">#2F99A4</span> primary, <span class="mono">#FF4D00</span> accent-<em>only</em>, <span class="mono">#585961</span> text. Orange must never dominate a surface.</p>
+          <span class="src">SKILL.md:42 · references/colors.md</span>
+        </div>
+        <div class="rule" data-issue-title="[Branding] Hard rule 3 — typography intent" data-issue-body="Re: SKILL.md Hard Validity Rule 3 (Raleway headlines/UI, Open Sans body).%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h3>3 · Typography intent</h3><span class="rule-id">NB-25</span></div>
+          <p>Raleway for headlines &amp; UI emphasis; Open Sans for body and forms. Calibri is the Office-document equivalent.</p>
+          <span class="src">SKILL.md:43 · references/typography.md</span>
+        </div>
+        <div class="rule" data-issue-title="[Branding] Hard rule 4 — footer branding" data-issue-body="Re: SKILL.md Hard Validity Rule 4 (footer with 'Netresearch DTT GmbH' + link to netresearch.de).%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h3>4 · Footer branding</h3><span class="rule-id">NB-25</span></div>
+          <p>Footer must contain the exact string <strong>Netresearch DTT GmbH</strong> and a link to <code>https://www.netresearch.de/</code>. See the bottom of this page.</p>
+          <span class="src">SKILL.md:44 · checkpoints.yaml NB-19/NB-25</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== COLORS ===================== -->
+  <section class="block alt" id="colors">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Colors</div>
+        <h2>Palette &amp; tokens</h2>
+        <p>The full palette from <code>references/colors.md</code>. Turquoise is the brand; orange is highlight-only; anthracite is text. Each swatch carries its own issue link.</p>
+      </div>
+
+      <div class="grid grid-4">
+        <div class="swatch" data-issue-title="[Branding] Primary turquoise #2F99A4" data-issue-body="Re: references/colors.md — Primary Turquoise #2F99A4.%0A%0AQuestion / proposal:">
+          <div class="chip" style="background:#2F99A4"><span class="sample" style="color:#fff">White on teal</span></div>
+          <div class="meta"><div class="name">Turquoise · Primary</div><div class="hex">#2F99A4</div><div class="role">CTAs, links, headers, brand identity. RGB 47,153,164</div></div>
+        </div>
+        <div class="swatch" data-issue-title="[Branding] Accent orange #FF4D00" data-issue-body="Re: references/colors.md — Accent Orange #FF4D00 (accent only).%0A%0AQuestion / proposal:">
+          <div class="chip" style="background:#FF4D00"><span class="sample" style="color:#fff">White on orange</span></div>
+          <div class="meta"><div class="name">Orange · Accent</div><div class="hex">#FF4D00</div><div class="role">Emphasis &amp; highlights only — never dominant. RGB 255,77,0</div></div>
+        </div>
+        <div class="swatch" data-issue-title="[Branding] Anthracite text #585961" data-issue-body="Re: references/colors.md — Anthracite text #585961.%0A%0AQuestion / proposal:">
+          <div class="chip" style="background:#585961"><span class="sample" style="color:#fff">White on grey</span></div>
+          <div class="meta"><div class="name">Anthracite · Text</div><div class="hex">#585961</div><div class="role">Body copy, headings, labels. RGB 88,89,97</div></div>
+        </div>
+        <div class="swatch" data-issue-title="[Branding] Light grey #CCCDCC" data-issue-body="Re: references/colors.md — Light Grey #CCCDCC (backgrounds/borders only).%0A%0AQuestion / proposal:">
+          <div class="chip" style="background:#CCCDCC"><span class="sample" style="color:#585961">Grey #585961</span></div>
+          <div class="meta"><div class="name">Light Grey</div><div class="hex">#CCCDCC</div><div class="role">Borders, dividers, disabled — not for text. RGB 204,205,204</div></div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:var(--space-2xl)">Live WCAG contrast verifier</h3>
+      <p style="max-width:75ch">The brand docs hard-code contrast ratios — but contrast is symmetric, so a pair cannot have two different values. These rows are computed <strong>in your browser</strong> from the hex values (WCAG 2.x relative luminance). Where the document’s stated number disagrees with the math, the mismatch is flagged. This is <a href="#F2">Finding&nbsp;F2</a>.</p>
+      <div style="overflow-x:auto">
+        <table class="contrast-table" id="contrastTable">
+          <thead>
+            <tr><th>Foreground</th><th>Background</th><th>Computed</th><th>AA normal</th><th>AA large</th><th>Doc claim (colors.md)</th></tr>
+          </thead>
+          <tbody><!-- injected by JS --></tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:var(--space-2xl)">Approved vs. forbidden combinations</h3>
+      <div class="dodont">
+        <div class="do">
+          <span class="tag">✓ Do</span>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <span style="background:#2F99A4;color:#fff;padding:10px 16px;border-radius:6px;font-family:var(--font-headline);font-weight:600">White on turquoise</span>
+            <span style="background:#fff;color:#2F99A4;border:1px solid var(--nr-border);padding:10px 16px;border-radius:6px;font-family:var(--font-headline);font-weight:600">Turquoise on white (large)</span>
+            <span style="background:#fff;color:#585961;border:1px solid var(--nr-border);padding:10px 16px;border-radius:6px">Anthracite on white</span>
+          </div>
+        </div>
+        <div class="dont">
+          <span class="tag">✗ Don’t — intentional anti-patterns</span>
+          <div class="anti" style="display:flex;gap:12px;flex-wrap:wrap">
+            <span style="background:#2F99A4;color:#FF4D00;padding:10px 16px;border-radius:6px;font-weight:600">Orange on turquoise</span>
+            <span style="background:#fff;color:#CCCDCC;padding:10px 16px;border-radius:6px">Light grey text on white</span>
+            <span style="background:#fff;color:#FF4D00;font-size:13px;padding:10px 16px;border-radius:6px">Small orange text on white</span>
+          </div>
+          <p style="font-size:13px;color:var(--nr-text-secondary);margin:12px 0 0">These swatches deliberately violate the brand to illustrate the rule — they are not the page’s chrome.</p>
+        </div>
+      </div>
+
+      <div class="rule" style="margin-top:var(--space-lg)" data-issue-title="[Branding] CSS token names: --nr-* vs --color-*" data-issue-body="Re: token naming. SKILL.md:59 prescribes --nr-primary/--nr-accent/--nr-text/--nr-border/--nr-bg and checkpoint NB-16 greps for --nr-(primary|accent|text), but every CSS example in references/colors.md and references/typography.md uses --color-* instead. The reference snippets would fail NB-16.%0A%0AProposal: pick one canonical scheme and make references + SKILL + NB-16 agree.">
+        <div class="rule-head"><h4>Canonical CSS variables</h4><a class="src" href="#F1">→ Finding F1</a></div>
+        <p>SKILL.md prescribes <code>--nr-primary</code>, <code>--nr-accent</code>, <code>--nr-text</code>, <code>--nr-border</code>, <code>--nr-bg</code> and NB-16 enforces them. (Note: the reference files’ own examples use <code>--color-*</code> instead — see Open Questions.)</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TYPOGRAPHY ===================== -->
+  <section class="block" id="type">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Typography</div>
+        <h2>Raleway for voice, Open Sans for reading</h2>
+        <p>From <code>references/typography.md</code>. Headlines, navigation and buttons use Raleway (400/600/700); body, lists, forms and captions use Open Sans. Never below 14px in production.</p>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="rule" data-issue-title="[Branding] Raleway usage rules" data-issue-body="Re: references/typography.md — Raleway (headlines/UI).%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h3 style="font-family:var(--font-headline)">Raleway</h3><span class="rule-id">Headlines</span></div>
+          <p style="font-family:var(--font-headline);font-weight:700;font-size:34px;margin:0 0 4px">Aa Bb Cc 123</p>
+          <p>Headlines (h1–h5), nav items, button labels, pull quotes, taglines. Weights 400 / 600 / 700.</p>
+          <p style="font-size:13px;color:var(--nr-text-secondary)"><strong>Not</strong> for body paragraphs, long-form, or text below 14px.</p>
+          <span class="src">references/typography.md:366–439</span>
+        </div>
+        <div class="rule" data-issue-title="[Branding] Open Sans usage rules" data-issue-body="Re: references/typography.md — Open Sans (body).%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h3 style="font-family:var(--font-headline)">Open Sans</h3><span class="rule-id">Body</span></div>
+          <p style="font-family:var(--font-body);font-weight:400;font-size:24px;margin:0 0 4px">Aa Bb Cc 123</p>
+          <p>All body copy, lists, form inputs, captions, table content, footer text. Weights 400 / 600 / 700.</p>
+          <p style="font-size:13px;color:var(--nr-text-secondary)"><strong>Not</strong> for main headlines or display text above 48px.</p>
+          <span class="src">references/typography.md:442–511</span>
+        </div>
+      </div>
+
+      <div class="rule" data-issue-title="[Branding] Type scale" data-issue-body="Re: references/typography.md — responsive type scale.%0A%0AQuestion / proposal:">
+        <div class="rule-head"><h4>Type scale (desktop)</h4><span class="rule-id">Scale</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-family:var(--font-headline);font-weight:700;font-size:48px;line-height:1.1">H1 · 48px / 700 Raleway</span>
+          <span style="font-family:var(--font-headline);font-weight:700;font-size:36px;line-height:1.1">H2 · 36px / 700 Raleway</span>
+          <span style="font-family:var(--font-headline);font-weight:600;font-size:28px;line-height:1.2">H3 · 28px / 600 Raleway</span>
+          <span style="font-family:var(--font-headline);font-weight:600;font-size:22px">H4 · 22px / 600 Raleway</span>
+          <span style="font-family:var(--font-body);font-size:20px">Lead · 20px / 400 Open Sans</span>
+          <span style="font-family:var(--font-body);font-size:16px">Body · 16px / 400 Open Sans — optimal line length 50–75 characters.</span>
+          <span style="font-family:var(--font-body);font-size:14px;color:var(--nr-text-secondary)">Small · 14px / 400 Open Sans (production floor)</span>
+        </div>
+        <span class="src">references/typography.md:554–667</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== COMPONENTS ===================== -->
+  <section class="block alt" id="components">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Components</div>
+        <h2>The component library</h2>
+        <p>Buttons, cards, forms, links, tables, quotes and alerts as defined in <code>references/web-design.md</code> — generous white space, 4px/8px radii, brand-colored focus rings.</p>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="rule" data-issue-title="[Branding] Buttons" data-issue-body="Re: references/web-design.md — button styles.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>Buttons</h4><span class="rule-id">web-design.md</span></div>
+          <div class="btn-row" style="margin-bottom:12px">
+            <button class="btn btn-primary">Primary</button>
+            <button class="btn btn-secondary">Accent</button>
+            <button class="btn btn-outline">Outline</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary btn-small">Small</button>
+            <button class="btn btn-primary">Default</button>
+            <button class="btn btn-primary btn-large">Large</button>
+            <button class="btn btn-primary" disabled>Disabled</button>
+          </div>
+        </div>
+
+        <div class="rule" data-issue-title="[Branding] Form controls" data-issue-body="Re: references/web-design.md — form styles.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>Forms</h4><span class="rule-id">web-design.md</span></div>
+          <div class="form-group">
+            <label class="form-label" for="d-email">Email</label>
+            <input class="form-input" id="d-email" type="email" placeholder="you@example.com">
+            <div class="form-help">Focus me to see the brand-teal ring.</div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="d-msg">Message</label>
+            <textarea class="form-textarea" id="d-msg" rows="2" placeholder="Your message"></textarea>
+          </div>
+        </div>
+
+        <div class="rule" data-issue-title="[Branding] Cards" data-issue-body="Re: references/web-design.md — card component.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>Cards</h4><span class="rule-id">web-design.md</span></div>
+          <div class="demo-card">
+            <div class="cc">
+              <div class="ct">Card title</div>
+              <p style="margin:0 0 12px">Soft shadow, 8px radius, lift on hover. Title in Raleway, body in Open Sans.</p>
+              <a class="btn btn-primary btn-small" href="#components">Read more</a>
+            </div>
+            <div class="cf">Footer · meta in muted grey</div>
+          </div>
+        </div>
+
+        <div class="rule" data-issue-title="[Branding] Links, quotes & alerts" data-issue-body="Re: references/web-design.md — links, blockquotes, alerts.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>Links, quote &amp; alerts</h4><span class="rule-id">web-design.md</span></div>
+          <p>Inline <a href="https://www.netresearch.de/">a brand link</a> and an <a href="https://www.netresearch.de/" target="_blank" rel="noopener">external link</a>.</p>
+          <blockquote class="brand">Clean, uncluttered layouts that let the content breathe.<cite>— Web design principle #1</cite></blockquote>
+          <div class="alert alert-info" style="margin-top:16px"><h4>Info</h4>Teal-bordered call-out for neutral information.</div>
+          <div class="alert alert-accent" style="margin-bottom:0"><h4>Highlight</h4>Orange-bordered call-out — used sparingly.</div>
+        </div>
+      </div>
+
+      <div class="rule" data-issue-title="[Branding] Tables" data-issue-body="Re: references/web-design.md — table component.%0A%0AQuestion / proposal:">
+        <div class="rule-head"><h4>Tables</h4><span class="rule-id">web-design.md</span></div>
+        <div style="overflow-x:auto">
+          <table class="demo-table">
+            <thead><tr><th>Token</th><th>Value</th><th>Role</th></tr></thead>
+            <tbody>
+              <tr><td><code>--nr-primary</code></td><td>#2F99A4</td><td>Primary brand</td></tr>
+              <tr><td><code>--nr-accent</code></td><td>#FF4D00</td><td>Accent only</td></tr>
+              <tr><td><code>--nr-text</code></td><td>#585961</td><td>Body text</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LOGO ===================== -->
+  <section class="block" id="logo">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Logo</div>
+        <h2>The symbol-only <span class="mono">[n]</span> mark</h2>
+        <p>From <code>references/logo.md</code> and <code>references/logo-svg.md</code>. Turquoise frame, anthracite “n”, square canvas, fixed aspect ratio, clear space ≥ 0.25× width on every side.</p>
+      </div>
+
+      <div class="logo-demo">
+        <div class="rule" style="margin:0" data-issue-title="[Branding] Logo clear space" data-issue-body="Re: references/logo.md — minimum clear space 0.25x logo width per side.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>Clear space</h4><span class="rule-id">0.25×</span></div>
+          <div class="logo-frame">
+            <span class="clear">
+              <svg width="96" height="96" viewBox="-75 -75 440 440" role="img" aria-label="Netresearch symbol logo"><title>Netresearch DTT GmbH</title><g><path fill="#2F99A4" d="M209.6,0V31.62h32.77a26.38,26.38,0,0,1,26.44,26.43V242a26.38,26.38,0,0,1-26.44,26.44H209.6V300h47.93a42.77,42.77,0,0,0,42.86-42.86V42.89A42.76,42.76,0,0,0,257.53,0ZM43.25,0A42.76,42.76,0,0,0,.39,42.89V257.18A42.76,42.76,0,0,0,43.25,300H91.18V268.46H58.4A26.38,26.38,0,0,1,32,242v-184A26.37,26.37,0,0,1,58.4,31.62H91.18V0Z" transform="translate(-0.39 -0.04)"/><path fill="#585961" d="M221.44,120.41c0-34.48-13.94-57.82-48.93-57.82-26.62,0-48.54,7.74-64.17,26.56l-.7-22.06-28.31.06V232.94h31.59V124.69c7.14-18.38,32.14-34.8,53-34.5,27.38.4,25.2,26.24,26,45.81v96.94h31.58" transform="translate(-0.39 -0.04)"/></g></svg>
+            </span>
+            <div style="font-size:12px;color:var(--nr-text-secondary);margin-top:10px;font-family:ui-monospace,monospace">dashed = minimum clear zone</div>
+          </div>
+        </div>
+
+        <div class="rule" style="margin:0;flex:1" data-issue-title="[Branding] Logo minimum & recommended sizes" data-issue-body="Re: logo sizes. SKILL.md:43 says min 32x32, recommended 40-56px in headers. references/logo.md:51 says recommended >=120px when the logo is a visual anchor. These two 'recommended' figures differ — clarify which applies where.">
+          <div class="rule-head"><h4>Sizes</h4><a class="src" href="#F5">→ Finding F5</a></div>
+          <div class="logo-sizes">
+            <figure><svg width="32" height="32" viewBox="-75 -75 440 440" aria-hidden="true"><g><path fill="#2F99A4" d="M209.6,0V31.62h32.77a26.38,26.38,0,0,1,26.44,26.43V242a26.38,26.38,0,0,1-26.44,26.44H209.6V300h47.93a42.77,42.77,0,0,0,42.86-42.86V42.89A42.76,42.76,0,0,0,257.53,0ZM43.25,0A42.76,42.76,0,0,0,.39,42.89V257.18A42.76,42.76,0,0,0,43.25,300H91.18V268.46H58.4A26.38,26.38,0,0,1,32,242v-184A26.37,26.37,0,0,1,58.4,31.62H91.18V0Z" transform="translate(-0.39 -0.04)"/><path fill="#585961" d="M221.44,120.41c0-34.48-13.94-57.82-48.93-57.82-26.62,0-48.54,7.74-64.17,26.56l-.7-22.06-28.31.06V232.94h31.59V124.69c7.14-18.38,32.14-34.8,53-34.5,27.38.4,25.2,26.24,26,45.81v96.94h31.58" transform="translate(-0.39 -0.04)"/></g></svg><figcaption>32px min</figcaption></figure>
+            <figure><svg width="48" height="48" viewBox="-75 -75 440 440" aria-hidden="true"><g><path fill="#2F99A4" d="M209.6,0V31.62h32.77a26.38,26.38,0,0,1,26.44,26.43V242a26.38,26.38,0,0,1-26.44,26.44H209.6V300h47.93a42.77,42.77,0,0,0,42.86-42.86V42.89A42.76,42.76,0,0,0,257.53,0ZM43.25,0A42.76,42.76,0,0,0,.39,42.89V257.18A42.76,42.76,0,0,0,43.25,300H91.18V268.46H58.4A26.38,26.38,0,0,1,32,242v-184A26.37,26.37,0,0,1,58.4,31.62H91.18V0Z" transform="translate(-0.39 -0.04)"/><path fill="#585961" d="M221.44,120.41c0-34.48-13.94-57.82-48.93-57.82-26.62,0-48.54,7.74-64.17,26.56l-.7-22.06-28.31.06V232.94h31.59V124.69c7.14-18.38,32.14-34.8,53-34.5,27.38.4,25.2,26.24,26,45.81v96.94h31.58" transform="translate(-0.39 -0.04)"/></g></svg><figcaption>48px header</figcaption></figure>
+            <figure><svg width="120" height="120" viewBox="-75 -75 440 440" aria-hidden="true"><g><path fill="#2F99A4" d="M209.6,0V31.62h32.77a26.38,26.38,0,0,1,26.44,26.43V242a26.38,26.38,0,0,1-26.44,26.44H209.6V300h47.93a42.77,42.77,0,0,0,42.86-42.86V42.89A42.76,42.76,0,0,0,257.53,0ZM43.25,0A42.76,42.76,0,0,0,.39,42.89V257.18A42.76,42.76,0,0,0,43.25,300H91.18V268.46H58.4A26.38,26.38,0,0,1,32,242v-184A26.37,26.37,0,0,1,58.4,31.62H91.18V0Z" transform="translate(-0.39 -0.04)"/><path fill="#585961" d="M221.44,120.41c0-34.48-13.94-57.82-48.93-57.82-26.62,0-48.54,7.74-64.17,26.56l-.7-22.06-28.31.06V232.94h31.59V124.69c7.14-18.38,32.14-34.8,53-34.5,27.38.4,25.2,26.24,26,45.81v96.94h31.58" transform="translate(-0.39 -0.04)"/></g></svg><figcaption>120px anchor</figcaption></figure>
+          </div>
+          <p style="font-size:13px;color:var(--nr-text-secondary);margin:16px 0 0">SKILL.md recommends 40–56px in headers; logo.md recommends ≥120px as a visual anchor. Both say “recommended” — which wins, when?</p>
+        </div>
+      </div>
+
+      <div class="dodont" style="margin-top:var(--space-lg)">
+        <div class="do">
+          <span class="tag">✓ Do</span>
+          <ul style="margin:0;padding-left:20px">
+            <li>Keep the turquoise frame dominant, the grey “n” clearly visible.</li>
+            <li>Use on white or very light neutral backgrounds.</li>
+            <li>Link clickable instances to <code>netresearch.de</code>.</li>
+          </ul>
+        </div>
+        <div class="dont">
+          <span class="tag">✗ Don’t</span>
+          <ul style="margin:0;padding-left:20px">
+            <li>Recolor, add gradients, strokes, glows or drop-shadows.</li>
+            <li>Rotate, skew, distort or crop the mark.</li>
+            <li>Replace with a generic placeholder icon.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TYPO3 ===================== -->
+  <section class="block alt" id="typo3">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">TYPO3 extensions</div>
+        <h2>Extension branding requirements</h2>
+        <p>From <code>references/typo3-extension-branding.md</code>. These apply to every <code>netresearch/</code> TYPO3 extension and are enforced by checkpoints NB-01…NB-14.</p>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="rule" data-issue-title="[Branding] TYPO3 extension icon" data-issue-body="Re: typo3-extension-branding.md — Resources/Public/Icons/Extension.svg, teal #2F99A4 frame + #585961 letter.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>Extension icon</h4><span class="rule-id">NB-01/02</span></div>
+          <p><code>Resources/Public/Icons/Extension.svg</code> — the symbol-only mark, teal frame <code>#2F99A4</code>, letter <code>#585961</code>. No PNG on v12+ (NB-03).</p>
+        </div>
+        <div class="rule" data-issue-title="[Branding] composer.json vendor & author" data-issue-body="Re: typo3-extension-branding.md — composer.json vendor netresearch/, author homepage netresearch.de, email typo3@netresearch.de.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>composer.json</h4><span class="rule-id">NB-09/10</span></div>
+          <p>Name <code>netresearch/&lt;ext&gt;</code>; author <strong>Netresearch DTT GmbH</strong>, email <code>typo3@netresearch.de</code>, homepage <code>https://www.netresearch.de/</code>.</p>
+        </div>
+        <div class="rule" data-issue-title="[Branding] ext_emconf.php branding" data-issue-body="Re: typo3-extension-branding.md — ext_emconf author_company 'Netresearch DTT GmbH', description ends '- by Netresearch'.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>ext_emconf.php</h4><span class="rule-id">NB-13/14</span></div>
+          <p><code>author_company</code> must be exactly <strong>Netresearch DTT GmbH</strong>; description ends with <code>- by Netresearch</code>.</p>
+        </div>
+        <div class="rule" data-issue-title="[Branding] Repo description suffix" data-issue-body="Re: typo3-extension-branding.md / NB-20 — GitHub repository description must end with '- by Netresearch'.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>Repo description</h4><span class="rule-id">NB-20</span></div>
+          <p>The GitHub repository description must end with <code>- by Netresearch</code>.</p>
+        </div>
+      </div>
+
+      <div class="rule" data-issue-title="[Branding] README badge ordering" data-issue-body="Re: typo3-extension-branding.md 'README Badge Standards' — 4-row badge order (CI/Quality, Security, Standards, TER).%0A%0AQuestion / proposal:">
+        <div class="rule-head"><h4>README badge ordering</h4><span class="rule-id">Standard</span></div>
+        <p>Four rows, in order: <strong>1)</strong> CI/Quality (CI, codecov) · <strong>2)</strong> Security (OpenSSF Scorecard, Best Practices, SLSA 3) · <strong>3)</strong> Standards (PHPStan, PHP, TYPO3, License, Release, Covenant) · <strong>4)</strong> TER badges if published.</p>
+        <span class="src">references/typo3-extension-branding.md:525–597</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== README ===================== -->
+  <section class="block" id="readme">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">README branding</div>
+        <h2>Top &amp; bottom placement (NB-30…NB-33)</h2>
+        <p>From <code>references/README-branding.md</code>: readers scan the top and the bottom. Affiliation must be visible at both ends, with the licence mention nearby. Applies to <em>every</em> Netresearch repo, not just TYPO3.</p>
+      </div>
+      <div class="grid grid-2">
+        <div class="rule" data-issue-title="[Branding] README headline (NB-30)" data-issue-body="Re: NB-30 — first 30 lines must reference Netresearch (netresearch.de link, 'Netresearch DTT', or 'by Netresearch').%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>Headline · first 30 lines</h4><span class="rule-id">NB-30</span></div>
+          <p>Must contain a <code>netresearch.de</code> link, the string <strong>Netresearch DTT</strong>, or <strong>by Netresearch</strong>.</p>
+        </div>
+        <div class="rule" data-issue-title="[Branding] README footer (NB-31/NB-32)" data-issue-body="Re: NB-31/NB-32 — last 20 lines must contain 'Netresearch DTT' AND a netresearch.de link.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>Footer · last 20 lines</h4><span class="rule-id">NB-31/32</span></div>
+          <p>Both the company name <strong>Netresearch DTT</strong> and a <code>netresearch.de</code> link.</p>
+        </div>
+      </div>
+      <div class="rule" data-issue-title="[Branding] README license mention (NB-33)" data-issue-body="Re: NB-33 — README must mention licensing (heading, 'licensed under', or SPDX badge URL).%0A%0AQuestion / proposal:">
+        <div class="rule-head"><h4>License mention</h4><span class="rule-id">NB-33</span></div>
+        <p>The README must reference licensing somewhere — a <code>## License</code> heading, “licensed under”, or an SPDX badge whose URL contains <code>license</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CHECKPOINTS ===================== -->
+  <section class="block alt" id="checkpoints">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Enforcement</div>
+        <h2>All checkpoints</h2>
+        <p>The mechanical &amp; LLM checks from <code>checkpoints.yaml</code> that automated assessment runs against any repo. TYPO3-only checks pass trivially (N/A) on non-TYPO3 repos. Each row has an issue link.</p>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="cp-table" id="cpTable">
+          <thead><tr><th>ID</th><th>Severity</th><th>Check</th><th>Issue</th></tr></thead>
+          <tbody><!-- injected by JS --></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FINDINGS / OPEN QUESTIONS ===================== -->
+  <section class="block" id="findings">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Open questions</div>
+        <h2>Ambiguous, contradictory &amp; undefined rules</h2>
+        <p>Building this page surfaced rules that conflict between files, contradict the math, or are simply undefined. Each is cited to <code>file:line</code> and carries a pre-filled issue link so it can be triaged. Nothing here is invented — every claim is checkable in the repo.</p>
+      </div>
+      <div id="findingsList"><!-- injected by JS --></div>
+    </div>
+  </section>
+
+  </main>
+
+  <!-- ===================== FOOTER (mandatory branding) ===================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">
+            <svg viewBox="-75 -75 440 440" role="img" aria-label="Netresearch symbol logo"><title>Netresearch DTT GmbH</title><g><path fill="#2F99A4" d="M209.6,0V31.62h32.77a26.38,26.38,0,0,1,26.44,26.43V242a26.38,26.38,0,0,1-26.44,26.44H209.6V300h47.93a42.77,42.77,0,0,0,42.86-42.86V42.89A42.76,42.76,0,0,0,257.53,0ZM43.25,0A42.76,42.76,0,0,0,.39,42.89V257.18A42.76,42.76,0,0,0,43.25,300H91.18V268.46H58.4A26.38,26.38,0,0,1,32,242v-184A26.37,26.37,0,0,1,58.4,31.62H91.18V0Z" transform="translate(-0.39 -0.04)"/><path fill="#585961" d="M221.44,120.41c0-34.48-13.94-57.82-48.93-57.82-26.62,0-48.54,7.74-64.17,26.56l-.7-22.06-28.31.06V232.94h31.59V124.69c7.14-18.38,32.14-34.8,53-34.5,27.38.4,25.2,26.24,26,45.81v96.94h31.58" transform="translate(-0.39 -0.04)"/></g></svg>
+            <strong style="font-family:var(--font-headline);font-size:18px">Netresearch DTT GmbH</strong>
+          </div>
+          <p style="color:rgba(255,255,255,.8);max-width:34ch">Professional TYPO3 development, AI integration, and enterprise consulting since 2002.</p>
+        </div>
+        <div>
+          <h4>This page</h4>
+          <ul>
+            <li><a href="#validity">Hard validity rules</a></li>
+            <li><a href="#colors">Colors &amp; contrast</a></li>
+            <li><a href="#type">Typography</a></li>
+            <li><a href="#components">Components</a></li>
+            <li><a href="#findings">Open questions</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>The skill</h4>
+          <ul>
+            <li><a href="https://github.com/netresearch/netresearch-branding-skill">Repository</a></li>
+            <li><a href="https://github.com/netresearch/netresearch-branding-skill/issues/new?labels=branding">Open an issue</a></li>
+            <li><a href="https://github.com/netresearch/netresearch-branding-skill/blob/main/skills/netresearch-branding/SKILL.md">SKILL.md</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Netresearch</h4>
+          <ul>
+            <li><a href="https://www.netresearch.de/">netresearch.de</a></li>
+            <li><a href="mailto:typo3@netresearch.de">typo3@netresearch.de</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p style="margin:0">© 2026 <a href="https://www.netresearch.de/">Netresearch DTT GmbH</a> · Code under MIT, content under CC-BY-SA-4.0 · This page is a generated demo of the <code style="background:rgba(255,255,255,.12);color:#fff">netresearch-branding</code> skill and is itself brand-compliant.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+  (function () {
+    "use strict";
+    var REPO = "https://github.com/netresearch/netresearch-branding-skill";
+
+    /* tiny DOM helper — textContent only, never innerHTML */
+    function el(tag, cls, text) {
+      var e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text != null) e.textContent = text;
+      return e;
+    }
+    function code(t) { return el("code", null, t); }
+
+    /* ---------- issue link helper: every [data-issue-title] gets a button ---------- */
+    function issueUrl(title, body) {
+      var p = new URLSearchParams();
+      p.set("title", title);
+      if (body) p.set("body", body.replace(/%0A/g, "\n"));
+      p.set("labels", "branding");
+      return REPO + "/issues/new?" + p.toString();
+    }
+    function makeIssueLink(title, body) {
+      var a = el("a", "issue-link", "⧉ Open issue");
+      a.href = issueUrl(title, body || "");
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.setAttribute("aria-label", "Open a GitHub issue about: " + title);
+      return a;
+    }
+    document.querySelectorAll("[data-issue-title]").forEach(function (node) {
+      var link = makeIssueLink(node.getAttribute("data-issue-title"), node.getAttribute("data-issue-body") || "");
+      var head = node.querySelector(".rule-head");
+      if (head) { head.appendChild(link); }
+      else { link.style.margin = "0 16px 16px"; node.appendChild(link); }
+    });
+
+    /* ---------- WCAG contrast (computed, not quoted) ---------- */
+    function lum(hex) {
+      var n = hex.replace("#", "");
+      var r = parseInt(n.substr(0, 2), 16) / 255,
+          g = parseInt(n.substr(2, 2), 16) / 255,
+          b = parseInt(n.substr(4, 2), 16) / 255;
+      function lin(c) { return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    }
+    function ratio(fg, bg) {
+      var a = lum(fg), b = lum(bg), hi = Math.max(a, b), lo = Math.min(a, b);
+      return (hi + 0.05) / (lo + 0.05);
+    }
+    function dot(hex) { var s = el("span", "sw-dot"); s.style.background = hex; return s; }
+    function badge(ok) { return el("span", "badge " + (ok ? "pass" : "fail"), ok ? "PASS" : "FAIL"); }
+    function colorCell(name, hex) {
+      var td = el("td");
+      td.appendChild(dot(hex));
+      td.appendChild(document.createTextNode(name + " "));
+      td.appendChild(code(hex));
+      return td;
+    }
+
+    var pairs = [
+      { fg: "#585961", bg: "#FFFFFF", fgN: "Anthracite", bgN: "White", claim: "8.3:1 — AAA all text" },
+      { fg: "#FFFFFF", bg: "#2F99A4", fgN: "White", bgN: "Turquoise", claim: "4.5:1 — AA all text" },
+      { fg: "#2F99A4", bg: "#FFFFFF", fgN: "Turquoise", bgN: "White", claim: "3.8:1 — AA large" },
+      { fg: "#FFFFFF", bg: "#FF4D00", fgN: "White", bgN: "Orange", claim: "3.2:1 — AA large only" },
+      { fg: "#FF4D00", bg: "#FFFFFF", fgN: "Orange", bgN: "White", claim: "3.9:1 — AA large" },
+      { fg: "#8A8B93", bg: "#FFFFFF", fgN: "Secondary grey", bgN: "White", claim: "(used for help/placeholder)" },
+      { fg: "#CCCDCC", bg: "#FFFFFF", fgN: "Light grey", bgN: "White", claim: "1.6:1 — fails (per doc)" }
+    ];
+    var ctb = document.querySelector("#contrastTable tbody");
+    pairs.forEach(function (p) {
+      var r = ratio(p.fg, p.bg);
+      var tr = el("tr");
+      tr.appendChild(colorCell(p.fgN, p.fg));
+      tr.appendChild(colorCell(p.bgN, p.bg));
+      var tdR = el("td", "ratio", r.toFixed(2) + ":1");
+      tr.appendChild(tdR);
+      var tdN = el("td"); tdN.appendChild(badge(r >= 4.5)); tr.appendChild(tdN);
+      var tdL = el("td"); tdL.appendChild(badge(r >= 3.0)); tr.appendChild(tdL);
+      var tdC = el("td", "doc-claim", p.claim + " ");
+      var m = p.claim.match(/(\d+\.\d+):1/);
+      if (m && Math.abs(parseFloat(m[1]) - r) >= 0.25) {
+        var warn = el("span", "mismatch", "⚠ mismatch");
+        warn.title = "disagrees with computed ratio";
+        tdC.appendChild(warn);
+      }
+      tr.appendChild(tdC);
+      ctb.appendChild(tr);
+    });
+
+    /* ---------- checkpoints table ---------- */
+    var checkpoints = [
+      ["NB-01", "error", "Extension icon SVG must exist (TYPO3 only)"],
+      ["NB-02", "error", "Extension icon uses teal #2F99A4 (TYPO3 only)"],
+      ["NB-03", "info", "No Extension.png on TYPO3 v12+ (SVG renders natively)"],
+      ["NB-04", "error", "README credits Netresearch"],
+      ["NB-05", "warning", "README links to netresearch.de"],
+      ["NB-06", "info", "CSS uses uppercase #2F99A4 (not lowercase)"],
+      ["NB-07", "info", "CSS uses uppercase #FF4D00 (not lowercase)"],
+      ["NB-08", "info", "CSS uses uppercase #585961 (not lowercase)"],
+      ["NB-09", "error", "Composer name uses netresearch/ vendor (TYPO3 only)"],
+      ["NB-10", "warning", "Composer lists 'Netresearch DTT GmbH' author (TYPO3 only)"],
+      ["NB-11", "info", "Netresearch [n] logo SVG present (TYPO3 only)"],
+      ["NB-12", "info", "No logo PNG on TYPO3 v12+"],
+      ["NB-13", "error", "ext_emconf author_company = 'Netresearch DTT GmbH'"],
+      ["NB-14", "warning", "ext_emconf description ends '- by Netresearch'"],
+      ["NB-15", "info", "CSS references Raleway / Open Sans"],
+      ["NB-16", "info", "CSS uses --nr-primary/--nr-accent/--nr-text variables"],
+      ["NB-17", "info", "Templates with footer link to netresearch.de"],
+      ["NB-18", "warning", "Branded templates include the Netresearch logo"],
+      ["NB-19", "warning", "Footer includes exact 'Netresearch DTT GmbH'"],
+      ["NB-20", "error", "Repo description ends '- by Netresearch' (LLM)"],
+      ["NB-21", "warning", "Extension icon visually reflects branding (LLM)"],
+      ["NB-22", "warning", "Brand colors used consistently (LLM)"],
+      ["NB-23", "error", "README properly credits Netresearch (LLM)"],
+      ["NB-24", "info", "[n] logo used where appropriate (LLM)"],
+      ["NB-25", "error", "Hard validity gate: logo+colors+type+footer present (LLM)"],
+      ["NB-26", "warning", "Brand references operationalized, not passive (LLM)"],
+      ["NB-30", "warning", "README headline references Netresearch (first 30 lines)"],
+      ["NB-31", "warning", "README footer credits Netresearch DTT (last 20 lines)"],
+      ["NB-32", "info", "README footer links netresearch.de (last 20 lines)"],
+      ["NB-33", "info", "README mentions licensing"]
+    ];
+    var cpb = document.querySelector("#cpTable tbody");
+    checkpoints.forEach(function (c) {
+      var tr = el("tr");
+      tr.appendChild(el("td", "cp-id", c[0]));
+      var sevTd = el("td"); sevTd.appendChild(el("span", "sev " + c[1], c[1])); tr.appendChild(sevTd);
+      tr.appendChild(el("td", null, c[2]));
+      var issTd = el("td");
+      issTd.appendChild(makeIssueLink("[Branding] Checkpoint " + c[0], "Re: checkpoints.yaml — " + c[0] + ": " + c[2] + "\n\nQuestion / proposal:"));
+      tr.appendChild(issTd);
+      cpb.appendChild(tr);
+    });
+
+    /* ---------- findings ---------- */
+    var findings = [
+      { id: "F1", kind: "Contradiction", title: "CSS token names disagree: --nr-* vs --color-*",
+        cite: "SKILL.md:59 · references/colors.md:274-300 · references/typography.md:903 · checkpoints.yaml:152 (NB-16)",
+        body: "SKILL.md:59 prescribes --nr-primary/--nr-accent/--nr-text/--nr-border/--nr-bg, and checkpoint NB-16 greps for --nr-(primary|accent|text). But every CSS example in references/colors.md and references/typography.md defines --color-primary/--color-accent/--color-text-primary instead. A project that copies the reference snippets verbatim would FAIL NB-16.",
+        ask: "Pick one canonical scheme. Either rewrite the reference CSS to --nr-*, or relax NB-16 to accept both. Add --nr-bg / --nr-border values while doing so (see F6)." },
+      { id: "F2", kind: "Contradicts the math", title: "Hard-coded contrast ratios are internally inconsistent (and wrong)",
+        cite: "references/colors.md:24-27, 64-66, 230-237",
+        body: "Contrast ratio is symmetric: fg-on-bg equals bg-on-fg. Yet the doc lists Turquoise-on-white as 3.8:1 and White-on-turquoise as 4.5:1 — the same pair, two numbers. Same for orange (3.9 vs 3.2). The live verifier above computes ~3.4:1 for the teal pair and ~3.3:1 for the orange pair; neither passes AA for normal text. The '4.5:1 — AA all text' claim for white-on-teal is therefore false.",
+        ask: "Replace the hand-written ratios with computed values, and correct the AA verdicts (teal & orange pass large text only)." },
+      { id: "F3", kind: "Brand-debt in the asset itself", title: "The canonical logo SVG uses off-brand hex values",
+        cite: "assets/logos/netresearch-symbol-only.svg (fill #2999a4 / #595a62) · references/logo.md:38",
+        body: "logo.md:38 states #2F99A4 and #585961 are the 'only valid brand color values for the symbol' and that any deviation 'even close approximations' is a brand-debt violation. But the canonical asset ships fill=\"#2999a4\" (not #2F99A4) and fill=\"#595a62\" (not #585961). The source of truth violates its own rule. This page deliberately uses the normalized values from references/logo-svg.md instead.",
+        ask: "Normalize the asset's two fills to #2F99A4 and #585961 so it matches the documented brand colors and references/logo-svg.md." },
+      { id: "F4", kind: "Inconsistency", title: "Two different viewBoxes for the same logo",
+        cite: "references/logo-svg.md:14 (-75 -75 440 440) · references/typo3-extension-branding.md:14 (0 0 300 300)",
+        body: "The logo-svg.md fallback uses viewBox='-75 -75 440 440' (padded), while the TYPO3 extension-icon snippet uses viewBox='0 0 300 300' (tight). Same paths, different coordinate framing — the icon gets different visual padding depending on which snippet an implementer copies.",
+        ask: "Document which viewBox is canonical for which context (padded for standalone, tight for the BE icon?) or unify them." },
+      { id: "F5", kind: "Ambiguity", title: "'Recommended' logo size is given two different numbers",
+        cite: "SKILL.md:43 (40-56px in headers) · references/logo.md:51 (>=120px when a visual anchor)",
+        body: "SKILL.md recommends 40-56px in headers; logo.md recommends >=120px width 'when the logo is a visual anchor'. Both use the word 'recommended' without saying which context wins, so an implementer has no single answer for 'how big should the logo be?'",
+        ask: "State the rule by context explicitly: e.g. 40-56px in nav headers, >=120px when the logo is the hero/anchor element." },
+      { id: "F6", kind: "Undefined", title: "--nr-bg and --nr-border are named but never given values",
+        cite: "SKILL.md:59",
+        body: "SKILL.md lists --nr-bg and --nr-border as preferred variables, but no hex value is defined for either anywhere in the skill. Implementers must guess. The reference files only define --color-background (#FFFFFF), --color-background-alt (#F5F5F5), --color-border (#CCCDCC) and --color-border-light (#E5E5E5) — under different names (see F1).",
+        ask: "Define canonical values for --nr-bg, --nr-border (and --nr-bg-alt) in the SKILL or a tokens reference." },
+      { id: "F7", kind: "Undefined", title: "#F5F5F5 is used everywhere but never defined as a brand color",
+        cite: "references/colors.md:146, 202, 248, 290",
+        body: "The off-white #F5F5F5 is used for card backgrounds, section backgrounds and --color-background-alt throughout colors.md and web-design.md, but it has no swatch, no name, and no technical spec in the palette. The only documented grey is #CCCDCC. It is a load-bearing surface color with no definition.",
+        ask: "Add #F5F5F5 to the palette as a named neutral (e.g. 'Off-white / surface-alt') with its spec, or replace its uses with a defined token." },
+      { id: "F8", kind: "Accessibility gap", title: "Secondary text #8A8B93 fails AA for the sizes it is used at",
+        cite: "references/colors.md:289 · references/web-design.md (.form-help, ::placeholder)",
+        body: "--color-text-secondary (#8A8B93) is applied to help text and placeholders, which are <18px. Its computed contrast on white is ~3.4:1 — below the 4.5:1 AA threshold for normal text (see verifier above). Meanwhile colors.md's own 'Avoid' list forbids low-contrast text on white. The token quietly contradicts the accessibility rule.",
+        ask: "Either darken the secondary text token to reach 4.5:1, or restrict it to >=18px contexts and say so." },
+      { id: "F9", kind: "Ambiguity", title: "'Orange must not dominate' has no measurable threshold",
+        cite: "SKILL.md:60 · references/colors.md:62",
+        body: "The rule 'accent orange is highlight-only and must not dominate surfaces' is qualitative — no percentage, area budget, or element allow-list. Two reviewers can disagree on whether a layout complies, and LLM checkpoints NB-22/NB-25 have no objective bar to test against.",
+        ask: "Add a concrete heuristic (e.g. 'orange <= ~10% of visible surface; never a section/background fill; allowed on borders, small CTAs, badges')." },
+      { id: "F10", kind: "Inconsistency", title: "License guidance is inconsistent across the skill",
+        cite: "typo3-extension-branding.md:68,91,144 (AGPL/GPL) · README-branding.md & this repo (MIT + CC-BY-SA-4.0)",
+        body: "TYPO3 extension branding recommends AGPL-3.0-or-later (or GPL-2.0-or-later) for extensions, while the skill repo and README-branding examples use split MIT + CC-BY-SA-4.0. There is no statement of which license applies to which artifact type, so 'the Netresearch license' is ambiguous.",
+        ask: "State the licensing policy by artifact type: e.g. TYPO3 extensions -> (A)GPL; skills/tools -> MIT code + CC-BY-SA-4.0 content." },
+      { id: "F11", kind: "Minor inconsistency", title: "Footer URL trailing slash: required vs optional",
+        cite: "SKILL.md:44 & references/logo.md (with slash) · checkpoints.yaml NB-25 (slash optional)",
+        body: "The hard validity rule and logo placement spec both write the footer link as https://www.netresearch.de/ (trailing slash), but NB-25 explicitly accepts the URL with or without the slash. Low-stakes, but the 'exact' framing of the hard rule and the relaxed checkpoint don't match.",
+        ask: "Align the wording — either declare the slash optional in the hard rule too, or have NB-25 require it." }
+    ];
+    var fl = document.getElementById("findingsList");
+    findings.forEach(function (f) {
+      var card = el("div", "rule finding");
+      card.id = f.id;
+
+      var head = el("div", "rule-head");
+      var headLeft = el("div");
+      headLeft.appendChild(el("div", "kind", f.id + " · " + f.kind));
+      var h = el("h3", null, f.title); h.style.margin = "4px 0 0";
+      headLeft.appendChild(h);
+      head.appendChild(headLeft);
+      head.appendChild(makeIssueLink(
+        "[Branding][" + f.id + "] " + f.title,
+        f.kind + " — " + f.title + "\n\nWhere: " + f.cite + "\n\nDetail: " + f.body + "\n\nSuggested resolution: " + f.ask
+      ));
+      card.appendChild(head);
+
+      card.appendChild(el("p", null, f.body));
+      card.appendChild(el("div", "cite", f.cite));
+
+      var det = el("details");
+      det.appendChild(el("summary", null, "Suggested resolution"));
+      var ap = el("p", null, f.ask); ap.style.margin = "0";
+      det.appendChild(ap);
+      card.appendChild(det);
+
+      fl.appendChild(card);
+    });
+  })();
+  </script>
+</body>
+</html>
