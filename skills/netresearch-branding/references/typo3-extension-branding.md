@@ -34,6 +34,23 @@
 - Frame (brackets): Turquoise `#2F99A4`
 - Letter "n": Anthracite Grey `#585961`
 
+## Module Icon
+
+The backend **module** icon should differ from the **extension** icon: the extension icon (`Extension.svg`, the symbol-only `[n]` logo) identifies the package, while the module icon identifies the *feature* (e.g. a passkey, a dashboard). Do not reuse the `[n]` logo for a feature module.
+
+**Standard:**
+- Use the feature glyph in brand turquoise **`#2F99A4`** combined with `currentColor`, so the icon adapts to the v14 light/dark backend.
+- Author with SVG **presentation attributes** (`fill="#2F99A4"`, `fill="currentColor"`, `fill-rule`), **never inline `style="..."`** — inline styles break under a hardened TYPO3 backend CSP.
+- Register in `Configuration/Icons.php`. When the colored v12/v13 variant (e.g. teal tile) and the flat v14 variant differ, version-split the source via `Typo3Version`.
+
+**Example** (v14 flat variant — teal key + `currentColor` body):
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <path fill="#2F99A4" fill-rule="evenodd" d="..."/>      <!-- feature accent -->
+  <path fill="currentColor" d="..."/>                      <!-- adapts to light/dark -->
+</svg>
+```
+
 ## Description Field Requirements
 
 **CRITICAL:** Both `composer.json` and `ext_emconf.php` description fields MUST mention the company name.
