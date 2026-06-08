@@ -40,7 +40,7 @@ The backend **module** icon should differ from the **extension** icon: the exten
 
 **Standard:**
 - Use the feature glyph in brand turquoise **`#2F99A4`** combined with `currentColor`, so the icon adapts to the v14 light/dark backend.
-- Author with SVG **presentation attributes** (`fill="#2F99A4"`, `fill="currentColor"`, `fill-rule`), **never inline `style="..."`** — inline styles break under a hardened TYPO3 backend CSP.
+- Use SVG **presentation attributes** (`fill="#2F99A4"`, `fill="currentColor"`, `fill-rule="evenodd"`), **never inline `style="..."`** — inline styles break under a hardened TYPO3 backend CSP.
 - Register in `Configuration/Icons.php`. When the colored v12/v13 variant (e.g. teal tile) and the flat v14 variant differ, version-split the source via `Typo3Version`.
 
 **Example** (v14 flat variant — teal key + `currentColor` body):
