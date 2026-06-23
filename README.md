@@ -288,10 +288,10 @@ The skill includes a complete set of CSS custom properties for easy implementati
 
 All brand implementations must meet **WCAG AA** standards:
 
-✅ **Text Contrast Ratios:**
-- Anthracite on white: 8.3:1 (AAA)
-- White on turquoise: 4.5:1 (AA)
-- Turquoise on white: 3.8:1 (AA for large text)
+✅ **Text Contrast Ratios (measured):**
+- Anthracite (#585961) on white: 6.96:1 (AA — not AAA; use #4D4F57 for AAA body text)
+- White on turquoise / turquoise on white: 3.38:1 (large text & UI only — fails AA for normal text)
+- For AAA-grade text use teal-dark #15585E (8.1:1) or anthracite-dark #4D4F57 (8.2:1)
 
 ✅ **Keyboard Navigation:**
 - All interactive elements accessible
