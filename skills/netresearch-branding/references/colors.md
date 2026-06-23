@@ -20,10 +20,12 @@ Complete color palette with technical specifications and usage guidelines.
 - Primary navigation highlights
 - Brand identity elements
 
-**Contrast Ratios (WCAG AA):**
-- On white background: 3.8:1 (Meets AA for large text)
-- On #F5F5F5: 4.2:1 (Meets AA for large text)
-- White text on turquoise: 4.5:1 (Meets AA for all text)
+**Contrast Ratios (WCAG, measured):**
+- On white background: 3.38:1 (large text & UI components only — fails AA for normal text)
+- On #F5F5F5: 3.1:1 (large text & UI only)
+- White text on turquoise: 3.38:1 (large text & UI only — **fails AA for normal text**, AAA needs 4.5:1 large / 7:1 normal)
+
+> Contrast is symmetric: `#2F99A4` on white and white on `#2F99A4` are the **same** 3.38:1. For normal body text on a teal fill (or teal text at body size), use a darker teal such as `#15585E` (8.1:1 on white) instead.
 
 **Web Implementation:**
 ```css
@@ -60,10 +62,10 @@ Complete color palette with technical specifications and usage guidelines.
 - Call-out boxes and highlights
 - Limited use - accent only, not dominant
 
-**Contrast Ratios (WCAG AA):**
-- On white background: 3.9:1 (Meets AA for large text)
-- On #F5F5F5: 4.3:1 (Meets AA for large text)
-- White text on orange: 3.2:1 (Meets AA for large text only)
+**Contrast Ratios (WCAG, measured):**
+- On white background: 3.33:1 (large text & UI only)
+- On #F5F5F5: 3.05:1 (large text & UI only)
+- White text on orange: 3.33:1 (large text & UI only — same value, contrast is symmetric)
 
 **Web Implementation:**
 ```css
@@ -100,9 +102,11 @@ Complete color palette with technical specifications and usage guidelines.
 - Form labels
 - Default icon color
 
-**Contrast Ratios (WCAG AA):**
-- On white background: 8.3:1 (Meets AAA for all text)
-- On #F5F5F5: 7.8:1 (Meets AAA for all text)
+**Contrast Ratios (WCAG, measured):**
+- On white background: 6.96:1 (Meets AA for all text — **just below the 7:1 AAA threshold**)
+- On #F5F5F5: 6.39:1 (Meets AA for all text; fails AAA)
+
+> For AAA-grade body text, darken to `#4D4F57` (8.2:1 on white) or use `#25272D` (≈15:1).
 
 **Web Implementation:**
 ```css
@@ -225,18 +229,23 @@ body, p, h1, h2, h3 {
 
 **Approved Text Combinations:**
 
-✅ **Pass AA for All Text Sizes:**
-- Anthracite (#585961) on white: 8.3:1 ✓
-- Anthracite (#585961) on #F5F5F5: 7.8:1 ✓
-- White on turquoise (#2F99A4): 4.5:1 ✓
+✅ **Pass AA for All Text Sizes** (normal & large):
+- Anthracite (#585961) on white: 6.96:1 ✓ (AA only — **not** AAA)
+- Anthracite (#585961) on #F5F5F5: 6.39:1 ✓ (AA only)
 
-✅ **Pass AA for Large Text Only:**
-- Turquoise (#2F99A4) on white: 3.8:1 ✓
-- Orange (#FF4D00) on white: 3.9:1 ✓
-- White on orange (#FF4D00): 3.2:1 ✓
+✅ **Pass AA for Large Text & UI Only** (≥18.66px bold / ≥24px; fail AA for normal text):
+- Turquoise (#2F99A4) on white: 3.38:1
+- White on turquoise (#2F99A4): 3.38:1 (same — symmetric)
+- Orange (#FF4D00) on white: 3.33:1
+- White on orange (#FF4D00): 3.33:1
 
-❌ **Fail AA (Do Not Use):**
-- Light grey (#CCCDCC) on white: 1.6:1 ✗
+✅ **AAA-grade (≥7:1 normal / ≥4.5:1 large)** — use these for body text:
+- Anthracite-dark (#4D4F57) on white: 8.2:1 ✓
+- Teal-dark (#15585E) on white: 8.1:1 ✓
+- Ink (#25272D) on white: ~15:1 ✓
+
+❌ **Fail AA (Do Not Use for text):**
+- Light grey (#CCCDCC) on white: 1.59:1 ✗
 
 ---
 
@@ -343,5 +352,5 @@ Before deploying any brand materials:
 
 ---
 
-*Last updated: 2025-10-18*
+*Last updated: 2026-06-23*
 *Maintained by: Netresearch DTT GmbH*
