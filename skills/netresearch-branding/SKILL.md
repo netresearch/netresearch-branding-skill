@@ -74,6 +74,10 @@ Operationalize references in every branded output:
 - `assets/markdown-pdf.css` — branded stylesheet for `markdown-to-pdf-skill`; apply via `--css` for branded PDFs.
 - `assets/markdown-pdf-logo.svg` — standalone Netresearch logo (brand-teal/grey); for the running header against the teal background, the CSS expects a white-fill variant supplied via the calling skill's HTML or as a base64 data URI.
 
+## No editorializing
+
+In branded reports, PR/commit text and docs, state what a change or output does, not how good or careful the work is — no narrating expected results ("all tests green", "documented") or self-praise ("clean", "the honest breaking change"). Judged by tone, not a wordlist. See `references/no-editorializing.md`.
+
 ## References
 
 - `references/colors.md`
@@ -83,3 +87,4 @@ Operationalize references in every branded output:
 - `references/logo-svg.md`
 - `references/typo3-extension-branding.md`
 - `references/README-branding.md`
+- `references/no-editorializing.md`
