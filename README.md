@@ -55,11 +55,10 @@ This skill provides complete brand guidelines, reference documentation, and read
   - Performance optimization
 
 - **web-design.md** - Web implementation patterns:
-  - Responsive grid system
-  - Component library (buttons, cards, forms, navigation)
+  - Component library brand decisions (buttons, cards, forms, navigation,
+    hero, footer) — CSS lives in `templates/styles.css`
   - Layout patterns
-  - Animations and transitions
-  - Accessibility considerations
+  - Pre-launch checklist
 
 ### 🎯 Templates & Examples
 - **landing-page.html** - Complete landing page template

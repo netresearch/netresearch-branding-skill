@@ -25,7 +25,7 @@ Contains YAML frontmatter (name, description, version, triggers) and the mandato
 Detailed specifications that agents consult as needed:
 - **colors.md** — full palette with Hex, RGB, CMYK, Pantone, NCS, CSS custom properties, WCAG contrast ratios
 - **typography.md** — font families, weights, responsive scale, loading strategies
-- **web-design.md** — component library (buttons, cards, forms, navigation), grid system, breakpoints
+- **web-design.md** — component library brand decisions (buttons, cards, forms, navigation), layout patterns
 - **typo3-extension-branding.md** — TYPO3-specific branding (icons, composer metadata, ext_emconf)
 
 ### Templates
