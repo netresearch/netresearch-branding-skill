@@ -81,6 +81,7 @@ only here.
 .table {
   width: 100%;
   border-collapse: collapse;
+  margin-bottom: var(--spacing-lg);
   background: #FFFFFF;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
