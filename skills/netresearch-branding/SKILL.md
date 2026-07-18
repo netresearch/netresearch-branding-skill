@@ -71,13 +71,13 @@ Operationalize references in every branded output:
 
 ## Brand Assets
 
-- `assets/markdown-pdf.css` — branded stylesheet for `markdown-to-pdf-skill`; apply via `--css` for branded PDFs. Its `.page-header`/`.page-footer` running elements are not emitted by `markdown-to-pdf-skill`'s `convert.py` — the caller must build HTML containing them (see that skill's `SKILL.md`).
+- `assets/markdown-pdf.css` — branded stylesheet for `markdown-to-pdf-skill`; apply via `--css`. Its `.page-header`/`.page-footer` running elements aren't emitted by `convert.py`; the caller must supply HTML containing them (see that skill's `SKILL.md`).
 - `assets/markdown-pdf-logo.svg` — standalone Netresearch logo (brand-teal/grey) for general use.
-- `assets/markdown-pdf-logo-white.svg` — white-fill variant, for the `.page-header` running header only, where it sits on the teal background (`--nr-primary`) and the standard teal/grey logo has no contrast. This is the sanctioned exception to "no recoloring" in Mandatory Logo Rendering Behavior — do not use it elsewhere.
+- `assets/markdown-pdf-logo-white.svg` — white-fill variant for the `.page-header` running header, where the teal/grey logo has no contrast on the teal background (`--nr-primary`). The sanctioned exception to "no recoloring" — do not use elsewhere.
 
 ## No editorializing
 
-In branded reports, PR/commit text and docs, state what a change or output does, not how good or careful the work is — no narrating expected results ("all tests green", "documented") or self-praise ("clean", "the honest breaking change"). Judged by tone, not a wordlist. See `references/no-editorializing.md`.
+In branded reports, PR/commit text and docs, state what a change or output does, not how good the work is — no narrating expected results ("all tests green") or self-praise ("clean"). Judged by tone, not a wordlist. See `references/no-editorializing.md`.
 
 ## References
 
