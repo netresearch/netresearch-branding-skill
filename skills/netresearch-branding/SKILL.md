@@ -3,7 +3,7 @@ name: netresearch-branding
 description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, extension icons, README badges, or CSS theming. Enforce strict brand compliance with mandatory logo usage, brand colors, typography, footer, and reference-driven implementation."
 license: "(MIT AND CC-BY-SA-4.0)"
 metadata:
-  version: "2.9.3"
+  version: "2.9.4"
   repository: "https://github.com/netresearch/netresearch-branding-skill"
   author: "Netresearch DTT GmbH"
 ---
@@ -71,12 +71,13 @@ Operationalize references in every branded output:
 
 ## Brand Assets
 
-- `assets/markdown-pdf.css` — branded stylesheet for `markdown-to-pdf-skill`; apply via `--css` for branded PDFs.
-- `assets/markdown-pdf-logo.svg` — standalone Netresearch logo (brand-teal/grey); for the running header against the teal background, the CSS expects a white-fill variant supplied via the calling skill's HTML or as a base64 data URI.
+- `assets/markdown-pdf.css` — branded stylesheet for `markdown-to-pdf-skill`; apply via `--css`. Its `.page-header`/`.page-footer` running elements aren't emitted by `convert.py`; the caller must supply HTML containing them (see that skill's `SKILL.md`).
+- `assets/markdown-pdf-logo.svg` — standalone Netresearch logo (brand-teal/grey) for general use.
+- `assets/markdown-pdf-logo-white.svg` — white-fill variant for the `.page-header` running header, where the teal/grey logo has no contrast on the teal background (`--nr-primary`). The sanctioned exception to "no recoloring" — do not use elsewhere.
 
 ## No editorializing
 
-In branded reports, PR/commit text and docs, state what a change or output does, not how good or careful the work is — no narrating expected results ("all tests green", "documented") or self-praise ("clean", "the honest breaking change"). Judged by tone, not a wordlist. See `references/no-editorializing.md`.
+In branded reports, PR/commit text and docs, state what a change or output does, not how good the work is — no narrating expected results ("all tests green") or self-praise ("clean"). Judged by tone, not a wordlist. See `references/no-editorializing.md`.
 
 ## References
 
