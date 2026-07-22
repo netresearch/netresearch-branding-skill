@@ -36,7 +36,7 @@ jobs:
       build-command: test -f site/index.html
 
   deploy:
-    name: Build and deploy
+    name: Deploy to Pages
     needs: build
     uses: netresearch/.github/.github/workflows/pages-deploy.yml@main
     permissions:
