@@ -354,3 +354,14 @@ Before deploying any brand materials:
 
 *Last updated: 2026-06-23*
 *Maintained by: Netresearch DTT GmbH*
+
+## WCAG-AAA contrast variants (verified against netresearch.de main.css)
+
+The bright primary `#2F99A4` is for accents and non-text use — it does not reach AAA on white. Verified working variants:
+
+- **Large headings on white**: `#0A6E77` (darker teal, ~6:1 = AAA-large only).
+- **AAA body/link text on white**: darken further to `#0A5057` (≥9:1).
+- **AAA dark theme** (all ≥7:1 on background `#14181B`): text `#E8EDEF`, links `#5FC6D2`, brand accents `#7FD6E0`.
+- Neutrals in live use: text `#585961`, near-black `#090909`; light grays `#F7F7F7`, `#D8D8D8`, `#CCCDCC`.
+
+The wordmark is lowercase "netresearch"; never substitute a red/orange primary (an early page wrongly used GitLab's `#E24329`).
