@@ -241,8 +241,14 @@ body, p, h1, h2, h3 {
 
 ✅ **AAA-grade (≥7:1 normal / ≥4.5:1 large)** — use these for body text:
 - Anthracite-dark (#4D4F57) on white: 8.2:1 ✓
-- Teal-dark (#15585E) on white: 8.1:1 ✓
+- Teal-dark (#15585E) on white: 8.1:1 ✓ (7.4:1 on #F5F5F5)
+- Accent-dark (#9A2E00) on white: 7.6:1 ✓ (7.0:1 on #F5F5F5)
 - Ink (#25272D) on white: ~15:1 ✓
+
+✅ **Fills that carry white text** — a filled button or badge is text on a
+background, and #2F99A4 gives that text 3.38:1:
+- White on teal-fill (#257880): 5.2:1 ✓
+- White on teal-dark (#15585E): 8.1:1 ✓
 
 ❌ **Fail AA (Do Not Use for text):**
 - Light grey (#CCCDCC) on white: 1.59:1 ✗
@@ -252,11 +258,71 @@ body, p, h1, h2, h3 {
 ## Usage Guidelines by Context
 
 ### Websites
-- **Primary color:** Turquoise for headers, links, CTAs
-- **Accent color:** Orange sparingly for emphasis
+
+Pick the token by role, not by name. Turquoise and orange are the brand at
+display sizes and on non-text elements; below 24px they need their dark
+variants, and a turquoise fill under white text needs one too.
+
+| Role | Token | Why |
+|---|---|---|
+| Display headings (≥24px, or ≥18.66px bold) | `#2F99A4` | 3.38:1 clears the 3:1 large-text threshold |
+| Links, small labels, eyebrows, badges | `#15585E` | 8.1:1 — `#2F99A4` is 3.38:1 and fails AA here |
+| Filled buttons carrying white text | `#257880` | white on `#2F99A4` is 3.38:1 |
+| Borders, rules, icons, chart series | `#2F99A4` | non-text, 3:1 applies |
+| Accent emphasis in text | `#9A2E00` | 7.6:1 — `#FF4D00` is 3.33:1 |
+| Accent as a fill or marker | `#FF4D00` | non-text |
+| Body text | `#585961` | 6.96:1 |
+
 - **Background:** White (#FFFFFF) or subtle off-white (#F5F5F5)
-- **Text:** Anthracite (#585961)
+- **Accent:** sparingly, for emphasis — never as a surface
 - **High white space:** Let colors breathe
+
+Measured on six Netresearch sites: following "turquoise for links and CTAs"
+literally produced 243 WCAG AA contrast failures, none of which a markup-level
+check can see. See "Verifying contrast" below.
+
+### Dark backgrounds
+
+The dark variants above are for light backgrounds. On a dark surface they go the
+wrong way: `#15585E` is *less* legible there, not more. Lift the same hues
+instead. The link and accent values are the ones already verified against
+netresearch.de — see "WCAG-AAA contrast variants" below.
+
+| Role | Token | Measured |
+|---|---|---|
+| Body text | `#E8EDEF` | 15.1:1 on `#14181B` |
+| Links, small labels, headings | `#5FC6D2` | 8.9:1 on `#14181B`, 5.7:1 on a lifted `#363a40` |
+| Brand accents | `#7FD6E0` | 6.9:1 on `#363a40` |
+| Fills carrying white text | `#1B6C74` | 6.1:1 |
+| Accent text on its own tint | `#FF7A45` | 4.8:1 on `#4a2d26` (`#FF4D00` is 3.7:1 there) |
+| Borders, rules, chart series | `#2F99A4` | non-text, 3:1 applies |
+
+Two traps this table exists for:
+
+- **The brand turquoise passes as text on a deep surface and fails on a lifted
+  one.** `#2F99A4` reaches 4.9:1 on `#1a1d2e` but only 3.38:1 on `#363a40` — the
+  same colour, the same page, one hovered row apart. Use `#5FC6D2` for text and
+  keep `#2F99A4` for the non-text roles.
+- **A translucent tint has no contrast value of its own.**
+  `rgba(47, 153, 164, .18)` composites against whatever is behind it, so the
+  pair changes with the parent and no static tool can decide it. Give badges and
+  pills an opaque background.
+
+### Verifying contrast
+
+Contrast is not decidable from markup, or from a stylesheet read in isolation.
+It needs resolved CSS and a compositing model, so it belongs in a browser:
+
+- Run `axe-core` against the **built** output, in a real browser, at the
+  conformance level the page claims — `wcag2a, wcag2aa, wcag21a, wcag21aa`.
+- Run it in **both colour schemes**. A dark palette is a separate set of colour
+  pairs; a light-only audit says nothing about it.
+- Serve the output over HTTP under its real base path, and fail on any request
+  that does not succeed. A page whose stylesheet 404s has no contrast failures
+  at all and passes for the wrong reason.
+- Do not trust a static CSS checker on a dark theme: it composites translucent
+  colours over white, reporting failures that are not there and missing ones
+  that are.
 
 ### Social Media
 - **Header images:** Turquoise primary with orange accents
