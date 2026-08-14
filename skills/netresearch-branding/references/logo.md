@@ -70,6 +70,25 @@ These are the **only** valid brand color values for the symbol. Any rendered out
 - Don’t rotate, skew, or distort
 - Don’t crop the mark
 - Don’t replace with generic placeholder icons
+- Don’t hand-draw or approximate the mark (e.g. a plain teal rounded square) in any derived asset — favicons, og/social preview images, extension icons, print headers all embed the official artwork
+
+## Derived Assets and Handoff Mockups
+
+Favicons, og/social preview images, icons, and print headers are logo placements
+like any other: they embed the official artwork from `assets/logos/` (or the
+inline SVG from `references/logo-svg.md`), never a simplified stand-in shape.
+
+Two traps seen in practice (2026-08-13, both required a user correction):
+
+1. **A mockup placeholder is not brand approval.** When a handed-off design or
+   customer mockup shows a simplified mark (a teal rounded square), replicating
+   it faithfully still violates the brand — replace it with the official symbol
+   unless the brand owner explicitly signed off the substitute shape.
+2. **Correcting one artifact means sweeping all of them.** The mark usually
+   appears in several generated artifacts (favicon, og-image templates, icons).
+   After a "wrong logo" correction, enumerate every mark-bearing artifact and
+   fix them in one pass — fixing only the artifact named in the complaint ships
+   the same defect again in the next preview.
 
 ## Placement Requirements
 

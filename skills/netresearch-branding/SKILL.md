@@ -42,7 +42,7 @@ Rules:
 - Include logo exactly once in top header/nav for branded pages
 - Minimum size `32x32px`; recommended `40–56px` in headers
 - Preserve aspect ratio
-- No recolor, distortion, filters, shadows, outlines, or substitutions
+- No recolor, distortion, filters, shadows, outlines, substitutions, or approximations
 - If clickable, link to `https://www.netresearch.de/`
 
 ## Active Reference Workflow
