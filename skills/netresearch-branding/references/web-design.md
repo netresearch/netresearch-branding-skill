@@ -178,3 +178,22 @@ and `references/colors.md`.
 
 *Last updated: 2026-07-12*
 *Maintained by: Netresearch DTT GmbH*
+
+## Verify: measure the rendered page, not the palette
+
+Contrast is decided by the *rendered* pair — a token that passes on white fails on a tinted
+surface, and a 14 px label on a filled teal head is the case that slips through. Run
+`scripts/contrast-audit.cjs` (headless Chromium, needs a local `playwright-core`) against the
+built page or the live URL:
+
+```bash
+node scripts/contrast-audit.cjs public/index.html
+node scripts/contrast-audit.cjs https://pages.nrdev.de/<ns>/<project>/ --header "Authorization: Bearer $GITLAB_TOKEN"
+```
+
+It lists every text element below AA for its size, plus skip link, labelled `nav`, `main`,
+table captions, the smallest font and decorative SVGs without `aria-hidden`; exit 1 on any
+contrast failure. Measured on a branded dashboard 2026-08-28: white on `#2F99A4` at 14 px is
+3.38:1 (card heads, table head, active tab), white on `#FF4D00` 3.1:1 — both fixed by moving
+filled surfaces to `#15585E` / `#9A2E00` and keeping the bright colours for borders, bars
+and large type. Re-measured: zero failures.
