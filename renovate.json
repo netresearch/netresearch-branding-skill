@@ -5,5 +5,17 @@
   ],
   "pre-commit": {
     "enabled": true
-  }
+  },
+  "customManagers": [
+    {
+      "description": "Playwright is provisioned inline in contrast-audit.yml (this repo ships no package-lock), so keep that pin updated.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/contrast-audit\\.yml$/"
+      ],
+      "matchStrings": ["playwright@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "playwright",
+      "datasourceTemplate": "npm"
+    }
+  ]
 }

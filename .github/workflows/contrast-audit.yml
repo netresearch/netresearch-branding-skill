@@ -1,0 +1,45 @@
+name: Contrast Audit
+
+# Runs skills/netresearch-branding/scripts/contrast-audit.cjs against the two
+# pages this repo ships, in headless Chromium. The script exits non-zero on any
+# text element below its WCAG AA ratio (4.5:1, or 3:1 for >=24px / >=18.66px
+# bold), so the templates cannot regress into the failures they had before:
+# white on the brand #2F99A4 is 3.38:1 and fails for a 16px button label.
+#
+# The check needs a real browser, so Playwright is provisioned in `pre-command`
+# rather than added to package.json — this repo ships no runtime dependencies.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/netresearch-branding/templates/**'
+      - 'skills/netresearch-branding/scripts/contrast-audit.cjs'
+      - 'examples/**'
+      - 'site/**'
+      - '.github/workflows/contrast-audit.yml'
+  pull_request:
+    paths:
+      - 'skills/netresearch-branding/templates/**'
+      - 'skills/netresearch-branding/scripts/contrast-audit.cjs'
+      - 'examples/**'
+      - 'site/**'
+      - '.github/workflows/contrast-audit.yml'
+  merge_group:
+
+permissions: {}
+
+jobs:
+  contrast:
+    name: WCAG AA contrast
+    uses: netresearch/.github/.github/workflows/script-check.yml@main
+    permissions:
+      contents: read
+    with:
+      pre-command: |
+        npm install --no-save --no-audit --no-fund playwright@1.62.1
+        npx playwright install --with-deps chromium
+      check-cmd: |
+        node skills/netresearch-branding/scripts/contrast-audit.cjs skills/netresearch-branding/templates/landing-page.html
+        node skills/netresearch-branding/scripts/contrast-audit.cjs examples/components.html
+        node skills/netresearch-branding/scripts/contrast-audit.cjs site/index.html
