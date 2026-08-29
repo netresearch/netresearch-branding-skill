@@ -83,7 +83,10 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
     // Smallest Lc that permits this size at this weight; null when the table has none.
     // Interpolated between the two bracketing rows, as apca-w3's own fontLookupAPCA
     // does — a plain row lookup rounds up to the next 5-Lc step and would warn about
-    // e.g. 30px/400 at Lc 55 where the interpolated requirement is 52.5.
+    // e.g. 30px/400 at Lc 55 where the interpolated requirement is 52.5. Never below
+    // APCA's own text floor: fontLookupAPCA marks anything under Lc 29.5 as non-text
+    // at every size, so the Lc 25 row must not license 120px body copy at Lc 27.
+    const APCA_TEXT_FLOOR = 29.5;
     const apcaRequired = (size, weight) => {
       const col = Math.min(9, Math.max(1, Math.round(weight / 100)));
       const usable = (v) => v !== 999 && v !== 777;
@@ -91,9 +94,10 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
         const min = FONT_MATRIX[i][col];
         if (!usable(min) || size < min) continue;
         const prev = i > 0 ? FONT_MATRIX[i - 1] : null;
-        if (!prev || !usable(prev[col]) || prev[col] <= min) return FONT_MATRIX[i][0];
+        if (!prev || !usable(prev[col]) || prev[col] <= min) return Math.max(FONT_MATRIX[i][0], APCA_TEXT_FLOOR);
         const span = prev[col] - min;
-        return FONT_MATRIX[i][0] - ((size - min) / span) * (FONT_MATRIX[i][0] - prev[0]);
+        const need = FONT_MATRIX[i][0] - ((size - min) / span) * (FONT_MATRIX[i][0] - prev[0]);
+        return Math.max(need, APCA_TEXT_FLOOR);
       }
       return null;
     };
