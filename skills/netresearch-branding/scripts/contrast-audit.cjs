@@ -63,8 +63,12 @@ const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
 // element whose hover colour nobody measured, in a run that still exits 0.
 const isDetached = (e) => /Could not find node|No node (found )?with given id|Node with given id does not belong/i.test(String(e?.message));
 
-async function measureOneNode(cdp, page, nodeId, state) {
+async function measureOneNode(cdp, nodeId, state) {
   const { object } = await cdp.send('DOM.resolveNode', { nodeId });
+  // No throw from a finally anywhere here: it would replace the measurement error
+  // with whatever the cleanup said. Both are captured and reported together.
+  let value;
+  let measureError;
   try {
     const { result, exceptionDetails } = await cdp.send('Runtime.callFunctionOn', {
       objectId: object.objectId, returnByValue: true,
@@ -74,13 +78,21 @@ async function measureOneNode(cdp, page, nodeId, state) {
     // callFunctionOn reports a thrown measurement through exceptionDetails and still
     // resolves; reading only result.value would drop the element quietly.
     if (exceptionDetails) throw new Error(`measurement threw: ${exceptionDetails.exception?.description || exceptionDetails.text}`);
-    return result.value;
-  } finally {
-    // Releasing a handle whose node is already gone is expected; anything else is a
-    // protocol failure and is reported rather than swallowed.
-    await cdp.send('Runtime.releaseObject', { objectId: object.objectId })
-      .catch((e) => { if (!isDetached(e)) throw e; });
+    value = result.value;
+  } catch (e) {
+    measureError = e;
   }
+  // Releasing a handle whose node is already gone is expected; anything else is a
+  // protocol failure and is reported rather than swallowed.
+  let releaseError;
+  await cdp.send('Runtime.releaseObject', { objectId: object.objectId })
+    .catch((e) => { if (!isDetached(e)) releaseError = e; });
+  if (measureError) {
+    if (releaseError) measureError.message += ` (release also failed: ${releaseError.message})`;
+    throw measureError;
+  }
+  if (releaseError) throw releaseError;
+  return value;
 }
 
 async function measureInteractiveStates(page) {
@@ -107,7 +119,7 @@ async function measureInteractiveStates(page) {
       try {
         await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [state] });
         forced = true;
-        const f = await measureOneNode(cdp, page, nodeId, state);
+        const f = await measureOneNode(cdp, nodeId, state);
         if (!f) continue;
         const key = `${state}|${f.element}|${f.fg}|${f.bg}`;
         if (seen.has(key)) continue;
