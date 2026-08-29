@@ -8,16 +8,23 @@
    ============================================ */
 :root {
   /* Brand Colors */
+  /* Brand hues. #2F99A4 and #FF4D00 are 3.38:1 and 3.33:1 on white: fine for
+     fills, borders, icons and display type, a WCAG AA failure for anything
+     smaller than 24px (18.66px bold). The -fill and -text variants below carry
+     text; see references/colors.md for the role table and the measured ratios. */
   --color-primary: #2F99A4;
   --color-primary-rgb: 47, 153, 164;
   --color-primary-dark: #257880;
+  --color-primary-fill: #257880; /* white text on it: 5.15:1 */
+  --color-primary-text: #15585E; /* on white: 8.11:1 */
   --color-accent: #FF4D00;
   --color-accent-rgb: 255, 77, 0;
-  --color-accent-dark: #CC3D00;
+  --color-accent-dark: #CC3D00; /* white text on it: 4.96:1 */
+  --color-accent-text: #9A2E00; /* on white: 7.60:1 */
 
   /* Neutral Colors */
   --color-text-primary: #585961;
-  --color-text-secondary: #8A8B93;
+  --color-text-secondary: #6E6F78; /* 4.99:1 on white, 4.58:1 on #F5F5F5 */
   --color-background: #FFFFFF;
   --color-background-alt: #F5F5F5;
   --color-border: #CCCDCC;
@@ -119,7 +126,7 @@ p {
 }
 
 a {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-decoration: none;
   transition: all 0.3s ease;
 }
@@ -213,7 +220,7 @@ a:hover {
 
 .navbar-link:hover,
 .navbar-link.active {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 600;
 }
 
@@ -244,7 +251,8 @@ a:hover {
   justify-content: center;
   min-height: 600px;
   padding: var(--spacing-4xl) var(--spacing-lg);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  background-color: var(--color-primary-fill);
+  background-image: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: var(--color-background);
   text-align: center;
 }
@@ -294,23 +302,23 @@ a:hover {
 }
 
 .btn-primary {
-  background-color: var(--color-primary);
+  background-color: var(--color-primary-fill);
   color: var(--color-background);
 }
 
 .btn-primary:hover {
-  background-color: var(--color-primary-dark);
+  background-color: var(--color-primary-text);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(47, 153, 164, 0.3);
 }
 
 .btn-secondary {
-  background-color: var(--color-accent);
+  background-color: var(--color-accent-dark);
   color: var(--color-background);
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-accent-dark);
+  background-color: var(--color-accent-text);
   box-shadow: 0 4px 12px rgba(255, 77, 0, 0.3);
 }
 
@@ -322,7 +330,7 @@ a:hover {
 
 .btn-outline:hover {
   background-color: var(--color-background);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .btn-large {
@@ -395,7 +403,7 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .link-standalone::after {
@@ -489,13 +497,13 @@ a:hover {
 }
 
 .footer-section a {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-background);
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 .footer-section a:hover {
-  color: var(--color-primary);
+  color: #A8E4EB; /* 4.96:1 on the anthracite footer; #2F99A4 is 2.06:1 there */
 }
 
 .footer-bottom {
@@ -505,7 +513,7 @@ a:hover {
 }
 
 .footer-bottom p {
-  color: rgba(255, 255, 255, 0.6);
+  color: #D5D6D9; /* opaque: 4.79:1 on the anthracite footer */
   font-size: var(--font-size-sm);
   margin: 0;
 }

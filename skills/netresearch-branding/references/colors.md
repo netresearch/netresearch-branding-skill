@@ -213,7 +213,7 @@ body, p, h1, h2, h3 {
 ❌ **Never Use:**
 - Orange on turquoise (poor contrast)
 - Light grey text on white (fails WCAG)
-- Turquoise text smaller than 18px on white (AA compliance)
+- Turquoise text smaller than 24px (18.66px bold) on white (AA compliance)
 - Orange text on white for small text (fails AA)
 
 ---
@@ -223,9 +223,13 @@ body, p, h1, h2, h3 {
 ### WCAG AA Compliance
 
 **Minimum Contrast Ratios:**
-- **Normal text (< 18px):** 4.5:1
-- **Large text (≥ 18px):** 3:1
+- **Normal text (< 24px, or < 18.66px bold):** 4.5:1
+- **Large text (≥ 24px, or ≥ 18.66px bold):** 3:1
 - **UI components:** 3:1
+
+> 18px is *not* the large-text threshold. WCAG 1.4.3 defines large text as 18pt
+> (= 24 CSS px) normal or 14pt (= 18.66 CSS px) bold, and a 16px/600 button
+> label is therefore normal text needing 4.5:1.
 
 **Approved Text Combinations:**
 
@@ -256,6 +260,20 @@ background, and #2F99A4 gives that text 3.38:1:
 ---
 
 ## Usage Guidelines by Context
+
+### Compliance vs. readability
+
+Two independent goals, in this order:
+
+1. **Compliance.** Every text-bearing combination MUST meet WCAG 2.2 AA. Where
+   EN 301 549 applies, WCAG 2.1 AA remains the referenced legal baseline; the
+   contrast requirements are identical in both.
+2. **Perceptual readability.** APCA MAY be measured in addition, especially for
+   saturated colours, dark mode, light-on-dark text and small or thin type. An
+   APCA pass MUST NOT waive a WCAG failure.
+
+Personal visual preference is not an accessibility test — see the
+`typo3-a11y` skill for the full policy and the reasoning.
 
 ### Websites
 

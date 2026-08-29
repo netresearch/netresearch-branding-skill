@@ -204,8 +204,8 @@
     "assertions": [
       {
         "type": "content_contains",
-        "value": "3.8",
-        "description": "Cites the 3.8:1 contrast ratio for turquoise on white"
+        "value": "3.38",
+        "description": "Cites the 3.38:1 contrast ratio for turquoise on white"
       },
       {
         "type": "content_contains",

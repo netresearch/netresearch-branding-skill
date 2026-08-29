@@ -28,10 +28,13 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
 `templates/landing-page.html`. The brand decision behind each component:
 
 - **Buttons** (`.btn-primary` / `.btn-secondary` / `.btn-outline`): primary
-  is teal fill, secondary is orange fill (accent — use sparingly, never as
-  the dominant action), outline is teal border on transparent. Hover darkens
-  the fill (`--color-primary-dark` `#257880` / `--color-accent-dark`
-  `#CC3D00`).
+  is a teal fill `#257880`, secondary an orange fill `#CC3D00` (accent — use
+  sparingly, never as the dominant action), outline is a white border on
+  transparent for dark surfaces. Hover darkens the fill further
+  (`--color-primary-text` `#15585E` / `--color-accent-text` `#9A2E00`). The
+  brand hues `#2F99A4` and `#FF4D00` are **not** used as fills under white
+  label text: they give 3.38:1 and 3.33:1, and a 16px/600 label is normal
+  text needing 4.5:1.
 - **Cards** (`.card`): white background, Raleway title, Open Sans body text.
 - **Navigation** (`.navbar`): sticky top, teal active-link state, hamburger
   toggle below 768px.
@@ -87,7 +90,9 @@ only here.
 }
 
 .table thead {
-  background-color: #2F99A4;
+  /* #257880, not the brand #2F99A4: white on #2F99A4 is 3.38:1 and a 16px/600
+     header cell is normal text, which needs 4.5:1. */
+  background-color: #257880;
   color: #FFFFFF;
 }
 
