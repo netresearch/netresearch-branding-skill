@@ -12,25 +12,25 @@
      fills, borders, icons and display type, a WCAG AA failure for anything
      smaller than 24px (18.66px bold). The -fill and -text variants below carry
      text; see references/colors.md for the role table and the measured ratios. */
-  --color-primary: #2F99A4;
-  --color-primary-rgb: 47, 153, 164;
-  --color-primary-dark: #257880;
-  --color-primary-fill: #257880; /* white text on it: 5.15:1 */
-  --color-primary-text: #15585E; /* on white: 8.11:1 */
-  --color-primary-deep: #0A5057; /* hover/darkest step, on white: 9.14:1 */
-  --color-accent: #FF4D00;
-  --color-accent-rgb: 255, 77, 0;
-  --color-accent-dark: #CC3D00; /* white text on it: 4.96:1 */
-  --color-accent-text: #9A2E00; /* on white: 7.60:1 */
+  --nr-primary: #2F99A4;
+  --nr-primary-rgb: 47, 153, 164;
+  --nr-primary-dark: #257880;
+  --nr-primary-fill: #257880; /* white text on it: 5.15:1 */
+  --nr-primary-text: #15585E; /* on white: 8.11:1 */
+  --nr-primary-deep: #0A5057; /* hover/darkest step, on white: 9.14:1 */
+  --nr-accent: #FF4D00;
+  --nr-accent-rgb: 255, 77, 0;
+  --nr-accent-dark: #CC3D00; /* white text on it: 4.96:1 */
+  --nr-accent-text: #9A2E00; /* on white: 7.60:1 */
 
   /* Neutral Colors */
-  --color-text-primary: #585961;
-  --color-text-secondary: #6E6F78; /* 4.99:1 on white, 4.58:1 on #F5F5F5 */
-  --color-background: #FFFFFF;
-  --color-background-alt: #F5F5F5;
-  --color-border: #CCCDCC;        /* dividers and decoration only: 1.59:1 on white */
-  --color-border-strong: #8A8B93; /* boundaries of interactive controls: 3.39:1 (SC 1.4.11 needs 3:1) */
-  --color-border-light: #E5E5E5;
+  --nr-text: #585961;
+  --nr-text-secondary: #6E6F78; /* 4.99:1 on white, 4.58:1 on #F5F5F5 */
+  --nr-bg: #FFFFFF;
+  --nr-bg-alt: #F5F5F5;
+  --nr-border: #CCCDCC;        /* dividers and decoration only: 1.59:1 on white */
+  --nr-border-strong: #8A8B93; /* boundaries of interactive controls: 3.39:1 (SC 1.4.11 needs 3:1) */
+  --nr-border-light: #E5E5E5;
 
   /* Typography */
   --font-headline: 'Raleway', sans-serif;
@@ -81,8 +81,8 @@ body {
   font-family: var(--font-body);
   font-size: var(--font-size-base);
   line-height: 1.6;
-  color: var(--color-text-primary);
-  background-color: var(--color-background);
+  color: var(--nr-text);
+  background-color: var(--nr-bg);
 }
 
 /* ============================================
@@ -92,7 +92,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-headline);
   font-weight: 700;
   line-height: 1.2;
-  color: var(--color-text-primary);
+  color: var(--nr-text);
 }
 
 h1 {
@@ -128,13 +128,13 @@ p {
 }
 
 a {
-  color: var(--color-primary-text);
+  color: var(--nr-primary-text);
   text-decoration: none;
   transition: all 0.3s ease;
 }
 
 a:hover {
-  color: var(--color-primary-deep);
+  color: var(--nr-primary-deep);
 }
 
 /* ============================================
@@ -152,7 +152,7 @@ a:hover {
 }
 
 .section-alt {
-  background-color: var(--color-background-alt);
+  background-color: var(--nr-bg-alt);
 }
 
 .section-title {
@@ -163,7 +163,7 @@ a:hover {
 .section-subtitle {
   text-align: center;
   font-size: var(--font-size-xl);
-  color: var(--color-text-secondary);
+  color: var(--nr-text-secondary);
   margin-bottom: var(--spacing-xxl);
 }
 
@@ -187,7 +187,7 @@ a:hover {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: var(--color-background);
+  background: var(--nr-bg);
   box-shadow: var(--shadow-sm);
   padding: var(--spacing-md) 0;
 }
@@ -215,14 +215,14 @@ a:hover {
   font-family: var(--font-headline);
   font-size: var(--font-size-base);
   font-weight: 400;
-  color: var(--color-text-primary);
+  color: var(--nr-text);
   padding: var(--spacing-xs) var(--spacing-md);
   transition: all 0.3s ease;
 }
 
 .navbar-link:hover,
 .navbar-link.active {
-  color: var(--color-primary-text);
+  color: var(--nr-primary-text);
   font-weight: 600;
 }
 
@@ -239,7 +239,7 @@ a:hover {
   display: block;
   width: 24px;
   height: 3px;
-  background: var(--color-primary);
+  background: var(--nr-primary);
   transition: all 0.3s ease;
 }
 
@@ -257,9 +257,9 @@ a:hover {
      #15585E is 8.11:1. The brand #2F99A4 cannot start this gradient -- it is
      3.38:1, and the audit cannot see it because a gradient has no
      backgroundColor to read. */
-  background-color: var(--color-primary-fill);
-  background-image: linear-gradient(135deg, var(--color-primary-fill) 0%, var(--color-primary-text) 100%);
-  color: var(--color-background);
+  background-color: var(--nr-primary-fill);
+  background-image: linear-gradient(135deg, var(--nr-primary-fill) 0%, var(--nr-primary-text) 100%);
+  color: var(--nr-bg);
   text-align: center;
 }
 
@@ -269,7 +269,7 @@ a:hover {
 }
 
 .hero-title {
-  color: var(--color-background);
+  color: var(--nr-bg);
   margin-bottom: var(--spacing-lg);
 }
 
@@ -308,35 +308,35 @@ a:hover {
 }
 
 .btn-primary {
-  background-color: var(--color-primary-fill);
-  color: var(--color-background);
+  background-color: var(--nr-primary-fill);
+  color: var(--nr-bg);
 }
 
 .btn-primary:hover {
-  background-color: var(--color-primary-text);
+  background-color: var(--nr-primary-text);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(47, 153, 164, 0.3);
 }
 
 .btn-secondary {
-  background-color: var(--color-accent-dark);
-  color: var(--color-background);
+  background-color: var(--nr-accent-dark);
+  color: var(--nr-bg);
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-accent-text);
+  background-color: var(--nr-accent-text);
   box-shadow: 0 4px 12px rgba(255, 77, 0, 0.3);
 }
 
 .btn-outline {
   background-color: transparent;
-  color: var(--color-background);
-  border: 2px solid var(--color-background);
+  color: var(--nr-bg);
+  border: 2px solid var(--nr-bg);
 }
 
 .btn-outline:hover {
-  background-color: var(--color-background);
-  color: var(--color-primary-text);
+  background-color: var(--nr-bg);
+  color: var(--nr-primary-text);
 }
 
 .btn-large {
@@ -353,7 +353,7 @@ a:hover {
    CARDS
    ============================================ */
 .card {
-  background: var(--color-background);
+  background: var(--nr-bg);
   border-radius: 8px;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
@@ -385,19 +385,19 @@ a:hover {
 .card-text {
   font-size: var(--font-size-base);
   line-height: 1.6;
-  color: var(--color-text-primary);
+  color: var(--nr-text);
   margin-bottom: var(--spacing-md);
 }
 
 .card-footer {
   padding: var(--spacing-md) var(--spacing-lg);
-  border-top: 1px solid var(--color-border-light);
-  background-color: var(--color-background-alt);
+  border-top: 1px solid var(--nr-border-light);
+  background-color: var(--nr-bg-alt);
 }
 
 .card-meta {
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: var(--nr-text-secondary);
 }
 
 /* ============================================
@@ -409,7 +409,7 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-primary-text);
+  color: var(--nr-primary-text);
 }
 
 .link-standalone::after {
@@ -432,7 +432,7 @@ a:hover {
   display: block;
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--nr-text);
   margin-bottom: var(--spacing-xs);
 }
 
@@ -441,26 +441,26 @@ a:hover {
   width: 100%;
   font-family: var(--font-body);
   font-size: var(--font-size-base);
-  color: var(--color-text-primary);
+  color: var(--nr-text);
   padding: 12px 16px;
   /* The visible boundary of a form control is a UI component under SC 1.4.11 and needs
-     3:1 — --color-border is 1.59:1 and is for dividers. */
-  border: 1px solid var(--color-border-strong);
+     3:1 — --nr-border is 1.59:1 and is for dividers. */
+  border: 1px solid var(--nr-border-strong);
   border-radius: 4px;
-  background: var(--color-background);
+  background: var(--nr-bg);
   transition: all 0.3s ease;
 }
 
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--nr-primary);
   box-shadow: 0 0 0 3px rgba(47, 153, 164, 0.1);
 }
 
 .form-input::placeholder,
 .form-textarea::placeholder {
-  color: var(--color-text-secondary);
+  color: var(--nr-text-secondary);
 }
 
 .form-textarea {
@@ -472,8 +472,8 @@ a:hover {
    FOOTER
    ============================================ */
 .footer {
-  background-color: var(--color-text-primary);
-  color: var(--color-background);
+  background-color: var(--nr-text);
+  color: var(--nr-bg);
   padding: var(--spacing-4xl) 0 var(--spacing-lg);
 }
 
@@ -490,7 +490,7 @@ a:hover {
 .footer-section h4 {
   font-size: var(--font-size-lg);
   font-weight: 600;
-  color: var(--color-background);
+  color: var(--nr-bg);
   margin-bottom: var(--spacing-md);
 }
 
@@ -505,7 +505,7 @@ a:hover {
 }
 
 .footer-section a {
-  color: var(--color-background);
+  color: var(--nr-bg);
   text-decoration: none;
   transition: color 0.3s ease;
 }
@@ -578,7 +578,7 @@ a:hover {
     left: 0;
     right: 0;
     flex-direction: column;
-    background: var(--color-background);
+    background: var(--nr-bg);
     padding: var(--spacing-lg);
     box-shadow: var(--shadow-md);
     transform: translateY(-100%);

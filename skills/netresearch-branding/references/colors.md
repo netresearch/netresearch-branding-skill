@@ -30,17 +30,17 @@ Complete color palette with technical specifications and usage guidelines.
 **Web Implementation:**
 ```css
 :root {
-  --color-primary: #2F99A4;
-  --color-primary-rgb: 47, 153, 164;
+  --nr-primary: #2F99A4;
+  --nr-primary-rgb: 47, 153, 164;
 }
 
 .btn-primary {
-  background-color: var(--color-primary);
+  background-color: var(--nr-primary);
   color: #FFFFFF;
 }
 
 .link-primary {
-  color: var(--color-primary);
+  color: var(--nr-primary);
 }
 ```
 
@@ -70,17 +70,17 @@ Complete color palette with technical specifications and usage guidelines.
 **Web Implementation:**
 ```css
 :root {
-  --color-accent: #FF4D00;
-  --color-accent-rgb: 255, 77, 0;
+  --nr-accent: #FF4D00;
+  --nr-accent-rgb: 255, 77, 0;
 }
 
 .btn-secondary {
-  background-color: var(--color-accent);
+  background-color: var(--nr-accent);
   color: #FFFFFF;
 }
 
 .highlight {
-  border-left: 4px solid var(--color-accent);
+  border-left: 4px solid var(--nr-accent);
 }
 ```
 
@@ -111,11 +111,11 @@ Complete color palette with technical specifications and usage guidelines.
 **Web Implementation:**
 ```css
 :root {
-  --color-text-primary: #585961;
+  --nr-text: #585961;
 }
 
 body, p, h1, h2, h3 {
-  color: var(--color-text-primary);
+  color: var(--nr-text);
 }
 ```
 
@@ -143,13 +143,13 @@ body, p, h1, h2, h3 {
 **Web Implementation:**
 ```css
 :root {
-  --color-background-light: #CCCDCC;
-  --color-border-light: #CCCDCC;
+  --nr-border: #CCCDCC;
+  --nr-border-light: #CCCDCC;
 }
 
 .card {
   background-color: #F5F5F5;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--nr-border-light);
 }
 ```
 
@@ -366,31 +366,31 @@ It needs resolved CSS and a compositing model, so it belongs in a browser:
 ```css
 :root {
   /* Primary Colors */
-  --color-primary: #2F99A4;
-  --color-primary-rgb: 47, 153, 164;
-  --color-primary-light: rgba(47, 153, 164, 0.1);
-  --color-primary-dark: #257880;
+  --nr-primary: #2F99A4;
+  --nr-primary-rgb: 47, 153, 164;
+  --nr-primary-light: rgba(47, 153, 164, 0.1);
+  --nr-primary-dark: #257880;
 
   /* Accent Colors */
-  --color-accent: #FF4D00;
-  --color-accent-rgb: 255, 77, 0;
-  --color-accent-light: rgba(255, 77, 0, 0.1);
-  --color-accent-dark: #CC3D00;
+  --nr-accent: #FF4D00;
+  --nr-accent-rgb: 255, 77, 0;
+  --nr-accent-light: rgba(255, 77, 0, 0.1);
+  --nr-accent-dark: #CC3D00;
 
   /* Neutral Colors */
-  --color-text-primary: #585961;
-  --color-text-secondary: #8A8B93;
-  --color-background: #FFFFFF;
-  --color-background-alt: #F5F5F5;
-  --color-border: #CCCDCC;        /* dividers, decoration */
-  --color-border-strong: #8A8B93; /* boundaries of interactive controls, 3:1 */
-  --color-border-light: #E5E5E5;
+  --nr-text: #585961;
+  --nr-text-secondary: #8A8B93;
+  --nr-bg: #FFFFFF;
+  --nr-bg-alt: #F5F5F5;
+  --nr-border: #CCCDCC;        /* dividers, decoration */
+  --nr-border-strong: #8A8B93; /* boundaries of interactive controls, 3:1 */
+  --nr-border-light: #E5E5E5;
 
   /* Semantic Colors */
-  --color-success: #28A745;
-  --color-warning: #FFC107;
-  --color-error: #DC3545;
-  --color-info: var(--color-primary);
+  --nr-success: #28A745;
+  --nr-warning: #FFC107;
+  --nr-error: #DC3545;
+  --nr-info: var(--nr-primary);
 }
 ```
 

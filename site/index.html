@@ -11,10 +11,9 @@
   <style>
     /* ============================================================
        Netresearch brand tokens.
-       Canonical names follow SKILL.md:59 (--nr-*). The reference
-       files use --color-* instead — that divergence is documented
-       as Finding F1 below. We follow the SKILL (and checkpoint
-       NB-16) here so this page is itself brand-compliant.
+       Canonical names follow SKILL.md (--nr-*), which the references
+       and templates now use as well — the earlier --color-* divergence
+       is Finding F1, resolved.
        ============================================================ */
     :root {
       /* The brand hues are 3.38:1 and 3.33:1 on white — fills, borders, icons and
@@ -456,9 +455,9 @@
         </div>
       </div>
 
-      <div class="rule" style="margin-top:var(--space-lg)" data-issue-title="[Branding] CSS token names: --nr-* vs --color-*" data-issue-body="Re: token naming. SKILL.md:59 prescribes --nr-primary/--nr-accent/--nr-text/--nr-border/--nr-bg and checkpoint NB-16 greps for --nr-(primary|accent|text), but every CSS example in references/colors.md and references/typography.md uses --color-* instead. The reference snippets would fail NB-16.%0A%0AProposal: pick one canonical scheme and make references + SKILL + NB-16 agree.">
+      <div class="rule" style="margin-top:var(--space-lg)" data-issue-title="[Branding] CSS token names" data-issue-body="Re: token naming — SKILL.md, checkpoint NB-16, the references and the templates all use --nr-*.%0A%0AQuestion / proposal:">
         <div class="rule-head"><h4>Canonical CSS variables</h4><a class="src" href="#F1">→ Finding F1</a></div>
-        <p>SKILL.md prescribes <code>--nr-primary</code>, <code>--nr-accent</code>, <code>--nr-text</code>, <code>--nr-border</code>, <code>--nr-bg</code> and NB-16 enforces them. (Note: the reference files’ own examples use <code>--color-*</code> instead — see Open Questions.)</p>
+        <p>SKILL.md prescribes <code>--nr-primary</code>, <code>--nr-accent</code>, <code>--nr-text</code>, <code>--nr-border</code>, <code>--nr-bg</code> and NB-16 enforces them. The references and templates use the same names, with the role suffixes the contrast rules need: <code>-fill</code> for a surface under white text, <code>-text</code> for type at body size, <code>-deep</code> for its hover, <code>-strong</code> for the boundary of a control.</p>
       </div>
     </div>
   </section>
@@ -936,10 +935,10 @@
 
     /* ---------- findings ---------- */
     var findings = [
-      { id: "F1", kind: "Contradiction", title: "CSS token names disagree: --nr-* vs --color-*",
-        cite: "SKILL.md:59 · references/colors.md:274-300 · references/typography.md:903 · checkpoints.yaml:152 (NB-16)",
-        body: "SKILL.md:59 prescribes --nr-primary/--nr-accent/--nr-text/--nr-border/--nr-bg, and checkpoint NB-16 greps for --nr-(primary|accent|text). But every CSS example in references/colors.md and references/typography.md defines --color-primary/--color-accent/--color-text-primary instead. A project that copies the reference snippets verbatim would FAIL NB-16.",
-        ask: "Pick one canonical scheme. Either rewrite the reference CSS to --nr-*, or relax NB-16 to accept both. Add --nr-bg / --nr-border values while doing so (see F6)." },
+      { id: "F1", kind: "Resolved", resolved: true, title: "CSS token names disagreed: --nr-* vs --color-*",
+        cite: "SKILL.md \u00b7 references/colors.md \u00b7 templates/styles.css \u00b7 checkpoints.yaml (NB-16)",
+        body: "SKILL.md prescribed --nr-primary/--nr-accent/--nr-text/--nr-border/--nr-bg and checkpoint NB-16 grepped for --nr-(primary|accent|text), while every CSS example in the references and templates defined --color-* instead \u2014 a project copying the reference snippets verbatim would have failed NB-16. The SKILL wins: a design system that ships its tokens into someone else's stylesheet needs a vendor prefix, the same reason Bootstrap uses --bs-. colors.md, styles.css, web-design.md, the example page and this page now all use --nr-*, carrying the role suffixes the contrast rules need (-fill, -text, -deep, -strong). NB-16 is unchanged and now passes on the reference snippets themselves.",
+        ask: "Done. Kept as the record of the divergence." },
       { id: "F2", kind: "Resolved", resolved: true, title: "Hard-coded contrast ratios were internally inconsistent (and wrong)",
         cite: "references/colors.md",
         body: "Contrast is symmetric, yet the doc used to list Turquoise-on-white as 3.8:1 and White-on-turquoise as 4.5:1 — the same pair, two numbers; same for orange (3.9 vs 3.2). Both are now the measured 3.38:1 and 3.33:1, with the verdict corrected to large text and UI only, and the doc names the text-bearing variants (#257880 for a fill under white text, #15585E for links and small labels). The verifier above compares against the current document, so this table should show no mismatch — if it does, the doc has drifted again.",
@@ -956,17 +955,17 @@
         cite: "SKILL.md:43 (40-56px in headers) · references/logo.md:51 (>=120px when a visual anchor)",
         body: "SKILL.md recommends 40-56px in headers; logo.md recommends >=120px width 'when the logo is a visual anchor'. Both use the word 'recommended' without saying which context wins, so an implementer has no single answer for 'how big should the logo be?'",
         ask: "State the rule by context explicitly: e.g. 40-56px in nav headers, >=120px when the logo is the hero/anchor element." },
-      { id: "F6", kind: "Undefined", title: "--nr-bg and --nr-border are named but never given values",
-        cite: "SKILL.md:59",
-        body: "SKILL.md lists --nr-bg and --nr-border as preferred variables, but no hex value is defined for either anywhere in the skill. Implementers must guess. The reference files only define --color-background (#FFFFFF), --color-background-alt (#F5F5F5), --color-border (#CCCDCC) and --color-border-light (#E5E5E5) — under different names (see F1).",
-        ask: "Define canonical values for --nr-bg, --nr-border (and --nr-bg-alt) in the SKILL or a tokens reference." },
+      { id: "F6", kind: "Resolved", resolved: true, title: "--nr-bg and --nr-border were named but never given values",
+        cite: "SKILL.md \u00a7 Core Brand System \u00b7 references/colors.md",
+        body: "SKILL.md listed --nr-bg and --nr-border as preferred variables without a hex value for either, so implementers had to guess. The canonical set is now written out with values: --nr-bg #FFFFFF, --nr-bg-alt #F5F5F5, --nr-border #CCCDCC (dividers and decoration only, 1.59:1), --nr-border-strong #8A8B93 (the visible boundary of an interactive control, which SC 1.4.11 requires to reach 3:1), --nr-border-light #E5E5E5.",
+        ask: "Done. Kept as the record." },
       { id: "F7", kind: "Undefined", title: "#F5F5F5 is used everywhere but never defined as a brand color",
         cite: "references/colors.md:146, 202, 248, 290",
-        body: "The off-white #F5F5F5 is used for card backgrounds, section backgrounds and --color-background-alt throughout colors.md and web-design.md, but it has no swatch, no name, and no technical spec in the palette. The only documented grey is #CCCDCC. It is a load-bearing surface color with no definition.",
+        body: "The off-white #F5F5F5 is used for card backgrounds, section backgrounds and --nr-bg-alt throughout colors.md and web-design.md, but it has no swatch, no name, and no technical spec in the palette. The only documented grey is #CCCDCC. It is a load-bearing surface color with no definition.",
         ask: "Add #F5F5F5 to the palette as a named neutral (e.g. 'Off-white / surface-alt') with its spec, or replace its uses with a defined token." },
       { id: "F8", kind: "Accessibility gap", title: "Secondary text #8A8B93 fails AA for the sizes it is used at",
         cite: "references/colors.md:289 · references/web-design.md (.form-help, ::placeholder)",
-        body: "--color-text-secondary (#8A8B93) is applied to help text and placeholders, which are <18px. Its computed contrast on white is ~3.4:1 — below the 4.5:1 AA threshold for normal text (see verifier above). Meanwhile colors.md's own 'Avoid' list forbids low-contrast text on white. The token quietly contradicts the accessibility rule.",
+        body: "--nr-text-secondary (#8A8B93) is applied to help text and placeholders, which are <18px. Its computed contrast on white is ~3.4:1 — below the 4.5:1 AA threshold for normal text (see verifier above). Meanwhile colors.md's own 'Avoid' list forbids low-contrast text on white. The token quietly contradicts the accessibility rule.",
         ask: "Either darken the secondary text token to reach 4.5:1, or restrict it to >=18px contexts and say so." },
       { id: "F9", kind: "Ambiguity", title: "'Orange must not dominate' has no measurable threshold",
         cite: "SKILL.md:60 · references/colors.md:62",

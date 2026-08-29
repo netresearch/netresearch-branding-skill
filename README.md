@@ -263,9 +263,9 @@ The skill includes a complete set of CSS custom properties for easy implementati
 ```css
 :root {
   /* Brand Colors */
-  --color-primary: #2F99A4;
-  --color-accent: #FF4D00;
-  --color-text-primary: #585961;
+  --nr-primary: #2F99A4;
+  --nr-accent: #FF4D00;
+  --nr-text: #585961;
 
   /* Typography */
   --font-headline: 'Raleway', sans-serif;
