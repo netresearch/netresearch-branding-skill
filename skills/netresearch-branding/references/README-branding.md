@@ -70,7 +70,9 @@ A standard footer block looks like:
 ```markdown
 ## License
 
-Code is licensed under [MIT](LICENSE-MIT).
+Code is licensed under [MIT](LICENSE-MIT). This split applies to skills,
+libraries, CLIs and internal tools — a TYPO3 extension is (A)GPL instead. The
+table in `SKILL.md` under "Licensing by artifact type" is the canonical one.
 Documentation and skill content are licensed under
 [CC-BY-SA-4.0](LICENSE-CC-BY-SA-4.0).
 

@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Netresearch Branding Skill — Living Style Guide &amp; Compliance Demo</title>
   <meta name="description" content="A self-verifying showcase of every Netresearch brand rule defined by the netresearch-branding Agent Skill — colors, typography, components, logo, TYPO3 extension branding, checkpoints, and the ambiguous rules that still need resolving.">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     /* ============================================================
        Netresearch brand tokens.
-       Canonical names follow SKILL.md:59 (--nr-*). The reference
-       files use --color-* instead — that divergence is documented
-       as Finding F1 below. We follow the SKILL (and checkpoint
-       NB-16) here so this page is itself brand-compliant.
+       Canonical names follow SKILL.md (--nr-*), which the references
+       and templates now use as well — the earlier --color-* divergence
+       is Finding F1, resolved.
        ============================================================ */
     :root {
       /* The brand hues are 3.38:1 and 3.33:1 on white — fills, borders, icons and
@@ -35,6 +35,34 @@
       --nr-border-light: #E5E5E5;
       --nr-bg: #FFFFFF;
       --nr-bg-alt: #F5F5F5;
+      --nr-surface: #FFFFFF;        /* cards, tables, framed demos */
+
+      /* Opaque tints. A translucent tint has no ratio of its own — it composites
+         against whatever is behind it, so every pair here is a fixed one. */
+      --nr-tint-pass-bg: #E6F4EA;  --nr-tint-pass-fg: #14602A;
+      --nr-tint-fail-bg: #FBE9EB;  --nr-tint-fail-fg: #8E1922;
+      --nr-tint-warn-bg: #FDF3D7;  --nr-tint-warn-fg: #6B4E03;
+      --nr-tint-info-bg: #E4F2F4;  --nr-tint-info-fg: #15585E;
+      --nr-callout-info-bg: #EDF6F7;
+      --nr-callout-accent-bg: #FFF1EB;
+      --nr-do-bg: #F3FAF5;
+      --nr-dont-bg: #FDF5F6;
+
+      /* Gradient stops are their own tokens, never the text tokens: in the dark
+         scheme --nr-primary-text lifts to #5FC6D2, and white hero text over that
+         is 2.00:1 — a failure no audit can see, because a gradient leaves no
+         backgroundColor to read. Both stops carry white text by construction. */
+      --nr-hero-from: #257880;  /* white on it: 5.15:1 */
+      --nr-hero-to: #15585E;    /* white on it: 8.11:1 */
+      /* Hover for a filled button is a surface too — same reason it may not borrow
+         --nr-primary-text / --nr-accent-text. */
+      --nr-primary-fill-hover: #15585E; /* white on it: 8.11:1 */
+      --nr-accent-fill-hover: #9A2E00;  /* white on it: 7.60:1 */
+
+      --nr-footer-bg: #585961;
+      --nr-footer-fg: #FFFFFF;
+      --nr-footer-muted: #D5D6D9;
+      --nr-footer-link-hover: #A8E4EB;
 
       --nr-success: #28A745;
       --nr-warning: #FFC107;
@@ -55,6 +83,55 @@
       --radius: 8px;
       --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
       --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    /* ============================================================
+       Dark scheme. The brand hues do not survive a dark surface as text:
+       #2F99A4 is 5.28:1 on #14181B but only 3.38:1 on a lifted row, so text
+       roles lift to #5FC6D2 / #7FD6E0 while #2F99A4 keeps the non-text ones.
+       Values from references/colors.md "Dark backgrounds"; every pair below
+       was measured, none is under 7:1.
+       ============================================================ */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --nr-bg: #14181B;
+        --nr-bg-alt: #1A2024;
+        --nr-surface: #1E2429;
+
+        --nr-text: #E8EDEF;             /* 13.28:1 on the surface */
+        --nr-text-secondary: #A9B2B8;   /* 7.28:1 */
+
+        --nr-primary-fill: #1B6C74;     /* white text on it: 6.10:1 */
+        --nr-primary-text: #5FC6D2;     /* 7.83:1 on the surface */
+        --nr-primary-deep: #7FD6E0;     /* hover lifts, it does not darken */
+        --nr-accent-text: #FF9166;      /* 7.09:1 */
+
+        --nr-border: #2A3238;
+        --nr-border-strong: #6B7680;    /* 3.38:1 on the surface, SC 1.4.11 */
+        --nr-border-light: #232A30;
+
+        --nr-tint-pass-bg: #12301C;  --nr-tint-pass-fg: #8FE0A6;
+        --nr-tint-fail-bg: #3A1418;  --nr-tint-fail-fg: #FFA7AE;
+        --nr-tint-warn-bg: #33280A;  --nr-tint-warn-fg: #F2CE5C;
+        --nr-tint-info-bg: #0E2E33;  --nr-tint-info-fg: #7FD6E0;
+        --nr-callout-info-bg: #10262A;
+        --nr-callout-accent-bg: #2A1710;
+        --nr-do-bg: #101F16;
+        --nr-dont-bg: #2A1216;
+
+        --nr-hero-from: #1B6C74;  /* white on it: 6.10:1 */
+        --nr-hero-to: #0F4A50;    /* white on it: 9.93:1 */
+        --nr-primary-fill-hover: #0F4A50; /* white on it: 9.93:1 */
+        --nr-accent-fill-hover: #B23600;  /* white on it: 6.14:1 */
+
+        --nr-footer-bg: #10161A;
+        --nr-footer-fg: #E8EDEF;
+        --nr-footer-muted: #A9B2B8;
+        --nr-footer-link-hover: #7FD6E0;
+
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.6);
+      }
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -98,7 +175,11 @@
       background: var(--nr-primary-fill); color: #fff; padding: 12px 20px;
       font-family: var(--font-headline); font-weight: 600;
     }
+    /* A skip link and a button are anchors, so the generic `a:hover` colour would
+       override their own white text — 1.77:1 on the teal fill. Restate it. */
     .skip-link:focus { left: 0; color: #fff; }
+    .skip-link:hover, .skip-link:focus:hover { color: #fff; }
+    .btn:hover, .btn-primary:hover, .btn-secondary:hover, .issue-link:hover { color: #fff; }
 
     /* ============================== NAV ============================== */
     .navbar {
@@ -134,8 +215,8 @@
     .hero {
       /* Both stops carry white text, so both clear 4.5:1. A gradient has no
          backgroundColor for an audit to read, hence the solid fallback too. */
-      background-color: var(--nr-primary-fill);
-      background-image: linear-gradient(135deg, var(--nr-primary-fill) 0%, var(--nr-primary-text) 100%);
+      background-color: var(--nr-hero-from);
+      background-image: linear-gradient(135deg, var(--nr-hero-from) 0%, var(--nr-hero-to) 100%);
       color: #fff; text-align: center;
       padding: var(--space-4xl) var(--space-lg);
     }
@@ -199,7 +280,7 @@
     @media (max-width: 680px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
 
     /* ============================== COLOR SWATCHES ============================== */
-    .swatch { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--nr-border-light); box-shadow: var(--shadow-sm); background:#fff; }
+    .swatch { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--nr-border-light); box-shadow: var(--shadow-sm); background: var(--nr-surface); }
     .swatch .chip { height: 120px; display: flex; align-items: flex-end; padding: var(--space-sm); }
     .swatch .chip .sample { font-family: var(--font-headline); font-weight: 700; font-size: 15px; }
     .swatch .meta { padding: var(--space-md); }
@@ -209,7 +290,7 @@
     .swatch .issue-link { margin: 0 var(--space-md) var(--space-md); }
 
     /* --- contrast verifier table --- */
-    .contrast-table, .demo-table, .cp-table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: var(--shadow-sm); border-radius: var(--radius); overflow: hidden; }
+    .contrast-table, .demo-table, .cp-table { width: 100%; border-collapse: collapse; background: var(--nr-surface); box-shadow: var(--shadow-sm); border-radius: var(--radius); overflow: hidden; }
     .contrast-table th { background: var(--nr-primary-fill); color: #fff; font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 12px 16px; font-size: 14px; }
     .contrast-table td { padding: 10px 16px; border-bottom: 1px solid var(--nr-border-light); font-size: 14px; vertical-align: middle; }
     .contrast-table tr:last-child td { border-bottom: none; }
@@ -218,17 +299,17 @@
     .badge { display: inline-block; font-family: var(--font-headline); font-weight: 600; font-size: 12px; padding: 2px 9px; border-radius: 999px; }
     /* Opaque tints: a translucent background has no ratio of its own, and the audit —
        like any static checker — resolves it to whatever sits behind it. */
-    .badge.pass { background: #E6F4EA; color: #14602A; }
-    .badge.fail { background: #FBE9EB; color: #8E1922; }
+    .badge.pass { background: var(--nr-tint-pass-bg); color: var(--nr-tint-pass-fg); }
+    .badge.fail { background: var(--nr-tint-fail-bg); color: var(--nr-tint-fail-fg); }
     .doc-claim { font-style: italic; color: var(--nr-text-secondary); }
     .mismatch { color: var(--nr-error); font-weight: 600; font-style: normal; }
 
     /* ============================== COMPONENTS ============================== */
     .btn { display: inline-block; font-family: var(--font-headline); font-weight: 600; font-size: 16px; line-height: 1; letter-spacing: .5px; text-align: center; padding: 12px 32px; border: none; border-radius: 4px; cursor: pointer; transition: all .3s ease; }
     .btn-primary { background: var(--nr-primary-fill); color: #fff; }
-    .btn-primary:hover { background: var(--nr-primary-text); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(47,153,164,.3); }
+    .btn-primary:hover { background: var(--nr-primary-fill-hover); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(47,153,164,.3); }
     .btn-secondary { background: var(--nr-accent-dark); color: #fff; }
-    .btn-secondary:hover { background: var(--nr-accent-text); color: #fff; box-shadow: 0 4px 12px rgba(255,77,0,.3); }
+    .btn-secondary:hover { background: var(--nr-accent-fill-hover); color: #fff; box-shadow: 0 4px 12px rgba(255,77,0,.3); }
     .btn-outline { background: transparent; color: var(--nr-primary-text); border: 2px solid var(--nr-primary); }
     .btn-outline:hover { background: var(--nr-primary-fill); color: #fff; }
     .btn-small { padding: 8px 20px; font-size: 14px; }
@@ -236,7 +317,7 @@
     .btn:disabled, .btn[disabled] { opacity: .5; cursor: not-allowed; }
     .btn-row { display: flex; gap: var(--space-md); flex-wrap: wrap; align-items: center; }
 
-    .demo-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; transition: all .3s ease; }
+    .demo-card { background: var(--nr-surface); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; transition: all .3s ease; }
     .demo-card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px); }
     .demo-card .cc { padding: var(--space-lg); }
     .demo-card .ct { font-family: var(--font-headline); font-weight: 600; font-size: 20px; margin-bottom: var(--space-xs); }
@@ -244,7 +325,7 @@
 
     .form-group { margin-bottom: var(--space-md); }
     .form-label { display: block; font-family: var(--font-body); font-weight: 600; font-size: 14px; margin-bottom: 6px; }
-    .form-input, .form-textarea { width: 100%; font-family: var(--font-body); font-size: 16px; color: var(--nr-text); padding: 12px 16px; border: 1px solid var(--nr-border-strong); border-radius: 4px; background: #fff; transition: all .2s ease; }
+    .form-input, .form-textarea { width: 100%; font-family: var(--font-body); font-size: 16px; color: var(--nr-text); padding: 12px 16px; border: 1px solid var(--nr-border-strong); border-radius: 4px; background: var(--nr-surface); transition: all .2s ease; }
     .form-input:focus, .form-textarea:focus { outline: none; border-color: var(--nr-primary); box-shadow: 0 0 0 3px rgba(47,153,164,.1); }
     .form-input::placeholder { color: var(--nr-text-secondary); }
     .form-help { font-size: 13px; color: var(--nr-text-secondary); margin-top: 6px; }
@@ -259,26 +340,28 @@
     .demo-table tbody tr:last-child td { border-bottom: none; }
 
     .alert { border-radius: var(--radius); padding: var(--space-md) var(--space-lg); margin-bottom: var(--space-md); border-left: 4px solid; }
-    .alert-info { background: #EDF6F7; border-color: var(--nr-primary); }
-    .alert-accent { background: #FFF1EB; border-color: var(--nr-accent); }
+    .alert-info { background: var(--nr-callout-info-bg); border-color: var(--nr-primary); }
+    .alert-accent { background: var(--nr-callout-accent-bg); border-color: var(--nr-accent); }
     .alert h4 { margin: 0 0 4px; }
 
     /* --- DO / DON'T framing for intentional anti-pattern demos --- */
     .dodont { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); }
     @media (max-width: 680px) { .dodont { grid-template-columns: 1fr; } }
     .do, .dont { border-radius: var(--radius); padding: var(--space-lg); border: 2px solid; }
-    .do { border-color: var(--nr-success); background: #F3FAF5; }
-    .dont { border-color: var(--nr-error); background: #FDF5F6; }
+    .do { border-color: var(--nr-success); background: var(--nr-do-bg); }
+    .dont { border-color: var(--nr-error); background: var(--nr-dont-bg); }
     .do .tag, .dont .tag { font-family: var(--font-headline); font-weight: 700; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; display: inline-block; margin-bottom: var(--space-sm); }
-    .do .tag { color: #14602A; }
-    .dont .tag { color: #8E1922; }
-    .anti { background: #fff; border: 1px dashed var(--nr-error); border-radius: 6px; padding: var(--space-md); }
+    .do .tag { color: var(--nr-tint-pass-fg); }
+    .dont .tag { color: var(--nr-tint-fail-fg); }
+    .anti { background: var(--nr-surface); border: 1px dashed var(--nr-error); border-radius: 6px; padding: var(--space-md); }
     .specimens { display: flex; gap: 12px; flex-wrap: wrap; }
     .specimen { padding: 10px 16px; border-radius: 6px; }
+    .resolved-findings { margin-top: var(--space-lg); }
+    .resolved-findings > summary { cursor: pointer; font-family: var(--font-headline); font-weight: 600; color: var(--nr-text); padding: var(--space-sm) 0; }
 
     /* --- logo clear-space demo --- */
     .logo-demo { display: flex; gap: var(--space-2xl); flex-wrap: wrap; align-items: stretch; }
-    .logo-frame { background: #fff; border: 1px solid var(--nr-border-light); border-radius: var(--radius); padding: var(--space-lg); text-align: center; }
+    .logo-frame { background: var(--nr-surface); border: 1px solid var(--nr-border-light); border-radius: var(--radius); padding: var(--space-lg); text-align: center; }
     .logo-frame .clear { display: inline-block; padding: 25%; outline: 1px dashed var(--nr-border); }
     .logo-frame svg { display: block; }
     .logo-sizes { display: flex; gap: var(--space-lg); align-items: flex-end; flex-wrap: wrap; }
@@ -287,13 +370,13 @@
 
     /* --- checkpoints table --- */
     .cp-table { font-size: 14px; }
-    .cp-table th { background: var(--nr-text); color: #fff; font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 12px 14px; }
+    .cp-table th { background: var(--nr-footer-bg); color: var(--nr-footer-fg); font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 12px 14px; }
     .cp-table td { padding: 10px 14px; border-bottom: 1px solid var(--nr-border-light); vertical-align: top; }
     .cp-table tbody tr:hover { background: var(--nr-bg-alt); }
     .sev { font-family: var(--font-headline); font-weight: 600; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
-    .sev.error { background: #FBE9EB; color: #8E1922; }
-    .sev.warning { background: #FDF3D7; color: #6B4E03; }
-    .sev.info { background: #E4F2F4; color: var(--nr-primary-text); }
+    .sev.error { background: var(--nr-tint-fail-bg); color: var(--nr-tint-fail-fg); }
+    .sev.warning { background: var(--nr-tint-warn-bg); color: var(--nr-tint-warn-fg); }
+    .sev.info { background: var(--nr-tint-info-bg); color: var(--nr-tint-info-fg); }
     .cp-id { font-family: ui-monospace, monospace; font-weight: 600; white-space: nowrap; }
 
     /* --- findings --- */
@@ -305,16 +388,18 @@
     .finding details[open] summary { margin-bottom: var(--space-sm); }
 
     /* ============================== FOOTER ============================== */
-    .footer { background: var(--nr-text); color: #fff; padding: var(--space-3xl) 0 var(--space-lg); }
+    .footer { background: var(--nr-footer-bg); color: var(--nr-footer-fg); padding: var(--space-3xl) 0 var(--space-lg); }
     .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-xl); margin-bottom: var(--space-xl); }
-    .footer h4 { color: #fff; }
-    .footer a { color: #fff; }
-    .footer a:hover { color: #A8E4EB; }
+    .footer h4 { color: var(--nr-footer-fg); }
+    .footer a { color: var(--nr-footer-fg); }
+    .footer a:hover { color: var(--nr-footer-link-hover); }
     .footer ul { list-style: none; padding: 0; margin: 0; }
     .footer li { margin-bottom: var(--space-xs); }
     .footer-brand { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); }
+    /* The logo keeps its white plate in both schemes — recolouring it is a brand
+       violation (references/logo.md), so it gets a light surface instead. */
     .footer-brand svg { width: 40px; height: 40px; background: #fff; border-radius: 6px; padding: 4px; }
-    .footer-bottom { border-top: 1px solid rgba(255,255,255,.15); padding-top: var(--space-lg); text-align: center; color: #D5D6D9; font-size: 14px; }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,.15); padding-top: var(--space-lg); text-align: center; color: var(--nr-footer-muted); font-size: 14px; }
     .footer-bottom a { color: #fff; }
   </style>
 </head>
@@ -358,7 +443,7 @@
       <span class="pill">Logo &amp; TYPO3 rules</span>
       <span class="pill">30 checkpoints</span>
       <span class="pill">Live WCAG contrast</span>
-      <span class="pill">11 open questions</span>
+      <span class="pill" id="openQuestionCount">open questions</span>
     </div>
   </header>
 
@@ -427,11 +512,13 @@
       </div>
 
       <h3 style="margin-top:var(--space-2xl)">Live WCAG contrast verifier</h3>
-      <p style="max-width:75ch">The brand docs hard-code contrast ratios — but contrast is symmetric, so a pair cannot have two different values. These rows are computed <strong>in your browser</strong> from the hex values (WCAG 2.x relative luminance). Where the document’s stated number disagrees with the math, the mismatch is flagged. This is <a href="#F2">Finding&nbsp;F2</a>.</p>
+      <p style="max-width:75ch">The brand docs hard-code contrast ratios — but contrast is symmetric, so a pair cannot have two different values. These rows are computed <strong>in your browser</strong> from the hex values, both ways: WCAG 2.x relative luminance, and APCA (APCA-W3 0.1.9). Where the document’s stated number disagrees with the math, the mismatch is flagged.</p>
+
+      <p style="max-width:75ch"><strong>The two columns answer different questions.</strong> WCAG is the compliance gate and is not negotiable. APCA is a perceptual readability measure: its Lc is signed — positive means dark text on a light background, negative the reverse — and the size it permits depends on the font weight, so there is no single passing number. A pair can clear WCAG and still read poorly at 14px, and an APCA pass never waives a WCAG failure. The APCA reading column names the smallest regular-weight (400) text the Lc allows, from APCA’s own font table.</p>
       <div style="overflow-x:auto">
         <table class="contrast-table" id="contrastTable">
           <thead>
-            <tr><th>Foreground</th><th>Background</th><th>Computed</th><th>AA normal</th><th>AA large</th><th>Doc claim (colors.md)</th></tr>
+            <tr><th>Foreground</th><th>Background</th><th>WCAG</th><th>AA normal</th><th>AA large</th><th>APCA Lc</th><th>APCA reading</th><th>Doc claim (colors.md)</th></tr>
           </thead>
           <tbody><!-- injected by JS --></tbody>
         </table>
@@ -454,9 +541,9 @@
         </div>
       </div>
 
-      <div class="rule" style="margin-top:var(--space-lg)" data-issue-title="[Branding] CSS token names: --nr-* vs --color-*" data-issue-body="Re: token naming. SKILL.md:59 prescribes --nr-primary/--nr-accent/--nr-text/--nr-border/--nr-bg and checkpoint NB-16 greps for --nr-(primary|accent|text), but every CSS example in references/colors.md and references/typography.md uses --color-* instead. The reference snippets would fail NB-16.%0A%0AProposal: pick one canonical scheme and make references + SKILL + NB-16 agree.">
+      <div class="rule" style="margin-top:var(--space-lg)" data-issue-title="[Branding] CSS token names" data-issue-body="Re: token naming — SKILL.md, checkpoint NB-16, the references and the templates all use --nr-*.%0A%0AQuestion / proposal:">
         <div class="rule-head"><h4>Canonical CSS variables</h4><a class="src" href="#F1">→ Finding F1</a></div>
-        <p>SKILL.md prescribes <code>--nr-primary</code>, <code>--nr-accent</code>, <code>--nr-text</code>, <code>--nr-border</code>, <code>--nr-bg</code> and NB-16 enforces them. (Note: the reference files’ own examples use <code>--color-*</code> instead — see Open Questions.)</p>
+        <p>SKILL.md prescribes <code>--nr-primary</code>, <code>--nr-accent</code>, <code>--nr-text</code>, <code>--nr-border</code>, <code>--nr-bg</code> and NB-16 enforces them. The references and templates use the same names, with the role suffixes the contrast rules need: <code>-fill</code> for a surface under white text, <code>-text</code> for type at body size, <code>-deep</code> for its hover, <code>-strong</code> for the boundary of a control.</p>
       </div>
     </div>
   </section>
@@ -825,6 +912,44 @@
       return td;
     }
 
+    /* APCA-W3 0.1.9 (github.com/Myndex/apca-w3, W3 licence) — same coefficients as
+       WCAG; the differences are the transfer curve, the asymmetric polarity and the
+       font size/weight input. Mirrors scripts/contrast-audit.cjs. */
+    var SA98G = { mainTRC: 2.4, sRco: 0.2126729, sGco: 0.7151522, sBco: 0.0721750,
+      normBG: 0.56, normTXT: 0.57, revTXT: 0.62, revBG: 0.65, blkThrs: 0.022,
+      blkClmp: 1.414, scaleBoW: 1.14, scaleWoB: 1.14, loBoWoffset: 0.027,
+      loWoBoffset: 0.027, deltaYmin: 0.0005, loClip: 0.1 };
+    function apcaY(hex) {
+      var n = hex.replace("#", "");
+      var e = function (v) { return Math.pow(parseInt(v, 16) / 255, SA98G.mainTRC); };
+      return SA98G.sRco * e(n.substr(0, 2)) + SA98G.sGco * e(n.substr(2, 2)) + SA98G.sBco * e(n.substr(4, 2));
+    }
+    function apcaLc(fg, bg) {
+      var t = apcaY(fg), b = apcaY(bg), sapc, out;
+      t = t > SA98G.blkThrs ? t : t + Math.pow(SA98G.blkThrs - t, SA98G.blkClmp);
+      b = b > SA98G.blkThrs ? b : b + Math.pow(SA98G.blkThrs - b, SA98G.blkClmp);
+      if (Math.abs(b - t) < SA98G.deltaYmin) return 0;
+      if (b > t) {
+        sapc = (Math.pow(b, SA98G.normBG) - Math.pow(t, SA98G.normTXT)) * SA98G.scaleBoW;
+        out = sapc < SA98G.loClip ? 0 : sapc - SA98G.loBoWoffset;
+      } else {
+        sapc = (Math.pow(b, SA98G.revBG) - Math.pow(t, SA98G.revTXT)) * SA98G.scaleWoB;
+        out = sapc > -SA98G.loClip ? 0 : sapc + SA98G.loWoBoffset;
+      }
+      return out * 100;
+    }
+    /* fontMatrixAscend, weight-400 column: the smallest px size each Lc permits.
+       777 = non-text only. */
+    var APCA_400 = [[30,108],[35,96],[40,60],[45,42],[50,32],[55,28],[60,24],[65,21.75],
+      [70,19.5],[75,18],[80,17.25],[85,16.5],[90,16],[95,15.5],[100,15],[105,14.5],
+      [110,14],[115,12.5],[120,11],[125,10]];
+    function apcaReading(lc) {
+      var a = Math.abs(lc), i;
+      if (a < 29.5) return "non-text only";
+      for (i = APCA_400.length - 1; i >= 0; i--) if (a >= APCA_400[i][0]) return "≥ " + APCA_400[i][1] + "px at 400";
+      return "non-text only";
+    }
+
     var pairs = [
       { fg: "#585961", bg: "#FFFFFF", fgN: "Anthracite", bgN: "White", claim: "6.96:1 — AA all text" },
       { fg: "#FFFFFF", bg: "#2F99A4", fgN: "White", bgN: "Turquoise", claim: "3.38:1 — large text & UI only" },
@@ -836,7 +961,13 @@
       { fg: "#9A2E00", bg: "#FFFFFF", fgN: "Accent text", bgN: "White", claim: "7.6:1 — AA all text" },
       { fg: "#6E6F78", bg: "#FFFFFF", fgN: "Secondary grey", bgN: "White", claim: "4.99:1 — help & meta text" },
       { fg: "#8A8B93", bg: "#FFFFFF", fgN: "Control border", bgN: "White", claim: "3.39:1 — non-text, SC 1.4.11" },
-      { fg: "#CCCDCC", bg: "#FFFFFF", fgN: "Light grey", bgN: "White", claim: "1.59:1 — fails, dividers only" }
+      { fg: "#CCCDCC", bg: "#FFFFFF", fgN: "Light grey", bgN: "White", claim: "1.59:1 — fails, dividers only" },
+      { fg: "#E8EDEF", bg: "#1E2429", fgN: "Dark: body text", bgN: "Dark surface", claim: "dark scheme — body copy" },
+      { fg: "#A9B2B8", bg: "#1E2429", fgN: "Dark: secondary", bgN: "Dark surface", claim: "dark scheme — help & meta" },
+      { fg: "#5FC6D2", bg: "#1E2429", fgN: "Dark: links", bgN: "Dark surface", claim: "dark scheme — links & labels" },
+      { fg: "#2F99A4", bg: "#1E2429", fgN: "Dark: brand hue", bgN: "Dark surface", claim: "dark scheme — non-text only" },
+      { fg: "#FFFFFF", bg: "#1B6C74", fgN: "White", bgN: "Dark teal fill", claim: "dark scheme — fill under white text" },
+      { fg: "#6B7680", bg: "#1E2429", fgN: "Dark: control border", bgN: "Dark surface", claim: "dark scheme — non-text, SC 1.4.11" }
     ];
     /* ---------- do / don't specimens ---------- */
     var specimens = {
@@ -876,6 +1007,10 @@
       tr.appendChild(tdR);
       var tdN = el("td"); tdN.appendChild(badge(r >= 4.5)); tr.appendChild(tdN);
       var tdL = el("td"); tdL.appendChild(badge(r >= 3.0)); tr.appendChild(tdL);
+      var lc = apcaLc(p.fg, p.bg);
+      tr.appendChild(el("td", "ratio", (lc > 0 ? "+" : "") + lc.toFixed(1)));
+      tr.appendChild(el("td", null, apcaReading(lc)));
+
       var tdC = el("td", "doc-claim", p.claim + " ");
       var m = p.claim.match(/(\d+\.\d+):1/);
       if (m && Math.abs(parseFloat(m[1]) - r) >= 0.25) {
@@ -934,11 +1069,11 @@
 
     /* ---------- findings ---------- */
     var findings = [
-      { id: "F1", kind: "Contradiction", title: "CSS token names disagree: --nr-* vs --color-*",
-        cite: "SKILL.md:59 · references/colors.md:274-300 · references/typography.md:903 · checkpoints.yaml:152 (NB-16)",
-        body: "SKILL.md:59 prescribes --nr-primary/--nr-accent/--nr-text/--nr-border/--nr-bg, and checkpoint NB-16 greps for --nr-(primary|accent|text). But every CSS example in references/colors.md and references/typography.md defines --color-primary/--color-accent/--color-text-primary instead. A project that copies the reference snippets verbatim would FAIL NB-16.",
-        ask: "Pick one canonical scheme. Either rewrite the reference CSS to --nr-*, or relax NB-16 to accept both. Add --nr-bg / --nr-border values while doing so (see F6)." },
-      { id: "F2", kind: "Resolved", title: "Hard-coded contrast ratios were internally inconsistent (and wrong)",
+      { id: "F1", kind: "Resolved", resolved: true, title: "CSS token names disagreed: --nr-* vs --color-*",
+        cite: "SKILL.md \u00b7 references/colors.md \u00b7 templates/styles.css \u00b7 checkpoints.yaml (NB-16)",
+        body: "SKILL.md prescribed --nr-primary/--nr-accent/--nr-text/--nr-border/--nr-bg and checkpoint NB-16 grepped for --nr-(primary|accent|text), while every CSS example in the references and templates defined --color-* instead \u2014 a project copying the reference snippets verbatim would have failed NB-16. The SKILL wins: a design system that ships its tokens into someone else's stylesheet needs a vendor prefix, the same reason Bootstrap uses --bs-. colors.md, styles.css, web-design.md, the example page and this page now all use --nr-*, carrying the role suffixes the contrast rules need (-fill, -text, -deep, -strong). NB-16 is unchanged and now passes on the reference snippets themselves.",
+        ask: "Done. Kept as the record of the divergence." },
+      { id: "F2", kind: "Resolved", resolved: true, title: "Hard-coded contrast ratios were internally inconsistent (and wrong)",
         cite: "references/colors.md",
         body: "Contrast is symmetric, yet the doc used to list Turquoise-on-white as 3.8:1 and White-on-turquoise as 4.5:1 — the same pair, two numbers; same for orange (3.9 vs 3.2). Both are now the measured 3.38:1 and 3.33:1, with the verdict corrected to large text and UI only, and the doc names the text-bearing variants (#257880 for a fill under white text, #15585E for links and small labels). The verifier above compares against the current document, so this table should show no mismatch — if it does, the doc has drifted again.",
         ask: "Nothing outstanding. Kept here as the record of what the numbers used to say." },
@@ -954,33 +1089,38 @@
         cite: "SKILL.md:43 (40-56px in headers) · references/logo.md:51 (>=120px when a visual anchor)",
         body: "SKILL.md recommends 40-56px in headers; logo.md recommends >=120px width 'when the logo is a visual anchor'. Both use the word 'recommended' without saying which context wins, so an implementer has no single answer for 'how big should the logo be?'",
         ask: "State the rule by context explicitly: e.g. 40-56px in nav headers, >=120px when the logo is the hero/anchor element." },
-      { id: "F6", kind: "Undefined", title: "--nr-bg and --nr-border are named but never given values",
-        cite: "SKILL.md:59",
-        body: "SKILL.md lists --nr-bg and --nr-border as preferred variables, but no hex value is defined for either anywhere in the skill. Implementers must guess. The reference files only define --color-background (#FFFFFF), --color-background-alt (#F5F5F5), --color-border (#CCCDCC) and --color-border-light (#E5E5E5) — under different names (see F1).",
-        ask: "Define canonical values for --nr-bg, --nr-border (and --nr-bg-alt) in the SKILL or a tokens reference." },
-      { id: "F7", kind: "Undefined", title: "#F5F5F5 is used everywhere but never defined as a brand color",
-        cite: "references/colors.md:146, 202, 248, 290",
-        body: "The off-white #F5F5F5 is used for card backgrounds, section backgrounds and --color-background-alt throughout colors.md and web-design.md, but it has no swatch, no name, and no technical spec in the palette. The only documented grey is #CCCDCC. It is a load-bearing surface color with no definition.",
-        ask: "Add #F5F5F5 to the palette as a named neutral (e.g. 'Off-white / surface-alt') with its spec, or replace its uses with a defined token." },
-      { id: "F8", kind: "Accessibility gap", title: "Secondary text #8A8B93 fails AA for the sizes it is used at",
-        cite: "references/colors.md:289 · references/web-design.md (.form-help, ::placeholder)",
-        body: "--color-text-secondary (#8A8B93) is applied to help text and placeholders, which are <18px. Its computed contrast on white is ~3.4:1 — below the 4.5:1 AA threshold for normal text (see verifier above). Meanwhile colors.md's own 'Avoid' list forbids low-contrast text on white. The token quietly contradicts the accessibility rule.",
-        ask: "Either darken the secondary text token to reach 4.5:1, or restrict it to >=18px contexts and say so." },
+      { id: "F6", kind: "Resolved", resolved: true, title: "--nr-bg and --nr-border were named but never given values",
+        cite: "SKILL.md \u00a7 Core Brand System \u00b7 references/colors.md",
+        body: "SKILL.md listed --nr-bg and --nr-border as preferred variables without a hex value for either, so implementers had to guess. The canonical set is now written out with values: --nr-bg #FFFFFF, --nr-bg-alt #F5F5F5, --nr-border #CCCDCC (dividers and decoration only, 1.59:1), --nr-border-strong #8A8B93 (the visible boundary of an interactive control, which SC 1.4.11 requires to reach 3:1), --nr-border-light #E5E5E5.",
+        ask: "Done. Kept as the record." },
+      { id: "F7", kind: "Resolved", resolved: true, title: "#F5F5F5 was used everywhere but never defined as a brand colour",
+        cite: "SKILL.md \u00a7 Core Brand System \u00b7 references/colors.md",
+        body: "The off-white was load-bearing for card and section surfaces with no swatch, no name and no spec \u2014 the only documented grey was #CCCDCC. It is now a named token with a value in the canonical set: --nr-bg-alt #F5F5F5, alongside --nr-bg #FFFFFF and --nr-surface for raised surfaces. The dark scheme names its counterparts too (#14181B, #1A2024, #1E2429).",
+        ask: "Done. Kept as the record." },
+      { id: "F8", kind: "Resolved", resolved: true, title: "Secondary text #8A8B93 failed AA for the sizes it was used at",
+        cite: "references/colors.md \u00b7 templates/styles.css \u00b7 references/web-design.md",
+        body: "--nr-text-secondary was #8A8B93, 3.39:1 on white and 3.11:1 on #F5F5F5, applied to help text, placeholders and captions below 18px \u2014 while colors.md's own \"Avoid\" list forbids low-contrast text on white. The token is #6E6F78 now (4.99:1 on white, 4.58:1 on #F5F5F5). #8A8B93 kept its job, under the name that says what it is: --nr-border-strong, the visible boundary of an interactive control, where SC 1.4.11 asks 3:1 rather than 4.5:1.",
+        ask: "Done. Kept as the record." },
       { id: "F9", kind: "Ambiguity", title: "'Orange must not dominate' has no measurable threshold",
         cite: "SKILL.md:60 · references/colors.md:62",
         body: "The rule 'accent orange is highlight-only and must not dominate surfaces' is qualitative — no percentage, area budget, or element allow-list. Two reviewers can disagree on whether a layout complies, and LLM checkpoints NB-22/NB-25 have no objective bar to test against.",
         ask: "Add a concrete heuristic (e.g. 'orange <= ~10% of visible surface; never a section/background fill; allowed on borders, small CTAs, badges')." },
-      { id: "F10", kind: "Inconsistency", title: "License guidance is inconsistent across the skill",
-        cite: "typo3-extension-branding.md:68,91,144 (AGPL/GPL) · README-branding.md & this repo (MIT + CC-BY-SA-4.0)",
-        body: "TYPO3 extension branding recommends AGPL-3.0-or-later (or GPL-2.0-or-later) for extensions, while the skill repo and README-branding examples use split MIT + CC-BY-SA-4.0. There is no statement of which license applies to which artifact type, so 'the Netresearch license' is ambiguous.",
-        ask: "State the licensing policy by artifact type: e.g. TYPO3 extensions -> (A)GPL; skills/tools -> MIT code + CC-BY-SA-4.0 content." },
+      { id: "F10", kind: "Resolved", resolved: true, title: "License guidance was inconsistent across the skill",
+        cite: "SKILL.md \u00a7 Licensing by artifact type \u00b7 typo3-extension-branding.md:108 \u00b7 README-branding.md:73",
+        body: "TYPO3 extension branding recommended AGPL-3.0-or-later (or GPL-2.0-or-later) while the skill repo and README-branding examples use split MIT + CC-BY-SA-4.0, with no statement of which applies to what. SKILL.md now carries the policy by artifact type: TYPO3 extensions AGPL-3.0-or-later (GPL-2.0-or-later beside GPL-2.0-only code, since TYPO3 core is GPL-2.0-or-later and an extension inherits that); skills, libraries, CLIs and internal tools split MIT for code and CC-BY-SA-4.0 for content, SPDX (MIT AND CC-BY-SA-4.0); brand assets CC-BY-SA-4.0 plus the trademark rules in logo.md, because a licence does not permit recolouring. Both reference files point at that table.",
+        ask: "Done. Kept as the record of what was ambiguous." },
       { id: "F11", kind: "Minor inconsistency", title: "Footer URL trailing slash: required vs optional",
         cite: "SKILL.md:44 & references/logo.md (with slash) · checkpoints.yaml NB-25 (slash optional)",
         body: "The hard validity rule and logo placement spec both write the footer link as https://www.netresearch.de/ (trailing slash), but NB-25 explicitly accepts the URL with or without the slash. Low-stakes, but the 'exact' framing of the hard rule and the relaxed checkpoint don't match.",
         ask: "Align the wording — either declare the slash optional in the hard rule too, or have NB-25 require it." }
     ];
     var fl = document.getElementById("findingsList");
-    findings.forEach(function (f) {
+    var openFindings = findings.filter(function (f) { return !f.resolved; });
+    var doneFindings = findings.filter(function (f) { return f.resolved; });
+    var counter = document.getElementById("openQuestionCount");
+    if (counter) counter.textContent = openFindings.length + " open questions";
+
+    function renderFinding(f, host) {
       var card = el("div", "rule finding");
       card.id = f.id;
 
@@ -1005,8 +1145,19 @@
       det.appendChild(ap);
       card.appendChild(det);
 
-      fl.appendChild(card);
-    });
+      host.appendChild(card);
+    }
+
+    openFindings.forEach(function (f) { renderFinding(f, fl); });
+
+    if (doneFindings.length) {
+      var box = el("details", "resolved-findings");
+      box.appendChild(el("summary", null, doneFindings.length + " resolved — kept as the record"));
+      var inner = el("div");
+      doneFindings.forEach(function (f) { renderFinding(f, inner); });
+      box.appendChild(inner);
+      fl.appendChild(box);
+    }
   })();
   </script>
 </body>

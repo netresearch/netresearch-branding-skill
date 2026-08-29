@@ -56,7 +56,27 @@ Operationalize references in every branded output:
 
 ## Core Brand System
 
-- CSS variables preferred: `--nr-primary`, `--nr-accent`, `--nr-text`, `--nr-border`, `--nr-bg`
+- CSS variables are `--nr-*` — the vendor prefix is the point: these tokens land in a
+  project's own stylesheet, where `--color-primary` may already mean something else.
+  Checkpoint NB-16 greps for them. Canonical set, with values:
+
+  | Token | Value | Role |
+  |---|---|---|
+  | `--nr-primary` | `#2F99A4` | surfaces, borders, icons, chart series, display type ≥24px — 3.38:1, not a text colour at body size |
+  | `--nr-primary-fill` | `#257880` | a filled surface carrying white text (5.15:1) |
+  | `--nr-primary-text` | `#15585E` | links, labels, small type on white (8.11:1) |
+  | `--nr-primary-deep` | `#0A5057` | hover for the above (9.14:1) |
+  | `--nr-accent` | `#FF4D00` | accent as a fill or marker — 3.33:1, never body text |
+  | `--nr-accent-dark` | `#CC3D00` | accent fill carrying white text (4.96:1) |
+  | `--nr-accent-text` | `#9A2E00` | accent emphasis in text (7.60:1) |
+  | `--nr-text` | `#585961` | body copy (6.96:1) |
+  | `--nr-text-secondary` | `#6E6F78` | help, meta, captions (4.99:1) |
+  | `--nr-bg` / `--nr-bg-alt` | `#FFFFFF` / `#F5F5F5` | page and section background |
+  | `--nr-border` | `#CCCDCC` | dividers and decoration only (1.59:1) |
+  | `--nr-border-strong` | `#8A8B93` | the visible boundary of an interactive control — SC 1.4.11 wants 3:1 |
+  | `--nr-border-light` | `#E5E5E5` | hairlines |
+
+  Dark surfaces use a different set entirely — see `references/colors.md`.
 - Accent orange is highlight-only and must not dominate surfaces
 - Accessibility: WCAG AA minimum contrast and semantic structure
 - Footer branding is mandatory in user-facing branded pages
@@ -74,6 +94,19 @@ Operationalize references in every branded output:
 - `assets/markdown-pdf.css` — branded stylesheet for `markdown-to-pdf-skill`; apply via `--css`. Its `.page-header`/`.page-footer` running elements aren't emitted by `convert.py`; the caller must supply HTML containing them (see that skill's `SKILL.md`).
 - `assets/markdown-pdf-logo.svg` — standalone Netresearch logo (brand-teal/grey) for general use.
 - `assets/markdown-pdf-logo-white.svg` — white-fill variant for the `.page-header` running header, where the teal/grey logo has no contrast on the teal background (`--nr-primary`). The sanctioned exception to "no recoloring" — do not use elsewhere.
+
+## Licensing by artifact type
+
+"The Netresearch licence" is not one licence. Pick by what the artifact is:
+
+| Artifact | Licence |
+|---|---|
+| TYPO3 extension (`netresearch/t3x-*`, any `typo3-cms-extension`) | `AGPL-3.0-or-later`, or `GPL-2.0-or-later` where the extension must sit alongside GPL-2.0-only code — TYPO3 core is GPL-2.0-or-later and an extension inherits that obligation |
+| Agent skill, library, CLI, internal tool | Split: code `MIT`, prose and reference content `CC-BY-SA-4.0`, shipped as `LICENSE-MIT` + `LICENSE-CC-BY-SA-4.0` with the SPDX expression `(MIT AND CC-BY-SA-4.0)` |
+| Brand assets (logo files, colour specs, this skill's references) | `CC-BY-SA-4.0`, and the logo additionally carries the trademark rules in `references/logo.md` — a licence does not permit recolouring or distortion |
+
+Details for each: `references/typo3-extension-branding.md` for extensions,
+`references/README-branding.md` for skills and tools.
 
 ## No editorializing
 

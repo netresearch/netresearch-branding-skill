@@ -30,17 +30,21 @@ Complete color palette with technical specifications and usage guidelines.
 **Web Implementation:**
 ```css
 :root {
-  --color-primary: #2F99A4;
-  --color-primary-rgb: 47, 153, 164;
+  --nr-primary: #2F99A4;       /* surfaces, borders, icons, display type */
+  --nr-primary-rgb: 47, 153, 164;
+  --nr-primary-fill: #257880;  /* a fill under white text: 5.15:1 */
+  --nr-primary-text: #15585E;  /* links and labels on white: 8.11:1 */
 }
 
+/* The brand hue is 3.38:1 on white. A 16px button label is normal text and
+   needs 4.5:1, so a filled button takes the -fill value, not --nr-primary. */
 .btn-primary {
-  background-color: var(--color-primary);
+  background-color: var(--nr-primary-fill);
   color: #FFFFFF;
 }
 
 .link-primary {
-  color: var(--color-primary);
+  color: var(--nr-primary-text);
 }
 ```
 
@@ -70,17 +74,18 @@ Complete color palette with technical specifications and usage guidelines.
 **Web Implementation:**
 ```css
 :root {
-  --color-accent: #FF4D00;
-  --color-accent-rgb: 255, 77, 0;
+  --nr-accent: #FF4D00;
+  --nr-accent-rgb: 255, 77, 0;
 }
 
+/* Same rule for the accent: #FF4D00 is 3.33:1 under white text. */
 .btn-secondary {
-  background-color: var(--color-accent);
+  background-color: var(--nr-accent-dark);
   color: #FFFFFF;
 }
 
 .highlight {
-  border-left: 4px solid var(--color-accent);
+  border-left: 4px solid var(--nr-accent);
 }
 ```
 
@@ -111,11 +116,11 @@ Complete color palette with technical specifications and usage guidelines.
 **Web Implementation:**
 ```css
 :root {
-  --color-text-primary: #585961;
+  --nr-text: #585961;
 }
 
 body, p, h1, h2, h3 {
-  color: var(--color-text-primary);
+  color: var(--nr-text);
 }
 ```
 
@@ -143,13 +148,14 @@ body, p, h1, h2, h3 {
 **Web Implementation:**
 ```css
 :root {
-  --color-background-light: #CCCDCC;
-  --color-border-light: #CCCDCC;
+  --nr-border: #CCCDCC;        /* dividers and decoration */
+  --nr-border-strong: #8A8B93; /* the boundary of an interactive control */
+  --nr-border-light: #E5E5E5;  /* hairlines */
 }
 
 .card {
   background-color: #F5F5F5;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--nr-border-light);
 }
 ```
 
@@ -307,14 +313,31 @@ wrong way: `#15585E` is *less* legible there, not more. Lift the same hues
 instead. The link and accent values are the ones already verified against
 netresearch.de — see "WCAG-AAA contrast variants" below.
 
-| Role | Token | Measured |
-|---|---|---|
-| Body text | `#E8EDEF` | 15.1:1 on `#14181B` |
-| Links, small labels, headings | `#5FC6D2` | 8.9:1 on `#14181B`, 5.7:1 on a lifted `#363a40` |
-| Brand accents | `#7FD6E0` | 6.9:1 on `#363a40` |
-| Fills carrying white text | `#1B6C74` | 6.1:1 |
-| Accent text on its own tint | `#FF7A45` | 4.8:1 on `#4a2d26` (`#FF4D00` is 3.7:1 there) |
-| Borders, rules, chart series | `#2F99A4` | non-text, 3:1 applies |
+| Role | Token | Value | Measured |
+|---|---|---|---|
+| Page background | `--nr-bg` | `#14181B` | — |
+| Section background | `--nr-bg-alt` | `#1A2024` | — |
+| Card / table surface | `--nr-surface` | `#1E2429` | — |
+| Body text | `--nr-text` | `#E8EDEF` | 15.1:1 on `#14181B`, 13.3:1 on the surface |
+| Help, meta, captions | `--nr-text-secondary` | `#A9B2B8` | 8.3:1 / 7.3:1 |
+| Links, small labels, headings | `--nr-primary-text` | `#5FC6D2` | 8.9:1 on `#14181B`, 7.8:1 on the surface, 5.7:1 on a lifted `#363a40` |
+| Hover for those — it lifts, it does not darken | `--nr-primary-deep` | `#7FD6E0` | 10.7:1 on `#14181B`, 6.9:1 on `#363a40` |
+| Fills carrying white text | `--nr-primary-fill` | `#1B6C74` | 6.1:1 |
+| Accent text | `--nr-accent-text` | `#FF9166` | 8.1:1 on `#14181B`, 7.1:1 on the surface |
+| Accent text on its own tint | — | `#FF7A45` | 4.8:1 on `#4a2d26` (`#FF4D00` is 3.7:1 there) |
+| Control boundary (SC 1.4.11) | `--nr-border-strong` | `#6B7680` | 3.9:1 / 3.4:1 — non-text, 3:1 applies |
+| Dividers, rules | `--nr-border` | `#2A3238` | decoration only |
+| Borders, icons, chart series | `--nr-primary` | `#2F99A4` | non-text, 3:1 applies |
+| Footer surface | `--nr-footer-bg` | `#10161A` | `#E8EDEF` on it: 15.5:1 |
+
+Status tints on dark, opaque (a translucent tint has no ratio of its own):
+
+| Tint | Background | Foreground | Measured |
+|---|---|---|---|
+| Pass | `#12301C` | `#8FE0A6` | 9.1:1 |
+| Fail | `#3A1418` | `#FFA7AE` | 8.8:1 |
+| Warning | `#33280A` | `#F2CE5C` | 9.5:1 |
+| Info | `#0E2E33` | `#7FD6E0` | 8.6:1 |
 
 Two traps this table exists for:
 
@@ -366,31 +389,31 @@ It needs resolved CSS and a compositing model, so it belongs in a browser:
 ```css
 :root {
   /* Primary Colors */
-  --color-primary: #2F99A4;
-  --color-primary-rgb: 47, 153, 164;
-  --color-primary-light: rgba(47, 153, 164, 0.1);
-  --color-primary-dark: #257880;
+  --nr-primary: #2F99A4;
+  --nr-primary-rgb: 47, 153, 164;
+  --nr-primary-light: rgba(47, 153, 164, 0.1);
+  --nr-primary-dark: #257880;
 
   /* Accent Colors */
-  --color-accent: #FF4D00;
-  --color-accent-rgb: 255, 77, 0;
-  --color-accent-light: rgba(255, 77, 0, 0.1);
-  --color-accent-dark: #CC3D00;
+  --nr-accent: #FF4D00;
+  --nr-accent-rgb: 255, 77, 0;
+  --nr-accent-light: rgba(255, 77, 0, 0.1);
+  --nr-accent-dark: #CC3D00;
 
   /* Neutral Colors */
-  --color-text-primary: #585961;
-  --color-text-secondary: #8A8B93;
-  --color-background: #FFFFFF;
-  --color-background-alt: #F5F5F5;
-  --color-border: #CCCDCC;        /* dividers, decoration */
-  --color-border-strong: #8A8B93; /* boundaries of interactive controls, 3:1 */
-  --color-border-light: #E5E5E5;
+  --nr-text: #585961;
+  --nr-text-secondary: #6E6F78;
+  --nr-bg: #FFFFFF;
+  --nr-bg-alt: #F5F5F5;
+  --nr-border: #CCCDCC;        /* dividers, decoration */
+  --nr-border-strong: #8A8B93; /* boundaries of interactive controls, 3:1 */
+  --nr-border-light: #E5E5E5;
 
   /* Semantic Colors */
-  --color-success: #28A745;
-  --color-warning: #FFC107;
-  --color-error: #DC3545;
-  --color-info: var(--color-primary);
+  --nr-success: #28A745;
+  --nr-warning: #FFC107;
+  --nr-error: #DC3545;
+  --nr-info: var(--nr-primary);
 }
 ```
 
@@ -399,27 +422,33 @@ It needs resolved CSS and a compositing model, so it belongs in a browser:
 ## Sass/SCSS Variables
 
 ```scss
-// Primary Colors
-$color-primary: #2F99A4;
-$color-accent: #FF4D00;
+// Same names as the custom properties, same roles.
+// Brand hues — surfaces, borders, icons, display type
+$nr-primary: #2F99A4;
+$nr-accent: #FF4D00;
 
-// Neutral Colors
-$color-anthracite: #585961;
-$color-light-grey: #CCCDCC;
-$color-white: #FFFFFF;
+// The text-bearing variants. Never derive these with lighten()/darken():
+// a computed value has no measured ratio, and lighten($nr-text, 15%) lands
+// around #7C7E88, which is 4.0:1 on white and fails AA for body text.
+$nr-primary-fill: #257880;  // white text on it: 5.15:1
+$nr-primary-text: #15585E;  // on white: 8.11:1
+$nr-primary-deep: #0A5057;  // hover: 9.14:1
+$nr-accent-dark: #CC3D00;   // white text on it: 4.96:1
+$nr-accent-text: #9A2E00;   // on white: 7.60:1
+
+// Neutral
+$nr-text: #585961;           // 6.96:1
+$nr-text-secondary: #6E6F78; // 4.99:1 on white, 4.58:1 on #F5F5F5
+$nr-white: #FFFFFF;
 
 // Backgrounds
-$color-bg-primary: $color-white;
-$color-bg-secondary: #F5F5F5;
-
-// Text
-$color-text-primary: $color-anthracite;
-$color-text-secondary: lighten($color-anthracite, 15%);
+$nr-bg: $nr-white;
+$nr-bg-alt: #F5F5F5;
 
 // Borders
-$color-border: $color-light-grey;
-$color-border-strong: #8A8B93;
-$color-border-light: #E5E5E5;
+$nr-border: #CCCDCC;        // dividers, decoration
+$nr-border-strong: #8A8B93; // boundary of an interactive control, 3:1
+$nr-border-light: #E5E5E5;
 ```
 
 ---

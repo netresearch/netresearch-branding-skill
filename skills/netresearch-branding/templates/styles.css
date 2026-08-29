@@ -12,25 +12,44 @@
      fills, borders, icons and display type, a WCAG AA failure for anything
      smaller than 24px (18.66px bold). The -fill and -text variants below carry
      text; see references/colors.md for the role table and the measured ratios. */
-  --color-primary: #2F99A4;
-  --color-primary-rgb: 47, 153, 164;
-  --color-primary-dark: #257880;
-  --color-primary-fill: #257880; /* white text on it: 5.15:1 */
-  --color-primary-text: #15585E; /* on white: 8.11:1 */
-  --color-primary-deep: #0A5057; /* hover/darkest step, on white: 9.14:1 */
-  --color-accent: #FF4D00;
-  --color-accent-rgb: 255, 77, 0;
-  --color-accent-dark: #CC3D00; /* white text on it: 4.96:1 */
-  --color-accent-text: #9A2E00; /* on white: 7.60:1 */
+  --nr-primary: #2F99A4;
+  --nr-primary-rgb: 47, 153, 164;
+  --nr-primary-dark: #257880;
+  --nr-primary-fill: #257880; /* white text on it: 5.15:1 */
+  --nr-primary-text: #15585E; /* on white: 8.11:1 */
+  --nr-primary-deep: #0A5057; /* hover/darkest step, on white: 9.14:1 */
+  /* Gradient stops get their own tokens rather than borrowing the text ones: a
+     stop is a surface under white text, and a text token is free to lift on a
+     dark scheme, where white over it would fail with nothing able to measure it. */
+  --nr-hero-from: #257880;    /* white on it: 5.15:1 */
+  --nr-hero-to: #15585E;      /* white on it: 8.11:1 */
+  /* A button's hover is a surface too, for the same reason. */
+  --nr-primary-fill-hover: #15585E;
+  --nr-accent-fill-hover: #9A2E00;
+  --nr-accent: #FF4D00;
+  --nr-accent-rgb: 255, 77, 0;
+  --nr-accent-dark: #CC3D00; /* white text on it: 4.96:1 */
+  --nr-accent-text: #9A2E00; /* on white: 7.60:1 */
 
   /* Neutral Colors */
-  --color-text-primary: #585961;
-  --color-text-secondary: #6E6F78; /* 4.99:1 on white, 4.58:1 on #F5F5F5 */
-  --color-background: #FFFFFF;
-  --color-background-alt: #F5F5F5;
-  --color-border: #CCCDCC;        /* dividers and decoration only: 1.59:1 on white */
-  --color-border-strong: #8A8B93; /* boundaries of interactive controls: 3.39:1 (SC 1.4.11 needs 3:1) */
-  --color-border-light: #E5E5E5;
+  --nr-text: #585961;
+  --nr-text-secondary: #6E6F78; /* 4.99:1 on white, 4.58:1 on #F5F5F5 */
+  --nr-bg: #FFFFFF;
+  --nr-bg-alt: #F5F5F5;
+  --nr-surface: #FFFFFF;      /* cards and other raised surfaces */
+  --nr-on-fill: #FFFFFF;      /* label colour ON a filled surface — white in BOTH
+                                 schemes, which is why it is not --nr-bg */
+  --nr-on-light: #15585E;     /* teal label on a constant white plate (the outline
+                                 button's hover) — also constant, for the mirror
+                                 reason: --nr-primary-text lifts on a dark scheme
+                                 and would give 2.00:1 there */
+  --nr-footer-bg: #585961;    /* the mandatory footer, per SKILL.md */
+  --nr-footer-fg: #FFFFFF;
+  --nr-footer-muted: #D5D6D9; /* 4.79:1 on the footer */
+  --nr-footer-link-hover: #A8E4EB; /* 4.96:1 on the footer */
+  --nr-border: #CCCDCC;        /* dividers and decoration only: 1.59:1 on white */
+  --nr-border-strong: #8A8B93; /* boundaries of interactive controls: 3.39:1 (SC 1.4.11 needs 3:1) */
+  --nr-border-light: #E5E5E5;
 
   /* Typography */
   --font-headline: 'Raleway', sans-serif;
@@ -65,6 +84,48 @@
 }
 
 /* ============================================
+   DARK SCHEME
+   Values from references/colors.md. The brand hues do not survive a dark
+   surface as text — #2F99A4 is 5.28:1 on #14181B but 3.38:1 on a lifted row —
+   so the text roles lift and the non-text roles keep the brand hue. Every pair
+   below is measured; the audit runs `--scheme dark` over this.
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --nr-bg: #14181B;
+    --nr-bg-alt: #1A2024;
+    --nr-surface: #1E2429;
+
+    --nr-text-primary: #E8EDEF;
+    --nr-text: #E8EDEF;             /* 13.28:1 on the surface */
+    --nr-text-secondary: #A9B2B8;   /* 7.28:1 */
+
+    --nr-primary-fill: #1B6C74;     /* white text on it: 6.10:1 */
+    --nr-primary-text: #5FC6D2;     /* 7.83:1 on the surface */
+    --nr-primary-deep: #7FD6E0;     /* hover lifts here, it does not darken */
+    --nr-accent-text: #FF9166;      /* 7.09:1 */
+
+    --nr-hero-from: #1B6C74;        /* white on it: 6.10:1 */
+    --nr-hero-to: #0F4A50;          /* white on it: 9.93:1 */
+    --nr-primary-fill-hover: #0F4A50;
+    --nr-accent-fill-hover: #B23600; /* white on it: 6.14:1 */
+
+    --nr-border: #2A3238;
+    --nr-border-strong: #6B7680;    /* 3.38:1 on the surface, SC 1.4.11 */
+    --nr-border-light: #232A30;
+
+    --nr-footer-bg: #10161A;
+    --nr-footer-fg: #E8EDEF;
+    --nr-footer-muted: #A9B2B8;
+    --nr-footer-link-hover: #7FD6E0;
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* ============================================
    RESET & BASE STYLES
    ============================================ */
 * {
@@ -81,8 +142,8 @@ body {
   font-family: var(--font-body);
   font-size: var(--font-size-base);
   line-height: 1.6;
-  color: var(--color-text-primary);
-  background-color: var(--color-background);
+  color: var(--nr-text);
+  background-color: var(--nr-bg);
 }
 
 /* ============================================
@@ -92,7 +153,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-headline);
   font-weight: 700;
   line-height: 1.2;
-  color: var(--color-text-primary);
+  color: var(--nr-text);
 }
 
 h1 {
@@ -128,13 +189,13 @@ p {
 }
 
 a {
-  color: var(--color-primary-text);
+  color: var(--nr-primary-text);
   text-decoration: none;
   transition: all 0.3s ease;
 }
 
 a:hover {
-  color: var(--color-primary-deep);
+  color: var(--nr-primary-deep);
 }
 
 /* ============================================
@@ -152,7 +213,7 @@ a:hover {
 }
 
 .section-alt {
-  background-color: var(--color-background-alt);
+  background-color: var(--nr-bg-alt);
 }
 
 .section-title {
@@ -163,7 +224,7 @@ a:hover {
 .section-subtitle {
   text-align: center;
   font-size: var(--font-size-xl);
-  color: var(--color-text-secondary);
+  color: var(--nr-text-secondary);
   margin-bottom: var(--spacing-xxl);
 }
 
@@ -187,7 +248,7 @@ a:hover {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: var(--color-background);
+  background: var(--nr-surface);
   box-shadow: var(--shadow-sm);
   padding: var(--spacing-md) 0;
 }
@@ -215,14 +276,14 @@ a:hover {
   font-family: var(--font-headline);
   font-size: var(--font-size-base);
   font-weight: 400;
-  color: var(--color-text-primary);
+  color: var(--nr-text);
   padding: var(--spacing-xs) var(--spacing-md);
   transition: all 0.3s ease;
 }
 
 .navbar-link:hover,
 .navbar-link.active {
-  color: var(--color-primary-text);
+  color: var(--nr-primary-text);
   font-weight: 600;
 }
 
@@ -239,7 +300,7 @@ a:hover {
   display: block;
   width: 24px;
   height: 3px;
-  background: var(--color-primary);
+  background: var(--nr-primary);
   transition: all 0.3s ease;
 }
 
@@ -257,9 +318,9 @@ a:hover {
      #15585E is 8.11:1. The brand #2F99A4 cannot start this gradient -- it is
      3.38:1, and the audit cannot see it because a gradient has no
      backgroundColor to read. */
-  background-color: var(--color-primary-fill);
-  background-image: linear-gradient(135deg, var(--color-primary-fill) 0%, var(--color-primary-text) 100%);
-  color: var(--color-background);
+  background-color: var(--nr-hero-from);
+  background-image: linear-gradient(135deg, var(--nr-hero-from) 0%, var(--nr-hero-to) 100%);
+  color: var(--nr-on-fill);
   text-align: center;
 }
 
@@ -269,7 +330,7 @@ a:hover {
 }
 
 .hero-title {
-  color: var(--color-background);
+  color: var(--nr-on-fill);
   margin-bottom: var(--spacing-lg);
 }
 
@@ -308,35 +369,44 @@ a:hover {
 }
 
 .btn-primary {
-  background-color: var(--color-primary-fill);
-  color: var(--color-background);
+  background-color: var(--nr-primary-fill);
+  color: var(--nr-on-fill);
+}
+
+/* These buttons are often anchors, and `a:hover` would otherwise repaint their
+   label in the link-hover colour — 1.13:1 on the filled background. */
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-large:hover,
+.btn-small:hover {
+  color: var(--nr-on-fill);
 }
 
 .btn-primary:hover {
-  background-color: var(--color-primary-text);
+  background-color: var(--nr-primary-fill-hover);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(47, 153, 164, 0.3);
 }
 
 .btn-secondary {
-  background-color: var(--color-accent-dark);
-  color: var(--color-background);
+  background-color: var(--nr-accent-dark);
+  color: var(--nr-on-fill);
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-accent-text);
+  background-color: var(--nr-accent-fill-hover);
   box-shadow: 0 4px 12px rgba(255, 77, 0, 0.3);
 }
 
 .btn-outline {
   background-color: transparent;
-  color: var(--color-background);
-  border: 2px solid var(--color-background);
+  color: var(--nr-on-fill);
+  border: 2px solid var(--nr-on-fill);
 }
 
 .btn-outline:hover {
-  background-color: var(--color-background);
-  color: var(--color-primary-text);
+  background-color: var(--nr-on-fill);
+  color: var(--nr-on-light);
 }
 
 .btn-large {
@@ -353,7 +423,7 @@ a:hover {
    CARDS
    ============================================ */
 .card {
-  background: var(--color-background);
+  background: var(--nr-surface);
   border-radius: 8px;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
@@ -385,19 +455,19 @@ a:hover {
 .card-text {
   font-size: var(--font-size-base);
   line-height: 1.6;
-  color: var(--color-text-primary);
+  color: var(--nr-text);
   margin-bottom: var(--spacing-md);
 }
 
 .card-footer {
   padding: var(--spacing-md) var(--spacing-lg);
-  border-top: 1px solid var(--color-border-light);
-  background-color: var(--color-background-alt);
+  border-top: 1px solid var(--nr-border-light);
+  background-color: var(--nr-bg-alt);
 }
 
 .card-meta {
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: var(--nr-text-secondary);
 }
 
 /* ============================================
@@ -409,7 +479,7 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-primary-text);
+  color: var(--nr-primary-text);
 }
 
 .link-standalone::after {
@@ -432,7 +502,7 @@ a:hover {
   display: block;
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--nr-text);
   margin-bottom: var(--spacing-xs);
 }
 
@@ -441,26 +511,26 @@ a:hover {
   width: 100%;
   font-family: var(--font-body);
   font-size: var(--font-size-base);
-  color: var(--color-text-primary);
+  color: var(--nr-text);
   padding: 12px 16px;
   /* The visible boundary of a form control is a UI component under SC 1.4.11 and needs
-     3:1 — --color-border is 1.59:1 and is for dividers. */
-  border: 1px solid var(--color-border-strong);
+     3:1 — --nr-border is 1.59:1 and is for dividers. */
+  border: 1px solid var(--nr-border-strong);
   border-radius: 4px;
-  background: var(--color-background);
+  background: var(--nr-surface);
   transition: all 0.3s ease;
 }
 
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--nr-primary);
   box-shadow: 0 0 0 3px rgba(47, 153, 164, 0.1);
 }
 
 .form-input::placeholder,
 .form-textarea::placeholder {
-  color: var(--color-text-secondary);
+  color: var(--nr-text-secondary);
 }
 
 .form-textarea {
@@ -472,8 +542,10 @@ a:hover {
    FOOTER
    ============================================ */
 .footer {
-  background-color: var(--color-text-primary);
-  color: var(--color-background);
+  /* Not --nr-text: on a dark scheme that token is near-white and would paint a
+     white footer. The footer has its own surface. */
+  background-color: var(--nr-footer-bg);
+  color: var(--nr-footer-fg);
   padding: var(--spacing-4xl) 0 var(--spacing-lg);
 }
 
@@ -490,7 +562,7 @@ a:hover {
 .footer-section h4 {
   font-size: var(--font-size-lg);
   font-weight: 600;
-  color: var(--color-background);
+  color: var(--nr-footer-fg);
   margin-bottom: var(--spacing-md);
 }
 
@@ -505,13 +577,13 @@ a:hover {
 }
 
 .footer-section a {
-  color: var(--color-background);
+  color: var(--nr-footer-fg);
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 .footer-section a:hover {
-  color: #A8E4EB; /* 4.96:1 on the anthracite footer; #2F99A4 is 2.06:1 there */
+  color: var(--nr-footer-link-hover); /* 4.96:1 on the light footer, 10.9:1 on the dark one */
 }
 
 .footer-bottom {
@@ -521,7 +593,7 @@ a:hover {
 }
 
 .footer-bottom p {
-  color: #D5D6D9; /* opaque: 4.79:1 on the anthracite footer */
+  color: var(--nr-footer-muted); /* opaque: 4.79:1 light, 8.5:1 dark */
   font-size: var(--font-size-sm);
   margin: 0;
 }
@@ -578,7 +650,7 @@ a:hover {
     left: 0;
     right: 0;
     flex-direction: column;
-    background: var(--color-background);
+    background: var(--nr-bg);
     padding: var(--spacing-lg);
     box-shadow: var(--shadow-md);
     transform: translateY(-100%);
