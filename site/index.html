@@ -17,13 +17,21 @@
        NB-16) here so this page is itself brand-compliant.
        ============================================================ */
     :root {
+      /* The brand hues are 3.38:1 and 3.33:1 on white — fills, borders, icons and
+         display type. Anything smaller than 24px (18.66px bold) uses the -fill / -text
+         variants; see references/colors.md for the role table. */
       --nr-primary: #2F99A4;
       --nr-primary-dark: #257880;
+      --nr-primary-fill: #257880;   /* white text on it: 5.15:1 */
+      --nr-primary-text: #15585E;   /* on white: 8.11:1 */
+      --nr-primary-deep: #0A5057;   /* hover: 9.14:1 */
       --nr-accent: #FF4D00;
-      --nr-accent-dark: #CC3D00;
+      --nr-accent-dark: #CC3D00;    /* white text on it: 4.96:1 */
+      --nr-accent-text: #9A2E00;    /* on white: 7.60:1 */
       --nr-text: #585961;
-      --nr-text-secondary: #8A8B93;
+      --nr-text-secondary: #6E6F78; /* 4.99:1 on white, 4.58:1 on #F5F5F5 */
       --nr-border: #CCCDCC;
+      --nr-border-strong: #8A8B93;  /* control boundaries, SC 1.4.11 needs 3:1 */
       --nr-border-light: #E5E5E5;
       --nr-bg: #FFFFFF;
       --nr-bg-alt: #F5F5F5;
@@ -71,8 +79,8 @@
     h3 { font-size: 24px; font-weight: 600; line-height: 1.3; }
     h4 { font-size: 18px; font-weight: 600; }
     p { margin: 0 0 var(--space-md); }
-    a { color: var(--nr-primary); text-decoration: none; transition: color .2s ease; }
-    a:hover { color: var(--nr-primary-dark); }
+    a { color: var(--nr-primary-text); text-decoration: none; transition: color .2s ease; }
+    a:hover { color: var(--nr-primary-deep); }
     code, .mono {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.875em;
@@ -87,7 +95,7 @@
     /* --- Skip link (a11y) --- */
     .skip-link {
       position: absolute; left: -9999px; top: 0; z-index: 2000;
-      background: var(--nr-primary); color: #fff; padding: 12px 20px;
+      background: var(--nr-primary-fill); color: #fff; padding: 12px 20px;
       font-family: var(--font-headline); font-weight: 600;
     }
     .skip-link:focus { left: 0; color: #fff; }
@@ -116,7 +124,7 @@
       font-family: var(--font-headline); font-weight: 400; font-size: 15px;
       color: var(--nr-text); padding: 8px 12px; border-radius: 6px; display: block;
     }
-    .navbar-menu a:hover { color: var(--nr-primary); font-weight: 600; background: var(--nr-bg-alt); }
+    .navbar-menu a:hover { color: var(--nr-primary-text); font-weight: 600; background: var(--nr-bg-alt); }
     @media (max-width: 880px) {
       .navbar-wordmark { display: none; }
       .navbar-menu { font-size: 13px; }
@@ -124,15 +132,20 @@
 
     /* ============================== HERO ============================== */
     .hero {
-      background: linear-gradient(135deg, var(--nr-primary) 0%, var(--nr-primary-dark) 100%);
+      /* Both stops carry white text, so both clear 4.5:1. A gradient has no
+         backgroundColor for an audit to read, hence the solid fallback too. */
+      background-color: var(--nr-primary-fill);
+      background-image: linear-gradient(135deg, var(--nr-primary-fill) 0%, var(--nr-primary-text) 100%);
       color: #fff; text-align: center;
       padding: var(--space-4xl) var(--space-lg);
     }
     .hero h1 { color: #fff; font-size: 52px; max-width: 18ch; margin: 0 auto var(--space-lg); }
-    .hero p { color: rgba(255,255,255,.92); font-size: 20px; max-width: 60ch; margin: 0 auto var(--space-xl); }
+    .hero p { color: #fff; font-size: 20px; max-width: 60ch; margin: 0 auto var(--space-xl); }
     .hero .badges { display: flex; gap: var(--space-sm); justify-content: center; flex-wrap: wrap; }
     .hero .pill {
-      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+      /* Opaque, not a white tint: over the hero gradient rgba(255,255,255,.15)
+         composites to ~#468C93 and gives 14px white text 3.87:1. */
+      background: #0A5057; border: 1px solid rgba(255,255,255,.5);
       color: #fff; padding: 6px 14px; border-radius: 999px; font-size: 14px;
       font-family: var(--font-headline); font-weight: 600;
     }
@@ -144,7 +157,7 @@
     .section-head { margin-bottom: var(--space-2xl); max-width: 70ch; }
     .section-head .eyebrow {
       font-family: var(--font-headline); font-weight: 700; font-size: 13px;
-      letter-spacing: 1px; text-transform: uppercase; color: var(--nr-primary);
+      letter-spacing: 1px; text-transform: uppercase; color: var(--nr-primary-text);
       margin-bottom: var(--space-xs);
     }
     .section-head p { font-size: 18px; color: var(--nr-text); }
@@ -160,7 +173,7 @@
     .rule-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
     .rule-id {
       font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600;
-      color: #fff; background: var(--nr-primary); padding: 2px 8px; border-radius: 4px;
+      color: #fff; background: var(--nr-primary-fill); padding: 2px 8px; border-radius: 4px;
       white-space: nowrap;
     }
     .src {
@@ -172,11 +185,11 @@
     .issue-link {
       display: inline-flex; align-items: center; gap: 6px;
       font-family: var(--font-headline); font-weight: 600; font-size: 13px;
-      color: var(--nr-primary); border: 1px solid var(--nr-border);
+      color: var(--nr-primary-text); border: 1px solid var(--nr-border-strong);
       padding: 5px 12px; border-radius: 999px; white-space: nowrap;
       background: var(--nr-bg); transition: all .2s ease; cursor: pointer;
     }
-    .issue-link:hover { background: var(--nr-primary); color: #fff; border-color: var(--nr-primary); }
+    .issue-link:hover { background: var(--nr-primary-fill); color: #fff; border-color: var(--nr-primary-fill); }
 
     .grid { display: grid; gap: var(--space-lg); }
     .grid-2 { grid-template-columns: repeat(2, 1fr); }
@@ -197,25 +210,27 @@
 
     /* --- contrast verifier table --- */
     .contrast-table, .demo-table, .cp-table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: var(--shadow-sm); border-radius: var(--radius); overflow: hidden; }
-    .contrast-table th { background: var(--nr-primary); color: #fff; font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 12px 16px; font-size: 14px; }
+    .contrast-table th { background: var(--nr-primary-fill); color: #fff; font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 12px 16px; font-size: 14px; }
     .contrast-table td { padding: 10px 16px; border-bottom: 1px solid var(--nr-border-light); font-size: 14px; vertical-align: middle; }
     .contrast-table tr:last-child td { border-bottom: none; }
     .sw-dot { display: inline-block; width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(0,0,0,.12); vertical-align: middle; margin-right: 6px; }
     .ratio { font-family: ui-monospace, monospace; font-weight: 600; }
     .badge { display: inline-block; font-family: var(--font-headline); font-weight: 600; font-size: 12px; padding: 2px 9px; border-radius: 999px; }
-    .badge.pass { background: rgba(40,167,69,.14); color: #1c7430; }
-    .badge.fail { background: rgba(220,53,69,.14); color: #b21f2d; }
+    /* Opaque tints: a translucent background has no ratio of its own, and the audit —
+       like any static checker — resolves it to whatever sits behind it. */
+    .badge.pass { background: #E6F4EA; color: #14602A; }
+    .badge.fail { background: #FBE9EB; color: #8E1922; }
     .doc-claim { font-style: italic; color: var(--nr-text-secondary); }
     .mismatch { color: var(--nr-error); font-weight: 600; font-style: normal; }
 
     /* ============================== COMPONENTS ============================== */
     .btn { display: inline-block; font-family: var(--font-headline); font-weight: 600; font-size: 16px; line-height: 1; letter-spacing: .5px; text-align: center; padding: 12px 32px; border: none; border-radius: 4px; cursor: pointer; transition: all .3s ease; }
-    .btn-primary { background: var(--nr-primary); color: #fff; }
-    .btn-primary:hover { background: var(--nr-primary-dark); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(47,153,164,.3); }
-    .btn-secondary { background: var(--nr-accent); color: #fff; }
-    .btn-secondary:hover { background: var(--nr-accent-dark); color: #fff; box-shadow: 0 4px 12px rgba(255,77,0,.3); }
-    .btn-outline { background: transparent; color: var(--nr-primary); border: 2px solid var(--nr-primary); }
-    .btn-outline:hover { background: var(--nr-primary); color: #fff; }
+    .btn-primary { background: var(--nr-primary-fill); color: #fff; }
+    .btn-primary:hover { background: var(--nr-primary-text); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(47,153,164,.3); }
+    .btn-secondary { background: var(--nr-accent-dark); color: #fff; }
+    .btn-secondary:hover { background: var(--nr-accent-text); color: #fff; box-shadow: 0 4px 12px rgba(255,77,0,.3); }
+    .btn-outline { background: transparent; color: var(--nr-primary-text); border: 2px solid var(--nr-primary); }
+    .btn-outline:hover { background: var(--nr-primary-fill); color: #fff; }
     .btn-small { padding: 8px 20px; font-size: 14px; }
     .btn-large { padding: 16px 44px; font-size: 18px; }
     .btn:disabled, .btn[disabled] { opacity: .5; cursor: not-allowed; }
@@ -229,34 +244,34 @@
 
     .form-group { margin-bottom: var(--space-md); }
     .form-label { display: block; font-family: var(--font-body); font-weight: 600; font-size: 14px; margin-bottom: 6px; }
-    .form-input, .form-textarea { width: 100%; font-family: var(--font-body); font-size: 16px; color: var(--nr-text); padding: 12px 16px; border: 1px solid var(--nr-border); border-radius: 4px; background: #fff; transition: all .2s ease; }
+    .form-input, .form-textarea { width: 100%; font-family: var(--font-body); font-size: 16px; color: var(--nr-text); padding: 12px 16px; border: 1px solid var(--nr-border-strong); border-radius: 4px; background: #fff; transition: all .2s ease; }
     .form-input:focus, .form-textarea:focus { outline: none; border-color: var(--nr-primary); box-shadow: 0 0 0 3px rgba(47,153,164,.1); }
     .form-input::placeholder { color: var(--nr-text-secondary); }
     .form-help { font-size: 13px; color: var(--nr-text-secondary); margin-top: 6px; }
 
-    blockquote.brand { font-family: var(--font-headline); font-size: 22px; font-weight: 400; font-style: italic; line-height: 1.5; color: var(--nr-primary); border-left: 4px solid var(--nr-accent); padding-left: var(--space-lg); margin: 0; }
+    blockquote.brand { font-family: var(--font-headline); font-size: 22px; font-weight: 400; font-style: italic; line-height: 1.5; color: var(--nr-primary-text); border-left: 4px solid var(--nr-accent); padding-left: var(--space-lg); margin: 0; }
     blockquote.brand cite { display: block; font-family: var(--font-body); font-size: 14px; font-weight: 600; font-style: normal; color: var(--nr-text); margin-top: var(--space-sm); }
 
-    .demo-table thead { background: var(--nr-primary); color: #fff; }
+    .demo-table thead { background: var(--nr-primary-fill); color: #fff; }
     .demo-table th { font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 14px 16px; }
     .demo-table td { padding: 12px 16px; border-bottom: 1px solid var(--nr-border-light); }
     .demo-table tbody tr:hover { background: var(--nr-bg-alt); }
     .demo-table tbody tr:last-child td { border-bottom: none; }
 
     .alert { border-radius: var(--radius); padding: var(--space-md) var(--space-lg); margin-bottom: var(--space-md); border-left: 4px solid; }
-    .alert-info { background: rgba(47,153,164,.08); border-color: var(--nr-primary); }
-    .alert-accent { background: rgba(255,77,0,.07); border-color: var(--nr-accent); }
+    .alert-info { background: #EDF6F7; border-color: var(--nr-primary); }
+    .alert-accent { background: #FFF1EB; border-color: var(--nr-accent); }
     .alert h4 { margin: 0 0 4px; }
 
     /* --- DO / DON'T framing for intentional anti-pattern demos --- */
     .dodont { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); }
     @media (max-width: 680px) { .dodont { grid-template-columns: 1fr; } }
     .do, .dont { border-radius: var(--radius); padding: var(--space-lg); border: 2px solid; }
-    .do { border-color: var(--nr-success); background: rgba(40,167,69,.05); }
-    .dont { border-color: var(--nr-error); background: rgba(220,53,69,.05); }
+    .do { border-color: var(--nr-success); background: #F3FAF5; }
+    .dont { border-color: var(--nr-error); background: #FDF5F6; }
     .do .tag, .dont .tag { font-family: var(--font-headline); font-weight: 700; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; display: inline-block; margin-bottom: var(--space-sm); }
-    .do .tag { color: #1c7430; }
-    .dont .tag { color: #b21f2d; }
+    .do .tag { color: #14602A; }
+    .dont .tag { color: #8E1922; }
     .anti { background: #fff; border: 1px dashed var(--nr-error); border-radius: 6px; padding: var(--space-md); }
 
     /* --- logo clear-space demo --- */
@@ -274,31 +289,31 @@
     .cp-table td { padding: 10px 14px; border-bottom: 1px solid var(--nr-border-light); vertical-align: top; }
     .cp-table tbody tr:hover { background: var(--nr-bg-alt); }
     .sev { font-family: var(--font-headline); font-weight: 600; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
-    .sev.error { background: rgba(220,53,69,.14); color: #b21f2d; }
-    .sev.warning { background: rgba(255,193,7,.22); color: #856404; }
-    .sev.info { background: rgba(47,153,164,.14); color: var(--nr-primary-dark); }
+    .sev.error { background: #FBE9EB; color: #8E1922; }
+    .sev.warning { background: #FDF3D7; color: #6B4E03; }
+    .sev.info { background: #E4F2F4; color: var(--nr-primary-text); }
     .cp-id { font-family: ui-monospace, monospace; font-weight: 600; white-space: nowrap; }
 
     /* --- findings --- */
     .finding { border-left: 4px solid var(--nr-accent); }
-    .finding .kind { font-family: var(--font-headline); font-weight: 700; font-size: 12px; letter-spacing: .5px; text-transform: uppercase; color: var(--nr-accent); }
+    .finding .kind { font-family: var(--font-headline); font-weight: 700; font-size: 12px; letter-spacing: .5px; text-transform: uppercase; color: var(--nr-accent-text); }
     .finding .cite { font-family: ui-monospace, monospace; font-size: 13px; color: var(--nr-text-secondary); margin-top: var(--space-sm); }
     .finding details { margin-top: var(--space-sm); }
-    .finding summary { cursor: pointer; font-weight: 600; color: var(--nr-primary); font-family: var(--font-headline); }
+    .finding summary { cursor: pointer; font-weight: 600; color: var(--nr-primary-text); font-family: var(--font-headline); }
     .finding details[open] summary { margin-bottom: var(--space-sm); }
 
     /* ============================== FOOTER ============================== */
     .footer { background: var(--nr-text); color: #fff; padding: var(--space-3xl) 0 var(--space-lg); }
     .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-xl); margin-bottom: var(--space-xl); }
     .footer h4 { color: #fff; }
-    .footer a { color: rgba(255,255,255,.85); }
-    .footer a:hover { color: var(--nr-primary); }
+    .footer a { color: #fff; }
+    .footer a:hover { color: #A8E4EB; }
     .footer ul { list-style: none; padding: 0; margin: 0; }
     .footer li { margin-bottom: var(--space-xs); }
     .footer-brand { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); }
     .footer-brand svg { width: 40px; height: 40px; background: #fff; border-radius: 6px; padding: 4px; }
-    .footer-bottom { border-top: 1px solid rgba(255,255,255,.15); padding-top: var(--space-lg); text-align: center; color: rgba(255,255,255,.7); font-size: 14px; }
-    .footer-bottom a { color: rgba(255,255,255,.9); }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,.15); padding-top: var(--space-lg); text-align: center; color: #D5D6D9; font-size: 14px; }
+    .footer-bottom a { color: #fff; }
   </style>
 </head>
 <body>
@@ -335,7 +350,7 @@
   <!-- ===================== HERO ===================== -->
   <header class="hero">
     <h1>The Netresearch Branding Skill, made visible</h1>
-    <p>A living style guide that renders every brand rule from the <code style="background:rgba(255,255,255,.18);color:#fff">netresearch-branding</code> Agent Skill — and verifies them against itself. Each item has a one-click button to open a GitHub issue about that rule.</p>
+    <p>A living style guide that renders every brand rule from the <code style="background:#0A5057;color:#fff">netresearch-branding</code> Agent Skill — and verifies them against itself. Each item has a one-click button to open a GitHub issue about that rule.</p>
     <div class="badges">
       <span class="pill">Colors · Type · Components</span>
       <span class="pill">Logo &amp; TYPO3 rules</span>
@@ -392,19 +407,19 @@
 
       <div class="grid grid-4">
         <div class="swatch" data-issue-title="[Branding] Primary turquoise #2F99A4" data-issue-body="Re: references/colors.md — Primary Turquoise #2F99A4.%0A%0AQuestion / proposal:">
-          <div class="chip" style="background:#2F99A4"><span class="sample" style="color:#fff">White on teal</span></div>
+          <div class="chip" data-contrast-demo style="background:#2F99A4"><span class="sample" style="color:#fff">White on teal</span></div>
           <div class="meta"><div class="name">Turquoise · Primary</div><div class="hex">#2F99A4</div><div class="role">CTAs, links, headers, brand identity. RGB 47,153,164</div></div>
         </div>
         <div class="swatch" data-issue-title="[Branding] Accent orange #FF4D00" data-issue-body="Re: references/colors.md — Accent Orange #FF4D00 (accent only).%0A%0AQuestion / proposal:">
-          <div class="chip" style="background:#FF4D00"><span class="sample" style="color:#fff">White on orange</span></div>
+          <div class="chip" data-contrast-demo style="background:#FF4D00"><span class="sample" style="color:#fff">White on orange</span></div>
           <div class="meta"><div class="name">Orange · Accent</div><div class="hex">#FF4D00</div><div class="role">Emphasis &amp; highlights only — never dominant. RGB 255,77,0</div></div>
         </div>
         <div class="swatch" data-issue-title="[Branding] Anthracite text #585961" data-issue-body="Re: references/colors.md — Anthracite text #585961.%0A%0AQuestion / proposal:">
-          <div class="chip" style="background:#585961"><span class="sample" style="color:#fff">White on grey</span></div>
+          <div class="chip" data-contrast-demo style="background:#585961"><span class="sample" style="color:#fff">White on grey</span></div>
           <div class="meta"><div class="name">Anthracite · Text</div><div class="hex">#585961</div><div class="role">Body copy, headings, labels. RGB 88,89,97</div></div>
         </div>
         <div class="swatch" data-issue-title="[Branding] Light grey #CCCDCC" data-issue-body="Re: references/colors.md — Light Grey #CCCDCC (backgrounds/borders only).%0A%0AQuestion / proposal:">
-          <div class="chip" style="background:#CCCDCC"><span class="sample" style="color:#585961">Grey #585961</span></div>
+          <div class="chip" data-contrast-demo style="background:#CCCDCC"><span class="sample" style="color:#585961">Grey #585961</span></div>
           <div class="meta"><div class="name">Light Grey</div><div class="hex">#CCCDCC</div><div class="role">Borders, dividers, disabled — not for text. RGB 204,205,204</div></div>
         </div>
       </div>
@@ -425,17 +440,19 @@
         <div class="do">
           <span class="tag">✓ Do</span>
           <div style="display:flex;gap:12px;flex-wrap:wrap">
-            <span style="background:#2F99A4;color:#fff;padding:10px 16px;border-radius:6px;font-family:var(--font-headline);font-weight:600">White on turquoise</span>
-            <span style="background:#fff;color:#2F99A4;border:1px solid var(--nr-border);padding:10px 16px;border-radius:6px;font-family:var(--font-headline);font-weight:600">Turquoise on white (large)</span>
-            <span style="background:#fff;color:#585961;border:1px solid var(--nr-border);padding:10px 16px;border-radius:6px">Anthracite on white</span>
+            <span style="background:#257880;color:#fff;padding:10px 16px;border-radius:6px;font-family:var(--font-headline);font-weight:600">White on #257880 · 5.15:1</span>
+            <span style="background:#fff;color:#15585E;border:1px solid var(--nr-border-strong);padding:10px 16px;border-radius:6px;font-family:var(--font-headline);font-weight:600">#15585E on white · 8.11:1</span>
+            <span style="background:#fff;color:#585961;border:1px solid var(--nr-border-strong);padding:10px 16px;border-radius:6px">Anthracite on white · 6.96:1</span>
           </div>
+          <p style="font-size:13px;color:var(--nr-text-secondary);margin:12px 0 0">The brand <code>#2F99A4</code> stays on borders, icons, chart series and display type at 24px or more. Under white label text it is 3.38:1.</p>
         </div>
         <div class="dont">
           <span class="tag">✗ Don’t — intentional anti-patterns</span>
-          <div class="anti" style="display:flex;gap:12px;flex-wrap:wrap">
-            <span style="background:#2F99A4;color:#FF4D00;padding:10px 16px;border-radius:6px;font-weight:600">Orange on turquoise</span>
-            <span style="background:#fff;color:#CCCDCC;padding:10px 16px;border-radius:6px">Light grey text on white</span>
-            <span style="background:#fff;color:#FF4D00;font-size:13px;padding:10px 16px;border-radius:6px">Small orange text on white</span>
+          <div class="anti" data-contrast-demo style="display:flex;gap:12px;flex-wrap:wrap">
+            <span style="background:#2F99A4;color:#fff;padding:10px 16px;border-radius:6px;font-family:var(--font-headline);font-weight:600">White on #2F99A4 · 3.38:1</span>
+            <span style="background:#2F99A4;color:#FF4D00;padding:10px 16px;border-radius:6px;font-weight:600">Orange on turquoise · 1.02:1</span>
+            <span style="background:#fff;color:#CCCDCC;padding:10px 16px;border-radius:6px">Light grey text on white · 1.59:1</span>
+            <span style="background:#fff;color:#FF4D00;font-size:13px;padding:10px 16px;border-radius:6px">Small orange text on white · 3.33:1</span>
           </div>
           <p style="font-size:13px;color:var(--nr-text-secondary);margin:12px 0 0">These swatches deliberately violate the brand to illustrate the rule — they are not the page’s chrome.</p>
         </div>
@@ -813,13 +830,17 @@
     }
 
     var pairs = [
-      { fg: "#585961", bg: "#FFFFFF", fgN: "Anthracite", bgN: "White", claim: "8.3:1 — AAA all text" },
-      { fg: "#FFFFFF", bg: "#2F99A4", fgN: "White", bgN: "Turquoise", claim: "4.5:1 — AA all text" },
-      { fg: "#2F99A4", bg: "#FFFFFF", fgN: "Turquoise", bgN: "White", claim: "3.8:1 — AA large" },
-      { fg: "#FFFFFF", bg: "#FF4D00", fgN: "White", bgN: "Orange", claim: "3.2:1 — AA large only" },
-      { fg: "#FF4D00", bg: "#FFFFFF", fgN: "Orange", bgN: "White", claim: "3.9:1 — AA large" },
-      { fg: "#8A8B93", bg: "#FFFFFF", fgN: "Secondary grey", bgN: "White", claim: "(used for help/placeholder)" },
-      { fg: "#CCCDCC", bg: "#FFFFFF", fgN: "Light grey", bgN: "White", claim: "1.6:1 — fails (per doc)" }
+      { fg: "#585961", bg: "#FFFFFF", fgN: "Anthracite", bgN: "White", claim: "6.96:1 — AA all text" },
+      { fg: "#FFFFFF", bg: "#2F99A4", fgN: "White", bgN: "Turquoise", claim: "3.38:1 — large text & UI only" },
+      { fg: "#2F99A4", bg: "#FFFFFF", fgN: "Turquoise", bgN: "White", claim: "3.38:1 — large text & UI only" },
+      { fg: "#FFFFFF", bg: "#257880", fgN: "White", bgN: "Teal fill", claim: "5.2:1 — AA all text" },
+      { fg: "#15585E", bg: "#FFFFFF", fgN: "Teal text", bgN: "White", claim: "8.1:1 — AA all text" },
+      { fg: "#FFFFFF", bg: "#FF4D00", fgN: "White", bgN: "Orange", claim: "3.33:1 — large text & UI only" },
+      { fg: "#FF4D00", bg: "#FFFFFF", fgN: "Orange", bgN: "White", claim: "3.33:1 — large text & UI only" },
+      { fg: "#9A2E00", bg: "#FFFFFF", fgN: "Accent text", bgN: "White", claim: "7.6:1 — AA all text" },
+      { fg: "#6E6F78", bg: "#FFFFFF", fgN: "Secondary grey", bgN: "White", claim: "4.99:1 — help & meta text" },
+      { fg: "#8A8B93", bg: "#FFFFFF", fgN: "Control border", bgN: "White", claim: "3.39:1 — non-text, SC 1.4.11" },
+      { fg: "#CCCDCC", bg: "#FFFFFF", fgN: "Light grey", bgN: "White", claim: "1.59:1 — fails, dividers only" }
     ];
     var ctb = document.querySelector("#contrastTable tbody");
     pairs.forEach(function (p) {
@@ -893,10 +914,10 @@
         cite: "SKILL.md:59 · references/colors.md:274-300 · references/typography.md:903 · checkpoints.yaml:152 (NB-16)",
         body: "SKILL.md:59 prescribes --nr-primary/--nr-accent/--nr-text/--nr-border/--nr-bg, and checkpoint NB-16 greps for --nr-(primary|accent|text). But every CSS example in references/colors.md and references/typography.md defines --color-primary/--color-accent/--color-text-primary instead. A project that copies the reference snippets verbatim would FAIL NB-16.",
         ask: "Pick one canonical scheme. Either rewrite the reference CSS to --nr-*, or relax NB-16 to accept both. Add --nr-bg / --nr-border values while doing so (see F6)." },
-      { id: "F2", kind: "Contradicts the math", title: "Hard-coded contrast ratios are internally inconsistent (and wrong)",
-        cite: "references/colors.md:24-27, 64-66, 230-237",
-        body: "Contrast ratio is symmetric: fg-on-bg equals bg-on-fg. Yet the doc lists Turquoise-on-white as 3.8:1 and White-on-turquoise as 4.5:1 — the same pair, two numbers. Same for orange (3.9 vs 3.2). The live verifier above computes ~3.4:1 for the teal pair and ~3.3:1 for the orange pair; neither passes AA for normal text. The '4.5:1 — AA all text' claim for white-on-teal is therefore false.",
-        ask: "Replace the hand-written ratios with computed values, and correct the AA verdicts (teal & orange pass large text only)." },
+      { id: "F2", kind: "Resolved", title: "Hard-coded contrast ratios were internally inconsistent (and wrong)",
+        cite: "references/colors.md",
+        body: "Contrast is symmetric, yet the doc used to list Turquoise-on-white as 3.8:1 and White-on-turquoise as 4.5:1 — the same pair, two numbers; same for orange (3.9 vs 3.2). Both are now the measured 3.38:1 and 3.33:1, with the verdict corrected to large text and UI only, and the doc names the text-bearing variants (#257880 for a fill under white text, #15585E for links and small labels). The verifier above compares against the current document, so this table should show no mismatch — if it does, the doc has drifted again.",
+        ask: "Nothing outstanding. Kept here as the record of what the numbers used to say." },
       { id: "F3", kind: "Brand-debt in the asset itself", title: "The canonical logo SVG uses off-brand hex values",
         cite: "skills/netresearch-branding/assets/logos/netresearch-symbol-only.svg (fill #2999a4 / #595a62) · references/logo.md:38",
         body: "logo.md:38 states #2F99A4 and #585961 are the 'only valid brand color values for the symbol' and that any deviation 'even close approximations' is a brand-debt violation. But the canonical asset ships fill=\"#2999a4\" (not #2F99A4) and fill=\"#595a62\" (not #585961). The source of truth violates its own rule. This page deliberately uses the normalized values from references/logo-svg.md instead.",

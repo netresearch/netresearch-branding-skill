@@ -16,12 +16,14 @@ on:
       - 'skills/netresearch-branding/templates/**'
       - 'skills/netresearch-branding/scripts/contrast-audit.cjs'
       - 'examples/**'
+      - 'site/**'
       - '.github/workflows/contrast-audit.yml'
   pull_request:
     paths:
       - 'skills/netresearch-branding/templates/**'
       - 'skills/netresearch-branding/scripts/contrast-audit.cjs'
       - 'examples/**'
+      - 'site/**'
       - '.github/workflows/contrast-audit.yml'
   merge_group:
 
@@ -40,3 +42,4 @@ jobs:
       check-cmd: |
         node skills/netresearch-branding/scripts/contrast-audit.cjs skills/netresearch-branding/templates/landing-page.html
         node skills/netresearch-branding/scripts/contrast-audit.cjs examples/components.html
+        node skills/netresearch-branding/scripts/contrast-audit.cjs site/index.html

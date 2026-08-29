@@ -16,7 +16,11 @@
  * listed under failedRequests without failing the run.
  *
  * Scope: text contrast (SC 1.4.3). It does NOT evaluate SC 1.4.11 non-text contrast —
- * control boundaries, focus rings, icons — so a green run is not a full AA verdict. The brand fact this exists for: white on #2F99A4 is 3.38:1 —
+ * control boundaries, focus rings, icons — so a green run is not a full AA verdict.
+ *
+ * Elements inside a [data-contrast-demo] subtree are skipped and counted in
+ * demoExemptElements: a style guide has to be able to SHOW a failing pair. Use it only
+ * for specimens the surrounding copy names as such, never to silence page chrome. The brand fact this exists for: white on #2F99A4 is 3.38:1 —
  * fine for large text and UI shapes, a fail for 14 px labels; use #15585E for those.
  *
  * `apcaWarnings` additionally reports each element whose APCA lightness contrast (Lc)
@@ -57,7 +61,19 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
     const parse = (c) => { const m = c.match(/\d+(\.\d+)?/g); return m ? { r: +m[0], g: +m[1], b: +m[2], a: m[3] !== undefined ? +m[3] : 1 } : null; };
     const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
     const lum = (c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
-    const bgOf = (el) => { while (el) { const c = parse(getComputedStyle(el).backgroundColor); if (c && c.a > 0) return c; el = el.parentElement; } return { r: 255, g: 255, b: 255, a: 1 }; };
+    // Composite the translucent layers instead of taking the first one at face value:
+    // rgba(255,255,255,.18) over a teal hero is NOT white, and reading it as white both
+    // invents failures and hides them.
+    const bgOf = (el) => {
+      const stack = [];
+      while (el) { const c = parse(getComputedStyle(el).backgroundColor);
+        if (c && c.a > 0) { stack.push(c); if (c.a >= 1) break; }
+        el = el.parentElement; }
+      let out = { r: 255, g: 255, b: 255 };
+      for (let i = stack.length - 1; i >= 0; i--) { const c = stack[i];
+        out = { r: c.r * c.a + out.r * (1 - c.a), g: c.g * c.a + out.g * (1 - c.a), b: c.b * c.a + out.b * (1 - c.a) }; }
+      return { r: Math.round(out.r), g: Math.round(out.g), b: Math.round(out.b), a: 1 };
+    };
     const ratio = (f, b) => { const l1 = lum(f), l2 = lum(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
 
     // --- APCA-W3 0.1.9, verbatim constants and steps (W3 licence) -------------
@@ -119,10 +135,18 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
     const seen = new Map();
     const apcaSeen = new Map();
     let smallest = Infinity;
+    let exempt = 0;
+    // <title>/<desc> inside an SVG are accessible names, never painted; script/style/
+    // template hold source text. None of them have a rendered contrast.
+    const NOT_PAINTED = new Set(['TITLE', 'DESC', 'SCRIPT', 'STYLE', 'TEMPLATE', 'METADATA', 'NOSCRIPT']);
     for (const el of document.querySelectorAll('body *')) {
+      if (NOT_PAINTED.has(el.tagName.toUpperCase())) continue;
       if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
       const cs = getComputedStyle(el);
       if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) continue;
+      // A style guide legitimately shows failing pairs as specimens. They must be declared
+      // with data-contrast-demo, and the count is reported so the exemption is visible.
+      if (el.closest('[data-contrast-demo]')) { exempt++; continue; }
       const size = parseFloat(cs.fontSize); smallest = Math.min(smallest, size);
       const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
       const bold = parseInt(cs.fontWeight, 10) >= 700; const large = size >= 24 || (size >= 18.66 && bold);
@@ -142,6 +166,7 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
       contrastFailures: [...seen.values()],
       // Advisory only: readability, not conformance. Never gates the exit code.
       apcaWarnings: [...apcaSeen.values()],
+      demoExemptElements: exempt,
       skipLink: !!document.querySelector('a[href^="#"].skip, a[href="#main"], a[href="#content"], a[href="#inhalt"]'),
       mainLandmark: !!document.querySelector('main'),
       navLabelled: [...document.querySelectorAll('nav')].every((n) => n.getAttribute('aria-label') || n.getAttribute('aria-labelledby')),
