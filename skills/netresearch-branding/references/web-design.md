@@ -198,7 +198,14 @@ node scripts/contrast-audit.cjs https://pages.nrdev.de/<ns>/<project>/ --header 
 
 It lists every text element below AA for its size, plus skip link, labelled `nav`, `main`,
 table captions, the smallest font and decorative SVGs without `aria-hidden`; exit 1 on any
-contrast failure. Measured on a branded dashboard 2026-08-28: white on `#2F99A4` at 14 px is
+contrast failure.
+
+`apcaWarnings` reports the same elements against APCA (Lc, and the value APCA's font table
+asks for at that size and weight). Those are **advisory**: they never change the exit code,
+and an APCA pass never waives a WCAG failure. WCAG 2.2 AA is the gate; see the `typo3-a11y`
+skill for the policy. A page can be WCAG-clean and still carry APCA warnings — the shipped
+`templates/landing-page.html` does, because APCA asks Lc 90 of 16px/400 body text and the
+anthracite `#585961` on white reaches Lc 84. Measured on a branded dashboard 2026-08-28: white on `#2F99A4` at 14 px is
 3.38:1 (card heads, table head, active tab), white on `#FF4D00` 3.1:1 — both fixed by moving
 filled surfaces to `#15585E` / `#9A2E00` and keeping the bright colours for borders, bars
 and large type. Re-measured: zero failures.
