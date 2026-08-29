@@ -18,6 +18,14 @@
   --nr-primary-fill: #257880; /* white text on it: 5.15:1 */
   --nr-primary-text: #15585E; /* on white: 8.11:1 */
   --nr-primary-deep: #0A5057; /* hover/darkest step, on white: 9.14:1 */
+  /* Gradient stops get their own tokens rather than borrowing the text ones: a
+     stop is a surface under white text, and a text token is free to lift on a
+     dark scheme, where white over it would fail with nothing able to measure it. */
+  --nr-hero-from: #257880;    /* white on it: 5.15:1 */
+  --nr-hero-to: #15585E;      /* white on it: 8.11:1 */
+  /* A button's hover is a surface too, for the same reason. */
+  --nr-primary-fill-hover: #15585E;
+  --nr-accent-fill-hover: #9A2E00;
   --nr-accent: #FF4D00;
   --nr-accent-rgb: 255, 77, 0;
   --nr-accent-dark: #CC3D00; /* white text on it: 4.96:1 */
@@ -257,8 +265,8 @@ a:hover {
      #15585E is 8.11:1. The brand #2F99A4 cannot start this gradient -- it is
      3.38:1, and the audit cannot see it because a gradient has no
      backgroundColor to read. */
-  background-color: var(--nr-primary-fill);
-  background-image: linear-gradient(135deg, var(--nr-primary-fill) 0%, var(--nr-primary-text) 100%);
+  background-color: var(--nr-hero-from);
+  background-image: linear-gradient(135deg, var(--nr-hero-from) 0%, var(--nr-hero-to) 100%);
   color: var(--nr-bg);
   text-align: center;
 }
@@ -312,8 +320,17 @@ a:hover {
   color: var(--nr-bg);
 }
 
+/* These buttons are often anchors, and `a:hover` would otherwise repaint their
+   label in the link-hover colour — 1.13:1 on the filled background. */
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-large:hover,
+.btn-small:hover {
+  color: var(--nr-bg);
+}
+
 .btn-primary:hover {
-  background-color: var(--nr-primary-text);
+  background-color: var(--nr-primary-fill-hover);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(47, 153, 164, 0.3);
 }
@@ -324,7 +341,7 @@ a:hover {
 }
 
 .btn-secondary:hover {
-  background-color: var(--nr-accent-text);
+  background-color: var(--nr-accent-fill-hover);
   box-shadow: 0 4px 12px rgba(255, 77, 0, 0.3);
 }
 

@@ -48,6 +48,17 @@
       --nr-do-bg: #F3FAF5;
       --nr-dont-bg: #FDF5F6;
 
+      /* Gradient stops are their own tokens, never the text tokens: in the dark
+         scheme --nr-primary-text lifts to #5FC6D2, and white hero text over that
+         is 2.00:1 — a failure no audit can see, because a gradient leaves no
+         backgroundColor to read. Both stops carry white text by construction. */
+      --nr-hero-from: #257880;  /* white on it: 5.15:1 */
+      --nr-hero-to: #15585E;    /* white on it: 8.11:1 */
+      /* Hover for a filled button is a surface too — same reason it may not borrow
+         --nr-primary-text / --nr-accent-text. */
+      --nr-primary-fill-hover: #15585E; /* white on it: 8.11:1 */
+      --nr-accent-fill-hover: #9A2E00;  /* white on it: 7.60:1 */
+
       --nr-footer-bg: #585961;
       --nr-footer-fg: #FFFFFF;
       --nr-footer-muted: #D5D6D9;
@@ -108,6 +119,11 @@
         --nr-do-bg: #101F16;
         --nr-dont-bg: #2A1216;
 
+        --nr-hero-from: #1B6C74;  /* white on it: 6.10:1 */
+        --nr-hero-to: #0F4A50;    /* white on it: 9.93:1 */
+        --nr-primary-fill-hover: #0F4A50; /* white on it: 9.93:1 */
+        --nr-accent-fill-hover: #B23600;  /* white on it: 6.14:1 */
+
         --nr-footer-bg: #10161A;
         --nr-footer-fg: #E8EDEF;
         --nr-footer-muted: #A9B2B8;
@@ -159,7 +175,11 @@
       background: var(--nr-primary-fill); color: #fff; padding: 12px 20px;
       font-family: var(--font-headline); font-weight: 600;
     }
+    /* A skip link and a button are anchors, so the generic `a:hover` colour would
+       override their own white text — 1.77:1 on the teal fill. Restate it. */
     .skip-link:focus { left: 0; color: #fff; }
+    .skip-link:hover, .skip-link:focus:hover { color: #fff; }
+    .btn:hover, .btn-primary:hover, .btn-secondary:hover, .issue-link:hover { color: #fff; }
 
     /* ============================== NAV ============================== */
     .navbar {
@@ -195,8 +215,8 @@
     .hero {
       /* Both stops carry white text, so both clear 4.5:1. A gradient has no
          backgroundColor for an audit to read, hence the solid fallback too. */
-      background-color: var(--nr-primary-fill);
-      background-image: linear-gradient(135deg, var(--nr-primary-fill) 0%, var(--nr-primary-text) 100%);
+      background-color: var(--nr-hero-from);
+      background-image: linear-gradient(135deg, var(--nr-hero-from) 0%, var(--nr-hero-to) 100%);
       color: #fff; text-align: center;
       padding: var(--space-4xl) var(--space-lg);
     }
@@ -287,9 +307,9 @@
     /* ============================== COMPONENTS ============================== */
     .btn { display: inline-block; font-family: var(--font-headline); font-weight: 600; font-size: 16px; line-height: 1; letter-spacing: .5px; text-align: center; padding: 12px 32px; border: none; border-radius: 4px; cursor: pointer; transition: all .3s ease; }
     .btn-primary { background: var(--nr-primary-fill); color: #fff; }
-    .btn-primary:hover { background: var(--nr-primary-text); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(47,153,164,.3); }
+    .btn-primary:hover { background: var(--nr-primary-fill-hover); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(47,153,164,.3); }
     .btn-secondary { background: var(--nr-accent-dark); color: #fff; }
-    .btn-secondary:hover { background: var(--nr-accent-text); color: #fff; box-shadow: 0 4px 12px rgba(255,77,0,.3); }
+    .btn-secondary:hover { background: var(--nr-accent-fill-hover); color: #fff; box-shadow: 0 4px 12px rgba(255,77,0,.3); }
     .btn-outline { background: transparent; color: var(--nr-primary-text); border: 2px solid var(--nr-primary); }
     .btn-outline:hover { background: var(--nr-primary-fill); color: #fff; }
     .btn-small { padding: 8px 20px; font-size: 14px; }

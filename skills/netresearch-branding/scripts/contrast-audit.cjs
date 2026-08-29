@@ -22,6 +22,12 @@
  * Scope: text contrast (SC 1.4.3). It does NOT evaluate SC 1.4.11 non-text contrast —
  * control boundaries, focus rings, icons — so a green run is not a full AA verdict.
  *
+ * `stateFailures` repeats the measurement with :hover and :focus-visible forced on every
+ * interactive element (CDP CSS.forcePseudoState), because a hover colour is invisible to a
+ * static read of the page and is where a generic `a:hover` quietly repaints a button label.
+ * Transitions are disabled first: with `transition: color .2s`, getComputedStyle returns the
+ * value from BEFORE the change and every such probe reports "nothing changed".
+ *
  * Elements inside a [data-contrast-demo] subtree are skipped and counted in
  * demoExemptElements: a style guide has to be able to SHOW a failing pair. Use it only
  * for specimens the surrounding copy names as such, never to silence page chrome. The brand fact this exists for: white on #2F99A4 is 3.38:1 —
@@ -63,6 +69,8 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
   page.on('response', (r) => { if (r.status() >= 400) badRequests.push({ what: `HTTP ${r.status()}`, url: r.url(), type: r.request().resourceType(), gating: gates(r.request().resourceType()) }); });
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
+  // Kill transitions before measuring anything: see the note on stateFailures above.
+  await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important;animation:none !important}' });
   const result = await page.evaluate(() => {
     const parse = (c) => { const m = c.match(/\d+(\.\d+)?/g); return m ? { r: +m[0], g: +m[1], b: +m[2], a: m[3] !== undefined ? +m[3] : 1 } : null; };
     const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
@@ -170,6 +178,23 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
         if (!seen.has(key)) seen.set(key, { element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
       }
     }
+    // Re-used by the interactive-state pass, which runs after this evaluate returns.
+    window.__measureStates = ({ state, selector }) => {
+      const out = [];
+      for (const el of document.querySelectorAll(selector)) {
+        if (el.closest('[data-contrast-demo]')) continue;
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) continue;
+        if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
+        const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
+        const size = Number.parseFloat(cs.fontSize);
+        const bold = (Number.parseInt(cs.fontWeight, 10) || 400) >= 700;
+        const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
+        if (r < need) out.push({ state, element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
+      }
+      return out;
+    };
+
     return {
       contrastFailures: [...seen.values()],
       // Advisory only: readability, not conformance. Never gates the exit code.
@@ -188,10 +213,26 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
       unreadableStylesheets: [...document.styleSheets].filter((ss) => { try { return !ss.cssRules; } catch (e) { return true; } }).length,
     };
   });
+  // --- interactive states -------------------------------------------------------
+  const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('DOM.enable'); await cdp.send('CSS.enable');
+  const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
+  const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: INTERACTIVE });
+  const force = async (classes) => { for (const nodeId of nodeIds) { try { await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: classes }); } catch (e) { /* detached */ } } };
+  const stateFailures = [];
+  for (const state of ['hover', 'focus-visible']) {
+    await force([state]);
+    const found = await page.evaluate((args) => window.__measureStates(args), { state, selector: INTERACTIVE });
+    stateFailures.push(...found);
+    await force([]);
+  }
+  result.stateFailures = stateFailures;
+
   result.scheme = scheme;
   result.failedRequests = badRequests;
   const blocking = badRequests.filter((r) => r.gating);
   console.log(JSON.stringify(result, null, 1));
   await browser.close();
-  process.exit(result.contrastFailures.length || blocking.length ? 1 : 0);
+  process.exit(result.contrastFailures.length || result.stateFailures.length || blocking.length ? 1 : 0);
 })().catch((e) => { console.error(e.message); process.exit(2); });
