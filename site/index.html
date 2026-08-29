@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Netresearch Branding Skill — Living Style Guide &amp; Compliance Demo</title>
   <meta name="description" content="A self-verifying showcase of every Netresearch brand rule defined by the netresearch-branding Agent Skill — colors, typography, components, logo, TYPO3 extension branding, checkpoints, and the ambiguous rules that still need resolving.">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -34,6 +35,23 @@
       --nr-border-light: #E5E5E5;
       --nr-bg: #FFFFFF;
       --nr-bg-alt: #F5F5F5;
+      --nr-surface: #FFFFFF;        /* cards, tables, framed demos */
+
+      /* Opaque tints. A translucent tint has no ratio of its own — it composites
+         against whatever is behind it, so every pair here is a fixed one. */
+      --nr-tint-pass-bg: #E6F4EA;  --nr-tint-pass-fg: #14602A;
+      --nr-tint-fail-bg: #FBE9EB;  --nr-tint-fail-fg: #8E1922;
+      --nr-tint-warn-bg: #FDF3D7;  --nr-tint-warn-fg: #6B4E03;
+      --nr-tint-info-bg: #E4F2F4;  --nr-tint-info-fg: #15585E;
+      --nr-callout-info-bg: #EDF6F7;
+      --nr-callout-accent-bg: #FFF1EB;
+      --nr-do-bg: #F3FAF5;
+      --nr-dont-bg: #FDF5F6;
+
+      --nr-footer-bg: #585961;
+      --nr-footer-fg: #FFFFFF;
+      --nr-footer-muted: #D5D6D9;
+      --nr-footer-link-hover: #A8E4EB;
 
       --nr-success: #28A745;
       --nr-warning: #FFC107;
@@ -54,6 +72,50 @@
       --radius: 8px;
       --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
       --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    /* ============================================================
+       Dark scheme. The brand hues do not survive a dark surface as text:
+       #2F99A4 is 5.28:1 on #14181B but only 3.38:1 on a lifted row, so text
+       roles lift to #5FC6D2 / #7FD6E0 while #2F99A4 keeps the non-text ones.
+       Values from references/colors.md "Dark backgrounds"; every pair below
+       was measured, none is under 7:1.
+       ============================================================ */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --nr-bg: #14181B;
+        --nr-bg-alt: #1A2024;
+        --nr-surface: #1E2429;
+
+        --nr-text: #E8EDEF;             /* 13.28:1 on the surface */
+        --nr-text-secondary: #A9B2B8;   /* 7.28:1 */
+
+        --nr-primary-fill: #1B6C74;     /* white text on it: 6.10:1 */
+        --nr-primary-text: #5FC6D2;     /* 7.83:1 on the surface */
+        --nr-primary-deep: #7FD6E0;     /* hover lifts, it does not darken */
+        --nr-accent-text: #FF9166;      /* 7.09:1 */
+
+        --nr-border: #2A3238;
+        --nr-border-strong: #6B7680;    /* 3.38:1 on the surface, SC 1.4.11 */
+        --nr-border-light: #232A30;
+
+        --nr-tint-pass-bg: #12301C;  --nr-tint-pass-fg: #8FE0A6;
+        --nr-tint-fail-bg: #3A1418;  --nr-tint-fail-fg: #FFA7AE;
+        --nr-tint-warn-bg: #33280A;  --nr-tint-warn-fg: #F2CE5C;
+        --nr-tint-info-bg: #0E2E33;  --nr-tint-info-fg: #7FD6E0;
+        --nr-callout-info-bg: #10262A;
+        --nr-callout-accent-bg: #2A1710;
+        --nr-do-bg: #101F16;
+        --nr-dont-bg: #2A1216;
+
+        --nr-footer-bg: #10161A;
+        --nr-footer-fg: #E8EDEF;
+        --nr-footer-muted: #A9B2B8;
+        --nr-footer-link-hover: #7FD6E0;
+
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.6);
+      }
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -198,7 +260,7 @@
     @media (max-width: 680px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
 
     /* ============================== COLOR SWATCHES ============================== */
-    .swatch { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--nr-border-light); box-shadow: var(--shadow-sm); background:#fff; }
+    .swatch { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--nr-border-light); box-shadow: var(--shadow-sm); background: var(--nr-surface); }
     .swatch .chip { height: 120px; display: flex; align-items: flex-end; padding: var(--space-sm); }
     .swatch .chip .sample { font-family: var(--font-headline); font-weight: 700; font-size: 15px; }
     .swatch .meta { padding: var(--space-md); }
@@ -208,7 +270,7 @@
     .swatch .issue-link { margin: 0 var(--space-md) var(--space-md); }
 
     /* --- contrast verifier table --- */
-    .contrast-table, .demo-table, .cp-table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: var(--shadow-sm); border-radius: var(--radius); overflow: hidden; }
+    .contrast-table, .demo-table, .cp-table { width: 100%; border-collapse: collapse; background: var(--nr-surface); box-shadow: var(--shadow-sm); border-radius: var(--radius); overflow: hidden; }
     .contrast-table th { background: var(--nr-primary-fill); color: #fff; font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 12px 16px; font-size: 14px; }
     .contrast-table td { padding: 10px 16px; border-bottom: 1px solid var(--nr-border-light); font-size: 14px; vertical-align: middle; }
     .contrast-table tr:last-child td { border-bottom: none; }
@@ -217,8 +279,8 @@
     .badge { display: inline-block; font-family: var(--font-headline); font-weight: 600; font-size: 12px; padding: 2px 9px; border-radius: 999px; }
     /* Opaque tints: a translucent background has no ratio of its own, and the audit —
        like any static checker — resolves it to whatever sits behind it. */
-    .badge.pass { background: #E6F4EA; color: #14602A; }
-    .badge.fail { background: #FBE9EB; color: #8E1922; }
+    .badge.pass { background: var(--nr-tint-pass-bg); color: var(--nr-tint-pass-fg); }
+    .badge.fail { background: var(--nr-tint-fail-bg); color: var(--nr-tint-fail-fg); }
     .doc-claim { font-style: italic; color: var(--nr-text-secondary); }
     .mismatch { color: var(--nr-error); font-weight: 600; font-style: normal; }
 
@@ -235,7 +297,7 @@
     .btn:disabled, .btn[disabled] { opacity: .5; cursor: not-allowed; }
     .btn-row { display: flex; gap: var(--space-md); flex-wrap: wrap; align-items: center; }
 
-    .demo-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; transition: all .3s ease; }
+    .demo-card { background: var(--nr-surface); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; transition: all .3s ease; }
     .demo-card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px); }
     .demo-card .cc { padding: var(--space-lg); }
     .demo-card .ct { font-family: var(--font-headline); font-weight: 600; font-size: 20px; margin-bottom: var(--space-xs); }
@@ -243,7 +305,7 @@
 
     .form-group { margin-bottom: var(--space-md); }
     .form-label { display: block; font-family: var(--font-body); font-weight: 600; font-size: 14px; margin-bottom: 6px; }
-    .form-input, .form-textarea { width: 100%; font-family: var(--font-body); font-size: 16px; color: var(--nr-text); padding: 12px 16px; border: 1px solid var(--nr-border-strong); border-radius: 4px; background: #fff; transition: all .2s ease; }
+    .form-input, .form-textarea { width: 100%; font-family: var(--font-body); font-size: 16px; color: var(--nr-text); padding: 12px 16px; border: 1px solid var(--nr-border-strong); border-radius: 4px; background: var(--nr-surface); transition: all .2s ease; }
     .form-input:focus, .form-textarea:focus { outline: none; border-color: var(--nr-primary); box-shadow: 0 0 0 3px rgba(47,153,164,.1); }
     .form-input::placeholder { color: var(--nr-text-secondary); }
     .form-help { font-size: 13px; color: var(--nr-text-secondary); margin-top: 6px; }
@@ -258,20 +320,20 @@
     .demo-table tbody tr:last-child td { border-bottom: none; }
 
     .alert { border-radius: var(--radius); padding: var(--space-md) var(--space-lg); margin-bottom: var(--space-md); border-left: 4px solid; }
-    .alert-info { background: #EDF6F7; border-color: var(--nr-primary); }
-    .alert-accent { background: #FFF1EB; border-color: var(--nr-accent); }
+    .alert-info { background: var(--nr-callout-info-bg); border-color: var(--nr-primary); }
+    .alert-accent { background: var(--nr-callout-accent-bg); border-color: var(--nr-accent); }
     .alert h4 { margin: 0 0 4px; }
 
     /* --- DO / DON'T framing for intentional anti-pattern demos --- */
     .dodont { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); }
     @media (max-width: 680px) { .dodont { grid-template-columns: 1fr; } }
     .do, .dont { border-radius: var(--radius); padding: var(--space-lg); border: 2px solid; }
-    .do { border-color: var(--nr-success); background: #F3FAF5; }
-    .dont { border-color: var(--nr-error); background: #FDF5F6; }
+    .do { border-color: var(--nr-success); background: var(--nr-do-bg); }
+    .dont { border-color: var(--nr-error); background: var(--nr-dont-bg); }
     .do .tag, .dont .tag { font-family: var(--font-headline); font-weight: 700; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; display: inline-block; margin-bottom: var(--space-sm); }
-    .do .tag { color: #14602A; }
-    .dont .tag { color: #8E1922; }
-    .anti { background: #fff; border: 1px dashed var(--nr-error); border-radius: 6px; padding: var(--space-md); }
+    .do .tag { color: var(--nr-tint-pass-fg); }
+    .dont .tag { color: var(--nr-tint-fail-fg); }
+    .anti { background: var(--nr-surface); border: 1px dashed var(--nr-error); border-radius: 6px; padding: var(--space-md); }
     .specimens { display: flex; gap: 12px; flex-wrap: wrap; }
     .specimen { padding: 10px 16px; border-radius: 6px; }
     .resolved-findings { margin-top: var(--space-lg); }
@@ -279,7 +341,7 @@
 
     /* --- logo clear-space demo --- */
     .logo-demo { display: flex; gap: var(--space-2xl); flex-wrap: wrap; align-items: stretch; }
-    .logo-frame { background: #fff; border: 1px solid var(--nr-border-light); border-radius: var(--radius); padding: var(--space-lg); text-align: center; }
+    .logo-frame { background: var(--nr-surface); border: 1px solid var(--nr-border-light); border-radius: var(--radius); padding: var(--space-lg); text-align: center; }
     .logo-frame .clear { display: inline-block; padding: 25%; outline: 1px dashed var(--nr-border); }
     .logo-frame svg { display: block; }
     .logo-sizes { display: flex; gap: var(--space-lg); align-items: flex-end; flex-wrap: wrap; }
@@ -288,13 +350,13 @@
 
     /* --- checkpoints table --- */
     .cp-table { font-size: 14px; }
-    .cp-table th { background: var(--nr-text); color: #fff; font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 12px 14px; }
+    .cp-table th { background: var(--nr-footer-bg); color: var(--nr-footer-fg); font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 12px 14px; }
     .cp-table td { padding: 10px 14px; border-bottom: 1px solid var(--nr-border-light); vertical-align: top; }
     .cp-table tbody tr:hover { background: var(--nr-bg-alt); }
     .sev { font-family: var(--font-headline); font-weight: 600; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
-    .sev.error { background: #FBE9EB; color: #8E1922; }
-    .sev.warning { background: #FDF3D7; color: #6B4E03; }
-    .sev.info { background: #E4F2F4; color: var(--nr-primary-text); }
+    .sev.error { background: var(--nr-tint-fail-bg); color: var(--nr-tint-fail-fg); }
+    .sev.warning { background: var(--nr-tint-warn-bg); color: var(--nr-tint-warn-fg); }
+    .sev.info { background: var(--nr-tint-info-bg); color: var(--nr-tint-info-fg); }
     .cp-id { font-family: ui-monospace, monospace; font-weight: 600; white-space: nowrap; }
 
     /* --- findings --- */
@@ -306,16 +368,18 @@
     .finding details[open] summary { margin-bottom: var(--space-sm); }
 
     /* ============================== FOOTER ============================== */
-    .footer { background: var(--nr-text); color: #fff; padding: var(--space-3xl) 0 var(--space-lg); }
+    .footer { background: var(--nr-footer-bg); color: var(--nr-footer-fg); padding: var(--space-3xl) 0 var(--space-lg); }
     .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-xl); margin-bottom: var(--space-xl); }
-    .footer h4 { color: #fff; }
-    .footer a { color: #fff; }
-    .footer a:hover { color: #A8E4EB; }
+    .footer h4 { color: var(--nr-footer-fg); }
+    .footer a { color: var(--nr-footer-fg); }
+    .footer a:hover { color: var(--nr-footer-link-hover); }
     .footer ul { list-style: none; padding: 0; margin: 0; }
     .footer li { margin-bottom: var(--space-xs); }
     .footer-brand { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); }
+    /* The logo keeps its white plate in both schemes — recolouring it is a brand
+       violation (references/logo.md), so it gets a light surface instead. */
     .footer-brand svg { width: 40px; height: 40px; background: #fff; border-radius: 6px; padding: 4px; }
-    .footer-bottom { border-top: 1px solid rgba(255,255,255,.15); padding-top: var(--space-lg); text-align: center; color: #D5D6D9; font-size: 14px; }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,.15); padding-top: var(--space-lg); text-align: center; color: var(--nr-footer-muted); font-size: 14px; }
     .footer-bottom a { color: #fff; }
   </style>
 </head>
@@ -428,11 +492,13 @@
       </div>
 
       <h3 style="margin-top:var(--space-2xl)">Live WCAG contrast verifier</h3>
-      <p style="max-width:75ch">The brand docs hard-code contrast ratios — but contrast is symmetric, so a pair cannot have two different values. These rows are computed <strong>in your browser</strong> from the hex values (WCAG 2.x relative luminance). Where the document’s stated number disagrees with the math, the mismatch is flagged. This is <a href="#F2">Finding&nbsp;F2</a>.</p>
+      <p style="max-width:75ch">The brand docs hard-code contrast ratios — but contrast is symmetric, so a pair cannot have two different values. These rows are computed <strong>in your browser</strong> from the hex values, both ways: WCAG 2.x relative luminance, and APCA (APCA-W3 0.1.9). Where the document’s stated number disagrees with the math, the mismatch is flagged.</p>
+
+      <p style="max-width:75ch"><strong>The two columns answer different questions.</strong> WCAG is the compliance gate and is not negotiable. APCA is a perceptual readability measure: its Lc is signed — positive means dark text on a light background, negative the reverse — and the size it permits depends on the font weight, so there is no single passing number. A pair can clear WCAG and still read poorly at 14px, and an APCA pass never waives a WCAG failure. The APCA reading column names the smallest regular-weight (400) text the Lc allows, from APCA’s own font table.</p>
       <div style="overflow-x:auto">
         <table class="contrast-table" id="contrastTable">
           <thead>
-            <tr><th>Foreground</th><th>Background</th><th>Computed</th><th>AA normal</th><th>AA large</th><th>Doc claim (colors.md)</th></tr>
+            <tr><th>Foreground</th><th>Background</th><th>WCAG</th><th>AA normal</th><th>AA large</th><th>APCA Lc</th><th>APCA reading</th><th>Doc claim (colors.md)</th></tr>
           </thead>
           <tbody><!-- injected by JS --></tbody>
         </table>
@@ -826,6 +892,44 @@
       return td;
     }
 
+    /* APCA-W3 0.1.9 (github.com/Myndex/apca-w3, W3 licence) — same coefficients as
+       WCAG; the differences are the transfer curve, the asymmetric polarity and the
+       font size/weight input. Mirrors scripts/contrast-audit.cjs. */
+    var SA98G = { mainTRC: 2.4, sRco: 0.2126729, sGco: 0.7151522, sBco: 0.0721750,
+      normBG: 0.56, normTXT: 0.57, revTXT: 0.62, revBG: 0.65, blkThrs: 0.022,
+      blkClmp: 1.414, scaleBoW: 1.14, scaleWoB: 1.14, loBoWoffset: 0.027,
+      loWoBoffset: 0.027, deltaYmin: 0.0005, loClip: 0.1 };
+    function apcaY(hex) {
+      var n = hex.replace("#", "");
+      var e = function (v) { return Math.pow(parseInt(v, 16) / 255, SA98G.mainTRC); };
+      return SA98G.sRco * e(n.substr(0, 2)) + SA98G.sGco * e(n.substr(2, 2)) + SA98G.sBco * e(n.substr(4, 2));
+    }
+    function apcaLc(fg, bg) {
+      var t = apcaY(fg), b = apcaY(bg), sapc, out;
+      t = t > SA98G.blkThrs ? t : t + Math.pow(SA98G.blkThrs - t, SA98G.blkClmp);
+      b = b > SA98G.blkThrs ? b : b + Math.pow(SA98G.blkThrs - b, SA98G.blkClmp);
+      if (Math.abs(b - t) < SA98G.deltaYmin) return 0;
+      if (b > t) {
+        sapc = (Math.pow(b, SA98G.normBG) - Math.pow(t, SA98G.normTXT)) * SA98G.scaleBoW;
+        out = sapc < SA98G.loClip ? 0 : sapc - SA98G.loBoWoffset;
+      } else {
+        sapc = (Math.pow(b, SA98G.revBG) - Math.pow(t, SA98G.revTXT)) * SA98G.scaleWoB;
+        out = sapc > -SA98G.loClip ? 0 : sapc + SA98G.loWoBoffset;
+      }
+      return out * 100;
+    }
+    /* fontMatrixAscend, weight-400 column: the smallest px size each Lc permits.
+       777 = non-text only. */
+    var APCA_400 = [[30,108],[35,96],[40,60],[45,42],[50,32],[55,28],[60,24],[65,21.75],
+      [70,19.5],[75,18],[80,17.25],[85,16.5],[90,16],[95,15.5],[100,15],[105,14.5],
+      [110,14],[115,12.5],[120,11],[125,10]];
+    function apcaReading(lc) {
+      var a = Math.abs(lc), i;
+      if (a < 29.5) return "non-text only";
+      for (i = APCA_400.length - 1; i >= 0; i--) if (a >= APCA_400[i][0]) return "≥ " + APCA_400[i][1] + "px at 400";
+      return "non-text only";
+    }
+
     var pairs = [
       { fg: "#585961", bg: "#FFFFFF", fgN: "Anthracite", bgN: "White", claim: "6.96:1 — AA all text" },
       { fg: "#FFFFFF", bg: "#2F99A4", fgN: "White", bgN: "Turquoise", claim: "3.38:1 — large text & UI only" },
@@ -837,7 +941,13 @@
       { fg: "#9A2E00", bg: "#FFFFFF", fgN: "Accent text", bgN: "White", claim: "7.6:1 — AA all text" },
       { fg: "#6E6F78", bg: "#FFFFFF", fgN: "Secondary grey", bgN: "White", claim: "4.99:1 — help & meta text" },
       { fg: "#8A8B93", bg: "#FFFFFF", fgN: "Control border", bgN: "White", claim: "3.39:1 — non-text, SC 1.4.11" },
-      { fg: "#CCCDCC", bg: "#FFFFFF", fgN: "Light grey", bgN: "White", claim: "1.59:1 — fails, dividers only" }
+      { fg: "#CCCDCC", bg: "#FFFFFF", fgN: "Light grey", bgN: "White", claim: "1.59:1 — fails, dividers only" },
+      { fg: "#E8EDEF", bg: "#1E2429", fgN: "Dark: body text", bgN: "Dark surface", claim: "dark scheme — body copy" },
+      { fg: "#A9B2B8", bg: "#1E2429", fgN: "Dark: secondary", bgN: "Dark surface", claim: "dark scheme — help & meta" },
+      { fg: "#5FC6D2", bg: "#1E2429", fgN: "Dark: links", bgN: "Dark surface", claim: "dark scheme — links & labels" },
+      { fg: "#2F99A4", bg: "#1E2429", fgN: "Dark: brand hue", bgN: "Dark surface", claim: "dark scheme — non-text only" },
+      { fg: "#FFFFFF", bg: "#1B6C74", fgN: "White", bgN: "Dark teal fill", claim: "dark scheme — fill under white text" },
+      { fg: "#6B7680", bg: "#1E2429", fgN: "Dark: control border", bgN: "Dark surface", claim: "dark scheme — non-text, SC 1.4.11" }
     ];
     /* ---------- do / don't specimens ---------- */
     var specimens = {
@@ -877,6 +987,10 @@
       tr.appendChild(tdR);
       var tdN = el("td"); tdN.appendChild(badge(r >= 4.5)); tr.appendChild(tdN);
       var tdL = el("td"); tdL.appendChild(badge(r >= 3.0)); tr.appendChild(tdL);
+      var lc = apcaLc(p.fg, p.bg);
+      tr.appendChild(el("td", "ratio", (lc > 0 ? "+" : "") + lc.toFixed(1)));
+      tr.appendChild(el("td", null, apcaReading(lc)));
+
       var tdC = el("td", "doc-claim", p.claim + " ");
       var m = p.claim.match(/(\d+\.\d+):1/);
       if (m && Math.abs(parseFloat(m[1]) - r) >= 0.25) {

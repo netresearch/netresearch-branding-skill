@@ -2,7 +2,11 @@
 /**
  * contrast-audit.cjs — measure a rendered page against WCAG AA in headless Chromium.
  *
- * Usage: node contrast-audit.cjs <url-or-file> [--width 1400] [--header "Authorization: Bearer …"]
+ * Usage: node contrast-audit.cjs <url-or-file> [--width 1400] [--scheme light|dark]
+ *        [--header "Authorization: Bearer …"]
+ *
+ * A dark palette is a separate set of colour pairs: a light-only run says nothing
+ * about it. Run both schemes on any page that ships one.
  * Needs playwright-core (any local install: set PLAYWRIGHT_CORE to its directory, or let
  * `require('playwright-core')` resolve it).
  *
@@ -36,14 +40,16 @@ const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || 'playwright-core');
 const args = process.argv.slice(2);
 const target = args.find((a) => !a.startsWith('--'));
-if (!target) { console.error('usage: contrast-audit.cjs <url-or-file> [--width N] [--header "Name: value"]'); process.exit(2); }
+if (!target) { console.error('usage: contrast-audit.cjs <url-or-file> [--width N] [--scheme light|dark] [--header "Name: value"]'); process.exit(2); }
 const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
 const width = Number.parseInt(opt('--width', '1400'), 10);
 const header = opt('--header', '');
+const scheme = opt('--scheme', 'light');
+if (!['light', 'dark'].includes(scheme)) { console.error(`--scheme must be light or dark, got ${scheme}`); process.exit(2); }
 const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
 (async () => {
   const browser = await chromium.launch({ headless: true });
-  const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: true,
+  const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: true, colorScheme: scheme,
     extraHTTPHeaders: header ? { [header.split(':')[0].trim()]: header.split(':').slice(1).join(':').trim() } : {} });
   const page = await ctx.newPage();
   // A page whose stylesheet 404s renders unstyled and reports zero contrast failures —
@@ -182,6 +188,7 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
       unreadableStylesheets: [...document.styleSheets].filter((ss) => { try { return !ss.cssRules; } catch (e) { return true; } }).length,
     };
   });
+  result.scheme = scheme;
   result.failedRequests = badRequests;
   const blocking = badRequests.filter((r) => r.gating);
   console.log(JSON.stringify(result, null, 1));

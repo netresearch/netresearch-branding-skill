@@ -307,14 +307,31 @@ wrong way: `#15585E` is *less* legible there, not more. Lift the same hues
 instead. The link and accent values are the ones already verified against
 netresearch.de — see "WCAG-AAA contrast variants" below.
 
-| Role | Token | Measured |
-|---|---|---|
-| Body text | `#E8EDEF` | 15.1:1 on `#14181B` |
-| Links, small labels, headings | `#5FC6D2` | 8.9:1 on `#14181B`, 5.7:1 on a lifted `#363a40` |
-| Brand accents | `#7FD6E0` | 6.9:1 on `#363a40` |
-| Fills carrying white text | `#1B6C74` | 6.1:1 |
-| Accent text on its own tint | `#FF7A45` | 4.8:1 on `#4a2d26` (`#FF4D00` is 3.7:1 there) |
-| Borders, rules, chart series | `#2F99A4` | non-text, 3:1 applies |
+| Role | Token | Value | Measured |
+|---|---|---|---|
+| Page background | `--nr-bg` | `#14181B` | — |
+| Section background | `--nr-bg-alt` | `#1A2024` | — |
+| Card / table surface | `--nr-surface` | `#1E2429` | — |
+| Body text | `--nr-text` | `#E8EDEF` | 15.1:1 on `#14181B`, 13.3:1 on the surface |
+| Help, meta, captions | `--nr-text-secondary` | `#A9B2B8` | 8.3:1 / 7.3:1 |
+| Links, small labels, headings | `--nr-primary-text` | `#5FC6D2` | 8.9:1 on `#14181B`, 7.8:1 on the surface, 5.7:1 on a lifted `#363a40` |
+| Hover for those — it lifts, it does not darken | `--nr-primary-deep` | `#7FD6E0` | 10.7:1 on `#14181B`, 6.9:1 on `#363a40` |
+| Fills carrying white text | `--nr-primary-fill` | `#1B6C74` | 6.1:1 |
+| Accent text | `--nr-accent-text` | `#FF9166` | 8.1:1 on `#14181B`, 7.1:1 on the surface |
+| Accent text on its own tint | — | `#FF7A45` | 4.8:1 on `#4a2d26` (`#FF4D00` is 3.7:1 there) |
+| Control boundary (SC 1.4.11) | `--nr-border-strong` | `#6B7680` | 3.9:1 / 3.4:1 — non-text, 3:1 applies |
+| Dividers, rules | `--nr-border` | `#2A3238` | decoration only |
+| Borders, icons, chart series | `--nr-primary` | `#2F99A4` | non-text, 3:1 applies |
+| Footer surface | `--nr-footer-bg` | `#10161A` | `#E8EDEF` on it: 15.5:1 |
+
+Status tints on dark, opaque (a translucent tint has no ratio of its own):
+
+| Tint | Background | Foreground | Measured |
+|---|---|---|---|
+| Pass | `#12301C` | `#8FE0A6` | 9.1:1 |
+| Fail | `#3A1418` | `#FFA7AE` | 8.8:1 |
+| Warning | `#33280A` | `#F2CE5C` | 9.5:1 |
+| Info | `#0E2E33` | `#7FD6E0` | 8.6:1 |
 
 Two traps this table exists for:
 

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" role="img" aria-label="Netresearch">
+  <title>Netresearch DTT GmbH</title>
+  <!-- 16px-optimised Netresearch symbol. Fills are the brand values #2F99A4 and
+       #585961 per references/logo.md — the 16px asset in circulation ships #2999a4
+       and #595a62, which that file calls a brand-debt violation (Finding F3). -->
+  <path fill="#2F99A4" d="M11.16,0V1.68h1.75a1.41,1.41,0,0,1,1.41,1.41v9.82a1.41,1.41,0,0,1-1.41,1.41H11.16V16h2.55A2.28,2.28,0,0,0,16,13.71V2.29A2.28,2.28,0,0,0,13.71,0ZM2.29,0A2.28,2.28,0,0,0,0,2.29V13.71A2.28,2.28,0,0,0,2.29,16H4.84V14.32H3.09a1.41,1.41,0,0,1-1.41-1.41V3.09A1.41,1.41,0,0,1,3.09,1.68H4.84V0Z"/>
+  <path fill="#585961" d="M11.79,6.42c0-1.84-.74-3.08-2.61-3.08A4.18,4.18,0,0,0,5.76,4.75l0-1.17H4.21v8.84H5.89V6.65A3.32,3.32,0,0,1,8.72,4.81c1.46,0,1.34,1.4,1.39,2.44v5.17h1.68"/>
+</svg>
