@@ -10,7 +10,13 @@
  * for ≥24 px / ≥18.66 px bold) with foreground, effective background and the measured
  * ratio; whether a skip link, a labelled <nav>, <main> and table captions exist; the
  * smallest rendered font size; SVGs inside text badges without aria-hidden. Hidden
- * elements are skipped. The brand fact this exists for: white on #2F99A4 is 3.38:1 —
+ * elements are skipped. Exits non-zero on a contrast failure OR on a stylesheet/script
+ * the page failed to load: an unstyled page has no contrast failures and would otherwise
+ * pass for the wrong reason. Other failed requests (a template's placeholder images) are
+ * listed under failedRequests without failing the run.
+ *
+ * Scope: text contrast (SC 1.4.3). It does NOT evaluate SC 1.4.11 non-text contrast —
+ * control boundaries, focus rings, icons — so a green run is not a full AA verdict. The brand fact this exists for: white on #2F99A4 is 3.38:1 —
  * fine for large text and UI shapes, a fail for 14 px labels; use #15585E for those.
  *
  * `apcaWarnings` additionally reports each element whose APCA lightness contrast (Lc)
@@ -36,6 +42,15 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
   const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: true,
     extraHTTPHeaders: header ? { [header.split(':')[0].trim()]: header.split(':').slice(1).join(':').trim() } : {} });
   const page = await ctx.newPage();
+  // A page whose stylesheet 404s renders unstyled and reports zero contrast failures —
+  // it passes for the wrong reason. Collect every failed subresource and fail on it.
+  // Only stylesheets and scripts gate the exit code: a missing image leaves the measured
+  // colours intact, a missing stylesheet removes all of them. Templates legitimately point
+  // at placeholder images, so those are reported and not failed on.
+  const badRequests = [];
+  const gates = (t) => t === 'stylesheet' || t === 'script';
+  page.on('requestfailed', (r) => badRequests.push({ what: r.failure()?.errorText || 'failed', url: r.url(), type: r.resourceType(), gating: gates(r.resourceType()) }));
+  page.on('response', (r) => { if (r.status() >= 400) badRequests.push({ what: `HTTP ${r.status()}`, url: r.url(), type: r.request().resourceType(), gating: gates(r.request().resourceType()) }); });
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
   const result = await page.evaluate(() => {
@@ -134,9 +149,15 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
       smallestFontPx: +smallest.toFixed(1),
       decorativeSvgWithoutAriaHidden: [...document.querySelectorAll('a svg, button svg, .badge svg')].filter((s) => s.getAttribute('aria-hidden') !== 'true' && !s.getAttribute('role')).length,
       darkScheme: [...document.styleSheets].some((ss) => { try { return [...ss.cssRules].some((r) => /prefers-color-scheme|data-theme/.test(r.cssText)); } catch (e) { return false; } }),
+      // Stylesheets the page linked but the browser could not read (cross-origin, or not
+      // served). Rules inside them are invisible to `darkScheme`, so report the count
+      // rather than letting it read as "no dark theme".
+      unreadableStylesheets: [...document.styleSheets].filter((ss) => { try { return !ss.cssRules; } catch (e) { return true; } }).length,
     };
   });
+  result.failedRequests = badRequests;
+  const blocking = badRequests.filter((r) => r.gating);
   console.log(JSON.stringify(result, null, 1));
   await browser.close();
-  process.exit(result.contrastFailures.length ? 1 : 0);
+  process.exit(result.contrastFailures.length || blocking.length ? 1 : 0);
 })().catch((e) => { console.error(e.message); process.exit(2); });

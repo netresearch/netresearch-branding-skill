@@ -28,7 +28,8 @@
   --color-text-secondary: #6E6F78; /* 4.99:1 on white, 4.58:1 on #F5F5F5 */
   --color-background: #FFFFFF;
   --color-background-alt: #F5F5F5;
-  --color-border: #CCCDCC;
+  --color-border: #CCCDCC;        /* dividers and decoration only: 1.59:1 on white */
+  --color-border-strong: #8A8B93; /* boundaries of interactive controls: 3.39:1 (SC 1.4.11 needs 3:1) */
   --color-border-light: #E5E5E5;
 
   /* Typography */
@@ -442,7 +443,9 @@ a:hover {
   font-size: var(--font-size-base);
   color: var(--color-text-primary);
   padding: 12px 16px;
-  border: 1px solid var(--color-border);
+  /* The visible boundary of a form control is a UI component under SC 1.4.11 and needs
+     3:1 — --color-border is 1.59:1 and is for dividers. */
+  border: 1px solid var(--color-border-strong);
   border-radius: 4px;
   background: var(--color-background);
   transition: all 0.3s ease;

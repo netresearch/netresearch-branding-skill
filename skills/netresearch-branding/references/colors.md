@@ -133,11 +133,12 @@ body, p, h1, h2, h3 {
 - Subtle borders and dividers
 - Disabled states
 - Alternating table rows
-- Input field borders
 
 **Contrast Note:**
-- Not suitable for text on white background
-- Use for backgrounds and UI elements only
+- Not suitable for text on white background (1.59:1)
+- Not suitable for the visible boundary of an interactive control either: SC 1.4.11
+  requires 3:1 for that, so an input or select border needs `#8A8B93` (3.39:1 on
+  white, 3.11:1 on `#F5F5F5`). Keep `#CCCDCC` for dividers, rules and decoration.
 
 **Web Implementation:**
 ```css
@@ -381,7 +382,8 @@ It needs resolved CSS and a compositing model, so it belongs in a browser:
   --color-text-secondary: #8A8B93;
   --color-background: #FFFFFF;
   --color-background-alt: #F5F5F5;
-  --color-border: #CCCDCC;
+  --color-border: #CCCDCC;        /* dividers, decoration */
+  --color-border-strong: #8A8B93; /* boundaries of interactive controls, 3:1 */
   --color-border-light: #E5E5E5;
 
   /* Semantic Colors */
@@ -416,6 +418,7 @@ $color-text-secondary: lighten($color-anthracite, 15%);
 
 // Borders
 $color-border: $color-light-grey;
+$color-border-strong: #8A8B93;
 $color-border-light: #E5E5E5;
 ```
 
