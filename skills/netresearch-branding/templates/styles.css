@@ -17,6 +17,7 @@
   --color-primary-dark: #257880;
   --color-primary-fill: #257880; /* white text on it: 5.15:1 */
   --color-primary-text: #15585E; /* on white: 8.11:1 */
+  --color-primary-deep: #0A5057; /* hover/darkest step, on white: 9.14:1 */
   --color-accent: #FF4D00;
   --color-accent-rgb: 255, 77, 0;
   --color-accent-dark: #CC3D00; /* white text on it: 4.96:1 */
@@ -132,7 +133,7 @@ a {
 }
 
 a:hover {
-  color: var(--color-primary-dark);
+  color: var(--color-primary-deep);
 }
 
 /* ============================================
@@ -251,8 +252,12 @@ a:hover {
   justify-content: center;
   min-height: 600px;
   padding: var(--spacing-4xl) var(--spacing-lg);
+  /* Both stops carry white text, so both must clear 4.5:1: #257880 is 5.15:1 and
+     #15585E is 8.11:1. The brand #2F99A4 cannot start this gradient -- it is
+     3.38:1, and the audit cannot see it because a gradient has no
+     backgroundColor to read. */
   background-color: var(--color-primary-fill);
-  background-image: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  background-image: linear-gradient(135deg, var(--color-primary-fill) 0%, var(--color-primary-text) 100%);
   color: var(--color-background);
   text-align: center;
 }

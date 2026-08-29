@@ -81,10 +81,20 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
       [120,33,21,16.5,11,10.75,10.5,10.25,13,15],[125,32,20,16,10,10,10,10,12,14],
     ];
     // Smallest Lc that permits this size at this weight; null when the table has none.
+    // Interpolated between the two bracketing rows, as apca-w3's own fontLookupAPCA
+    // does — a plain row lookup rounds up to the next 5-Lc step and would warn about
+    // e.g. 30px/400 at Lc 55 where the interpolated requirement is 52.5.
     const apcaRequired = (size, weight) => {
       const col = Math.min(9, Math.max(1, Math.round(weight / 100)));
-      for (const row of FONT_MATRIX) { const min = row[col];
-        if (min !== 999 && min !== 777 && size >= min) return row[0]; }
+      const usable = (v) => v !== 999 && v !== 777;
+      for (let i = 0; i < FONT_MATRIX.length; i++) {
+        const min = FONT_MATRIX[i][col];
+        if (!usable(min) || size < min) continue;
+        const prev = i > 0 ? FONT_MATRIX[i - 1] : null;
+        if (!prev || !usable(prev[col]) || prev[col] <= min) return FONT_MATRIX[i][0];
+        const span = prev[col] - min;
+        return FONT_MATRIX[i][0] - ((size - min) / span) * (FONT_MATRIX[i][0] - prev[0]);
+      }
       return null;
     };
     const seen = new Map();
@@ -102,7 +112,7 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
       const lcNeed = apcaRequired(size, parseInt(cs.fontWeight, 10) || 400);
       if (lcNeed !== null && Math.abs(lc) < lcNeed) {
         const akey = `apca|${el.tagName}.${el.className}|${cs.color}|${bg.r},${bg.g},${bg.b}|${size}`;
-        if (!apcaSeen.has(akey)) apcaSeen.set(akey, { element: el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).trim().split(/\s+/).join('.') : ''), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, lc: +lc.toFixed(1), lcRequired: lcNeed, fontSize: size, fontWeight: cs.fontWeight });
+        if (!apcaSeen.has(akey)) apcaSeen.set(akey, { element: el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).trim().split(/\s+/).join('.') : ''), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, lc: +lc.toFixed(1), lcRequired: +lcNeed.toFixed(1), fontSize: size, fontWeight: cs.fontWeight });
       }
       if (r < need) {
         const key = `${el.tagName}.${el.className}|${cs.color}|${bg.r},${bg.g},${bg.b}`;

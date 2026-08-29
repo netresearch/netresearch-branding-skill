@@ -39,11 +39,12 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
 - **Navigation** (`.navbar`): sticky top, teal active-link state, hamburger
   toggle below 768px.
 - **Forms** (`.form-input` etc.): teal focus ring on `:focus`.
-- **Hero sections** (`.hero`): teal gradient (`#2F99A4` → `#257880`)
-  background, white text, centered.
+- **Hero sections** (`.hero`): teal gradient (`#257880` → `#15585E`)
+  background, white text, centered. Both stops carry white text, so both clear
+  4.5:1; the brand `#2F99A4` is 3.38:1 and cannot start this gradient.
 - **Footer** (`.footer`): anthracite (`#585961`) background per the
   mandatory footer rule in `SKILL.md`.
-- **Links** (`a`, `.link-standalone`): teal default, darker teal on hover.
+- **Links** (`a`, `.link-standalone`): `#15585E` default (8.11:1), `#0A5057` on hover (9.14:1). The brand `#2F99A4` is 3.38:1 and is not a link colour at body size.
 
 Two rules aren't in the shared template — apply them directly:
 
@@ -205,7 +206,9 @@ asks for at that size and weight). Those are **advisory**: they never change the
 and an APCA pass never waives a WCAG failure. WCAG 2.2 AA is the gate; see the `typo3-a11y`
 skill for the policy. A page can be WCAG-clean and still carry APCA warnings — the shipped
 `templates/landing-page.html` does, because APCA asks Lc 90 of 16px/400 body text and the
-anthracite `#585961` on white reaches Lc 84. Measured on a branded dashboard 2026-08-28: white on `#2F99A4` at 14 px is
-3.38:1 (card heads, table head, active tab), white on `#FF4D00` 3.1:1 — both fixed by moving
+anthracite `#585961` on white reaches Lc 84.
+
+Measured on a branded dashboard 2026-08-28: white on `#2F99A4` at 14 px is
+3.38:1 (card heads, table head, active tab), white on `#FF4D00` 3.33:1 — both fixed by moving
 filled surfaces to `#15585E` / `#9A2E00` and keeping the bright colours for borders, bars
 and large type. Re-measured: zero failures.
