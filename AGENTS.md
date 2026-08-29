@@ -15,7 +15,7 @@
 │   └── templates/                  # Ready-to-use HTML/CSS
 │       ├── landing-page.html
 │       └── styles.css
-├── assets/logos/                    # Logo files (SVG)
+├── skills/netresearch-branding/assets/logos/   # Logo files (SVG)
 ├── examples/components.html        # Interactive component showcase
 ├── outputStyles/                   # Output style templates
 ├── evals/evals.json                # Skill evaluation suite
@@ -38,7 +38,7 @@ No Makefile or npm scripts. Available commands:
 
 1. **Colors**: Primary `#2F99A4` (turquoise), accent `#FF4D00` (orange — accent only), text `#585961`
 2. **Typography**: Raleway for headlines, Open Sans for body, Calibri for documents
-3. **Logo**: Use `assets/logos/netresearch-symbol-only.svg`, min 32x32px icon / 120px digital
+3. **Logo**: Use `skills/netresearch-branding/assets/logos/netresearch-symbol-only.svg`, min 32x32px icon / 120px digital
 4. **Footer**: Must link to https://www.netresearch.de/ with "Netresearch DTT GmbH"
 5. **Accessibility**: WCAG AA compliance mandatory
 6. **White space**: High white space design principle throughout
