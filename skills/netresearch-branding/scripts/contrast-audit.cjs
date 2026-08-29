@@ -76,7 +76,10 @@ async function measureOneNode(cdp, page, nodeId, state) {
     if (exceptionDetails) throw new Error(`measurement threw: ${exceptionDetails.exception?.description || exceptionDetails.text}`);
     return result.value;
   } finally {
-    await cdp.send('Runtime.releaseObject', { objectId: object.objectId }).catch(() => {});
+    // Releasing a handle whose node is already gone is expected; anything else is a
+    // protocol failure and is reported rather than swallowed.
+    await cdp.send('Runtime.releaseObject', { objectId: object.objectId })
+      .catch((e) => { if (!isDetached(e)) throw e; });
   }
 }
 
@@ -87,14 +90,18 @@ async function measureInteractiveStates(page) {
   const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: INTERACTIVE });
   const failures = [];
   const seen = new Set();
-  // Collected rather than thrown from a finally: a throw there would mask the
-  // measurement error that is already on its way out.
-  const resetErrors = [];
+  // Errors are collected, never thrown from a finally — a throw there replaces the
+  // exception already on its way out, which would be the measurement failure this
+  // whole pass exists to surface. Everything collected is reported together at the
+  // end, so a cleanup problem cannot hide a measurement problem or vice versa.
+  const errors = [];
   const reset = async (nodeId) => {
     try { await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] }); }
-    catch (e) { if (!isDetached(e)) resetErrors.push(e); }
+    catch (e) { if (!isDetached(e)) errors.push(e); }
   };
+  let aborted = false;
   for (const state of ['hover', 'focus-visible']) {
+    if (aborted) break;
     for (const nodeId of nodeIds) {
       let forced = false;
       try {
@@ -107,13 +114,22 @@ async function measureInteractiveStates(page) {
         seen.add(key);
         failures.push(f);
       } catch (e) {
-        if (!isDetached(e)) throw e;
+        if (isDetached(e)) continue;
+        // Stop measuring, but let this element's reset run and keep whatever the
+        // cleanup of the elements before it reported.
+        errors.push(e);
+        aborted = true;
       } finally {
         if (forced) await reset(nodeId);
       }
+      if (aborted) break;
     }
   }
-  if (resetErrors.length) throw resetErrors[0];
+  if (errors.length) {
+    const [first, ...rest] = errors;
+    if (rest.length) first.message += ` (+${rest.length} more: ${rest.map((e) => e.message).join('; ')})`;
+    throw first;
+  }
   return failures;
 }
 
