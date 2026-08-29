@@ -17,6 +17,7 @@ on:
     paths:
       - 'skills/netresearch-branding/templates/**'
       - 'skills/netresearch-branding/scripts/contrast-audit.cjs'
+      - 'skills/netresearch-branding/scripts/tests/**'
       - 'examples/**'
       - 'site/**'
       - '.github/workflows/contrast-audit.yml'
@@ -24,6 +25,7 @@ on:
     paths:
       - 'skills/netresearch-branding/templates/**'
       - 'skills/netresearch-branding/scripts/contrast-audit.cjs'
+      - 'skills/netresearch-branding/scripts/tests/**'
       - 'examples/**'
       - 'site/**'
       - '.github/workflows/contrast-audit.yml'
@@ -42,6 +44,7 @@ jobs:
         npm install --no-save --no-audit --no-fund playwright@1.62.1
         npx playwright install --with-deps chromium
       check-cmd: |
+        node skills/netresearch-branding/scripts/tests/contrast-audit-error-paths.test.cjs
         for scheme in light dark; do
           for page in \
             skills/netresearch-branding/templates/landing-page.html \

@@ -44,16 +44,121 @@
  */
 const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || 'playwright-core');
+// CLI arguments are only parsed when this file IS the entry point; required as a
+// module (the error-path tests) it exposes its internals instead and parses nothing.
+const CLI = require.main === module;
 const args = process.argv.slice(2);
-const target = args.find((a) => !a.startsWith('--'));
-if (!target) { console.error('usage: contrast-audit.cjs <url-or-file> [--width N] [--scheme light|dark] [--header "Name: value"]'); process.exit(2); }
 const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
+const target = args.find((a) => !a.startsWith('--'));
 const width = Number.parseInt(opt('--width', '1400'), 10);
 const header = opt('--header', '');
 const scheme = opt('--scheme', 'light');
-if (!['light', 'dark'].includes(scheme)) { console.error(`--scheme must be light or dark, got ${scheme}`); process.exit(2); }
-const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
+if (CLI && !target) { console.error('usage: contrast-audit.cjs <url-or-file> [--width N] [--scheme light|dark] [--header "Name: value"]'); process.exit(2); }
+if (CLI && !['light', 'dark'].includes(scheme)) { console.error(`--scheme must be light or dark, got ${scheme}`); process.exit(2); }
+const url = target ? (/^https?:/.test(target) ? target : 'file://' + path.resolve(target)) : '';
+// Measures :hover and :focus-visible on every interactive element, one element at a
+// time. Forcing the whole set at once is a state no user can reach — every control
+// hovered simultaneously — and an ancestor, sibling or :has() selector then resolves
+// against that fiction.
+const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
+// A node can legitimately disappear between the query and the force. Anything else is
+// a real failure and must not be swallowed: an element silently dropped here is an
+// element whose hover colour nobody measured, in a run that still exits 0.
+const isDetached = (e) => /Could not find node|No node (found )?with given id|Node with given id does not belong/i.test(String(e?.message));
+
+async function measureOneNode(cdp, nodeId, state) {
+  const { object } = await cdp.send('DOM.resolveNode', { nodeId });
+  // No throw from a finally anywhere here: it would replace the measurement error
+  // with whatever the cleanup said. Both are captured and reported together.
+  let value;
+  let measureError;
+  try {
+    const { result, exceptionDetails } = await cdp.send('Runtime.callFunctionOn', {
+      objectId: object.objectId, returnByValue: true,
+      functionDeclaration: 'function (state) { return window.__measureOne(this, state); }',
+      arguments: [{ value: state }],
+    });
+    // callFunctionOn reports a thrown measurement through exceptionDetails and still
+    // resolves; reading only result.value would drop the element quietly.
+    if (exceptionDetails) throw new Error(`measurement threw: ${exceptionDetails.exception?.description || exceptionDetails.text}`);
+    value = result.value;
+  } catch (e) {
+    measureError = e;
+  }
+  // Releasing a handle whose node is already gone is expected; anything else is a
+  // protocol failure and is reported rather than swallowed.
+  let releaseError;
+  await cdp.send('Runtime.releaseObject', { objectId: object.objectId })
+    .catch((e) => { if (!isDetached(e)) releaseError = e; });
+  if (measureError && releaseError) {
+    // A detached node is normal and the caller swallows it — but it must not carry a
+    // real release failure out with it, which is what appending would do: the outer
+    // catch matches on the message, sees "detached", and drops both.
+    if (isDetached(measureError)) throw releaseError;
+    measureError.message += ` (release also failed: ${releaseError.message})`;
+    throw measureError;
+  }
+  if (measureError) throw measureError;
+  if (releaseError) throw releaseError;
+  return value;
+}
+
+async function measureInteractiveStates(page) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('DOM.enable'); await cdp.send('CSS.enable'); await cdp.send('Runtime.enable');
+  const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
+  const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: INTERACTIVE });
+  const failures = [];
+  const seen = new Set();
+  // Errors are collected, never thrown from a finally — a throw there replaces the
+  // exception already on its way out, which would be the measurement failure this
+  // whole pass exists to surface. Everything collected is reported together at the
+  // end, so a cleanup problem cannot hide a measurement problem or vice versa.
+  const errors = [];
+  const reset = async (nodeId) => {
+    try { await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] }); }
+    catch (e) { if (!isDetached(e)) errors.push(e); }
+  };
+  let aborted = false;
+  for (const state of ['hover', 'focus-visible']) {
+    if (aborted) break;
+    for (const nodeId of nodeIds) {
+      let forced = false;
+      try {
+        await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [state] });
+        forced = true;
+        const f = await measureOneNode(cdp, nodeId, state);
+        if (!f) continue;
+        const key = `${state}|${f.element}|${f.fg}|${f.bg}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        failures.push(f);
+      } catch (e) {
+        if (isDetached(e)) continue;
+        // Stop measuring, but let this element's reset run and keep whatever the
+        // cleanup of the elements before it reported.
+        errors.push(e);
+        aborted = true;
+      } finally {
+        if (forced) await reset(nodeId);
+      }
+      if (aborted) break;
+    }
+  }
+  if (errors.length) {
+    const [first, ...rest] = errors;
+    if (rest.length) first.message += ` (+${rest.length} more: ${rest.map((e) => e.message).join('; ')})`;
+    throw first;
+  }
+  return failures;
+}
+
+// Exported when required as a module so the error paths can be tested against a
+// stubbed CDP session; running the file as a CLI is unaffected.
+if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetached }; }
+
 (async () => {
+  if (!CLI) return;
   const browser = await chromium.launch({ headless: true });
   const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: true, colorScheme: scheme,
     extraHTTPHeaders: header ? { [header.split(':')[0].trim()]: header.split(':').slice(1).join(':').trim() } : {} });
@@ -179,23 +284,23 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
       }
     }
     // Re-used by the interactive-state pass, which runs after this evaluate returns.
-    window.__measureStates = ({ state, selector }) => {
-      const out = [];
-      for (const el of document.querySelectorAll(selector)) {
-        if (el.closest('[data-contrast-demo]')) continue;
-        const cs = getComputedStyle(el);
-        if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) continue;
-        // Unlike the main pass, a wrapped label counts here: in <a><span>Read more</span></a>
-        // the colour that :hover changes sits on the <a>, and requiring a direct text node
-        // would skip exactly those controls.
-        if (!el.textContent.trim()) continue;
-        const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
-        const size = Number.parseFloat(cs.fontSize);
-        const bold = (Number.parseInt(cs.fontWeight, 10) || 400) >= 700;
-        const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
-        if (r < need) out.push({ state, element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
-      }
-      return out;
+    // Measures ONE element — the one currently forced into `state`. The caller hands
+    // it over by object reference (CDP DOM.resolveNode + Runtime.callFunctionOn), so
+    // nothing in the page has to be marked or mutated to find it again.
+    window.__measureOne = (el, state) => {
+      if (!el || el.closest('[data-contrast-demo]')) return null;
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) return null;
+      // Unlike the main pass, a wrapped label counts here: in <a><span>Read more</span></a>
+      // the colour that :hover changes sits on the <a>, and requiring a direct text node
+      // would skip exactly those controls.
+      if (!el.textContent.trim()) return null;
+      const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
+      const size = Number.parseFloat(cs.fontSize);
+      const bold = (Number.parseInt(cs.fontWeight, 10) || 400) >= 700;
+      const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
+      if (r >= need) return null;
+      return { state, element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
     };
 
     return {
@@ -216,21 +321,7 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
       unreadableStylesheets: [...document.styleSheets].filter((ss) => { try { return !ss.cssRules; } catch (e) { return true; } }).length,
     };
   });
-  // --- interactive states -------------------------------------------------------
-  const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('DOM.enable'); await cdp.send('CSS.enable');
-  const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
-  const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: INTERACTIVE });
-  const force = async (classes) => { for (const nodeId of nodeIds) { try { await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: classes }); } catch (e) { /* detached */ } } };
-  const stateFailures = [];
-  for (const state of ['hover', 'focus-visible']) {
-    await force([state]);
-    const found = await page.evaluate((args) => window.__measureStates(args), { state, selector: INTERACTIVE });
-    stateFailures.push(...found);
-    await force([]);
-  }
-  result.stateFailures = stateFailures;
+  result.stateFailures = await measureInteractiveStates(page);
 
   result.scheme = scheme;
   result.failedRequests = badRequests;
