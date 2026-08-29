@@ -53,6 +53,70 @@ const header = opt('--header', '');
 const scheme = opt('--scheme', 'light');
 if (!['light', 'dark'].includes(scheme)) { console.error(`--scheme must be light or dark, got ${scheme}`); process.exit(2); }
 const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
+// Measures :hover and :focus-visible on every interactive element, one element at a
+// time. Forcing the whole set at once is a state no user can reach — every control
+// hovered simultaneously — and an ancestor, sibling or :has() selector then resolves
+// against that fiction.
+const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
+// A node can legitimately disappear between the query and the force. Anything else is
+// a real failure and must not be swallowed: an element silently dropped here is an
+// element whose hover colour nobody measured, in a run that still exits 0.
+const isDetached = (e) => /Could not find node|No node (found )?with given id|Node with given id does not belong/i.test(String(e?.message));
+
+async function measureOneNode(cdp, page, nodeId, state) {
+  const { object } = await cdp.send('DOM.resolveNode', { nodeId });
+  try {
+    const { result, exceptionDetails } = await cdp.send('Runtime.callFunctionOn', {
+      objectId: object.objectId, returnByValue: true,
+      functionDeclaration: 'function (state) { return window.__measureOne(this, state); }',
+      arguments: [{ value: state }],
+    });
+    // callFunctionOn reports a thrown measurement through exceptionDetails and still
+    // resolves; reading only result.value would drop the element quietly.
+    if (exceptionDetails) throw new Error(`measurement threw: ${exceptionDetails.exception?.description || exceptionDetails.text}`);
+    return result.value;
+  } finally {
+    await cdp.send('Runtime.releaseObject', { objectId: object.objectId }).catch(() => {});
+  }
+}
+
+async function measureInteractiveStates(page) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('DOM.enable'); await cdp.send('CSS.enable'); await cdp.send('Runtime.enable');
+  const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
+  const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: INTERACTIVE });
+  const failures = [];
+  const seen = new Set();
+  // Collected rather than thrown from a finally: a throw there would mask the
+  // measurement error that is already on its way out.
+  const resetErrors = [];
+  const reset = async (nodeId) => {
+    try { await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] }); }
+    catch (e) { if (!isDetached(e)) resetErrors.push(e); }
+  };
+  for (const state of ['hover', 'focus-visible']) {
+    for (const nodeId of nodeIds) {
+      let forced = false;
+      try {
+        await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [state] });
+        forced = true;
+        const f = await measureOneNode(cdp, page, nodeId, state);
+        if (!f) continue;
+        const key = `${state}|${f.element}|${f.fg}|${f.bg}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        failures.push(f);
+      } catch (e) {
+        if (!isDetached(e)) throw e;
+      } finally {
+        if (forced) await reset(nodeId);
+      }
+    }
+  }
+  if (resetErrors.length) throw resetErrors[0];
+  return failures;
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: true, colorScheme: scheme,
@@ -216,57 +280,7 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
       unreadableStylesheets: [...document.styleSheets].filter((ss) => { try { return !ss.cssRules; } catch (e) { return true; } }).length,
     };
   });
-  // --- interactive states -------------------------------------------------------
-  const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('DOM.enable'); await cdp.send('CSS.enable'); await cdp.send('Runtime.enable');
-  const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
-  const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: INTERACTIVE });
-  // One element at a time. Forcing the whole set at once is a state no user can
-  // reach — every control hovered simultaneously — and an ancestor, sibling or
-  // :has() selector then resolves against that fiction. The reset sits in a
-  // finally so a forced state cannot leak into the next measurement.
-  const stateFailures = [];
-  const seenState = new Set();
-  // A node can legitimately disappear between the query and the force. Anything else
-  // is a real failure and must not be swallowed: an element silently dropped here is
-  // an element whose hover colour nobody measured, and the run would still exit 0.
-  const isDetached = (e) => /Could not find node|No node (found )?with given id|Node with given id does not belong/i.test(String(e && e.message));
-  for (const state of ['hover', 'focus-visible']) {
-    for (const nodeId of nodeIds) {
-      let forced = false;
-      try {
-        await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [state] });
-        forced = true;
-        const { object } = await cdp.send('DOM.resolveNode', { nodeId });
-        let f;
-        try {
-          const { result: r, exceptionDetails } = await cdp.send('Runtime.callFunctionOn', {
-            objectId: object.objectId, returnByValue: true,
-            functionDeclaration: `function (state) { return window.__measureOne(this, state); }`,
-            arguments: [{ value: state }],
-          });
-          // callFunctionOn reports a thrown measurement through exceptionDetails and
-          // still resolves; reading only `result.value` would drop the element quietly.
-          if (exceptionDetails) {
-            throw new Error(`measurement threw: ${exceptionDetails.exception?.description || exceptionDetails.text}`);
-          }
-          f = r.value;
-        } finally {
-          await cdp.send('Runtime.releaseObject', { objectId: object.objectId }).catch(() => {});
-        }
-        if (f) {
-          const key = `${state}|${f.element}|${f.fg}|${f.bg}`;
-          if (!seenState.has(key)) { seenState.add(key); stateFailures.push(f); }
-        }
-      } catch (e) {
-        if (!isDetached(e)) throw e;
-      } finally {
-        if (forced) { try { await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] }); } catch (e) { if (!isDetached(e)) throw e; } }
-      }
-    }
-  }
-  result.stateFailures = stateFailures;
+  result.stateFailures = await measureInteractiveStates(page);
 
   result.scheme = scheme;
   result.failedRequests = badRequests;
