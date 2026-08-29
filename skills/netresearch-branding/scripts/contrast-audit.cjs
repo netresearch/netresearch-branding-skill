@@ -44,15 +44,18 @@
  */
 const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || 'playwright-core');
+// CLI arguments are only parsed when this file IS the entry point; required as a
+// module (the error-path tests) it exposes its internals instead and parses nothing.
+const CLI = require.main === module;
 const args = process.argv.slice(2);
-const target = args.find((a) => !a.startsWith('--'));
-if (!target) { console.error('usage: contrast-audit.cjs <url-or-file> [--width N] [--scheme light|dark] [--header "Name: value"]'); process.exit(2); }
 const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
+const target = args.find((a) => !a.startsWith('--'));
 const width = Number.parseInt(opt('--width', '1400'), 10);
 const header = opt('--header', '');
 const scheme = opt('--scheme', 'light');
-if (!['light', 'dark'].includes(scheme)) { console.error(`--scheme must be light or dark, got ${scheme}`); process.exit(2); }
-const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
+if (CLI && !target) { console.error('usage: contrast-audit.cjs <url-or-file> [--width N] [--scheme light|dark] [--header "Name: value"]'); process.exit(2); }
+if (CLI && !['light', 'dark'].includes(scheme)) { console.error(`--scheme must be light or dark, got ${scheme}`); process.exit(2); }
+const url = target ? (/^https?:/.test(target) ? target : 'file://' + path.resolve(target)) : '';
 // Measures :hover and :focus-visible on every interactive element, one element at a
 // time. Forcing the whole set at once is a state no user can reach — every control
 // hovered simultaneously — and an ancestor, sibling or :has() selector then resolves
@@ -87,10 +90,15 @@ async function measureOneNode(cdp, nodeId, state) {
   let releaseError;
   await cdp.send('Runtime.releaseObject', { objectId: object.objectId })
     .catch((e) => { if (!isDetached(e)) releaseError = e; });
-  if (measureError) {
-    if (releaseError) measureError.message += ` (release also failed: ${releaseError.message})`;
+  if (measureError && releaseError) {
+    // A detached node is normal and the caller swallows it — but it must not carry a
+    // real release failure out with it, which is what appending would do: the outer
+    // catch matches on the message, sees "detached", and drops both.
+    if (isDetached(measureError)) throw releaseError;
+    measureError.message += ` (release also failed: ${releaseError.message})`;
     throw measureError;
   }
+  if (measureError) throw measureError;
   if (releaseError) throw releaseError;
   return value;
 }
@@ -145,7 +153,12 @@ async function measureInteractiveStates(page) {
   return failures;
 }
 
+// Exported when required as a module so the error paths can be tested against a
+// stubbed CDP session; running the file as a CLI is unaffected.
+if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetached }; }
+
 (async () => {
+  if (!CLI) return;
   const browser = await chromium.launch({ headless: true });
   const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: true, colorScheme: scheme,
     extraHTTPHeaders: header ? { [header.split(':')[0].trim()]: header.split(':').slice(1).join(':').trim() } : {} });
