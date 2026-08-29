@@ -273,6 +273,8 @@
     .do .tag { color: #14602A; }
     .dont .tag { color: #8E1922; }
     .anti { background: #fff; border: 1px dashed var(--nr-error); border-radius: 6px; padding: var(--space-md); }
+    .specimens { display: flex; gap: 12px; flex-wrap: wrap; }
+    .specimen { padding: 10px 16px; border-radius: 6px; }
 
     /* --- logo clear-space demo --- */
     .logo-demo { display: flex; gap: var(--space-2xl); flex-wrap: wrap; align-items: stretch; }
@@ -439,21 +441,15 @@
       <div class="dodont">
         <div class="do">
           <span class="tag">✓ Do</span>
-          <div style="display:flex;gap:12px;flex-wrap:wrap">
-            <span style="background:#257880;color:#fff;padding:10px 16px;border-radius:6px;font-family:var(--font-headline);font-weight:600">White on #257880 · 5.15:1</span>
-            <span style="background:#fff;color:#15585E;border:1px solid var(--nr-border-strong);padding:10px 16px;border-radius:6px;font-family:var(--font-headline);font-weight:600">#15585E on white · 8.11:1</span>
-            <span style="background:#fff;color:#585961;border:1px solid var(--nr-border-strong);padding:10px 16px;border-radius:6px">Anthracite on white · 6.96:1</span>
-          </div>
+          <!-- Specimens are rendered from data with their ratio computed in the browser,
+               like the verifier table above: a hand-typed ratio drifts from the colour
+               it labels. -->
+          <div class="specimens" id="specimensDo"></div>
           <p style="font-size:13px;color:var(--nr-text-secondary);margin:12px 0 0">The brand <code>#2F99A4</code> stays on borders, icons, chart series and display type at 24px or more. Under white label text it is 3.38:1.</p>
         </div>
         <div class="dont">
           <span class="tag">✗ Don’t — intentional anti-patterns</span>
-          <div class="anti" data-contrast-demo style="display:flex;gap:12px;flex-wrap:wrap">
-            <span style="background:#2F99A4;color:#fff;padding:10px 16px;border-radius:6px;font-family:var(--font-headline);font-weight:600">White on #2F99A4 · 3.38:1</span>
-            <span style="background:#2F99A4;color:#FF4D00;padding:10px 16px;border-radius:6px;font-weight:600">Orange on turquoise · 1.02:1</span>
-            <span style="background:#fff;color:#CCCDCC;padding:10px 16px;border-radius:6px">Light grey text on white · 1.59:1</span>
-            <span style="background:#fff;color:#FF4D00;font-size:13px;padding:10px 16px;border-radius:6px">Small orange text on white · 3.33:1</span>
-          </div>
+          <div class="anti specimens" id="specimensDont" data-contrast-demo></div>
           <p style="font-size:13px;color:var(--nr-text-secondary);margin:12px 0 0">These swatches deliberately violate the brand to illustrate the rule — they are not the page’s chrome.</p>
         </div>
       </div>
@@ -842,6 +838,34 @@
       { fg: "#8A8B93", bg: "#FFFFFF", fgN: "Control border", bgN: "White", claim: "3.39:1 — non-text, SC 1.4.11" },
       { fg: "#CCCDCC", bg: "#FFFFFF", fgN: "Light grey", bgN: "White", claim: "1.59:1 — fails, dividers only" }
     ];
+    /* ---------- do / don't specimens ---------- */
+    var specimens = {
+      specimensDo: [
+        { bg: "#257880", fg: "#FFFFFF", label: "White on #257880", strong: true },
+        { bg: "#FFFFFF", fg: "#15585E", label: "#15585E on white", strong: true, bordered: true },
+        { bg: "#FFFFFF", fg: "#585961", label: "Anthracite on white", bordered: true }
+      ],
+      specimensDont: [
+        { bg: "#2F99A4", fg: "#FFFFFF", label: "White on #2F99A4", strong: true },
+        { bg: "#2F99A4", fg: "#FF4D00", label: "Orange on turquoise", strong: true },
+        { bg: "#FFFFFF", fg: "#CCCDCC", label: "Light grey text on white" },
+        { bg: "#FFFFFF", fg: "#FF4D00", label: "Small orange text on white", small: true }
+      ]
+    };
+    Object.keys(specimens).forEach(function (id) {
+      var host = document.getElementById(id);
+      if (!host) return;
+      specimens[id].forEach(function (sp) {
+        var span = el("span", "specimen", sp.label + " · " + ratio(sp.fg, sp.bg).toFixed(2) + ":1");
+        span.style.background = sp.bg;
+        span.style.color = sp.fg;
+        if (sp.strong) { span.style.fontFamily = "var(--font-headline)"; span.style.fontWeight = "600"; }
+        if (sp.small) span.style.fontSize = "13px";
+        if (sp.bordered) span.style.border = "1px solid var(--nr-border-strong)";
+        host.appendChild(span);
+      });
+    });
+
     var ctb = document.querySelector("#contrastTable tbody");
     pairs.forEach(function (p) {
       var r = ratio(p.fg, p.bg);

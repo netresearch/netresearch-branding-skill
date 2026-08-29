@@ -38,7 +38,7 @@ const args = process.argv.slice(2);
 const target = args.find((a) => !a.startsWith('--'));
 if (!target) { console.error('usage: contrast-audit.cjs <url-or-file> [--width N] [--header "Name: value"]'); process.exit(2); }
 const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
-const width = parseInt(opt('--width', '1400'), 10);
+const width = Number.parseInt(opt('--width', '1400'), 10);
 const header = opt('--header', '');
 const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
 (async () => {
@@ -138,6 +138,7 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
     let exempt = 0;
     // <title>/<desc> inside an SVG are accessible names, never painted; script/style/
     // template hold source text. None of them have a rendered contrast.
+    const describe = (el) => el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).trim().replaceAll(/\s+/g, '.') : '');
     const NOT_PAINTED = new Set(['TITLE', 'DESC', 'SCRIPT', 'STYLE', 'TEMPLATE', 'METADATA', 'NOSCRIPT']);
     for (const el of document.querySelectorAll('body *')) {
       if (NOT_PAINTED.has(el.tagName.toUpperCase())) continue;
@@ -147,19 +148,20 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
       // A style guide legitimately shows failing pairs as specimens. They must be declared
       // with data-contrast-demo, and the count is reported so the exemption is visible.
       if (el.closest('[data-contrast-demo]')) { exempt++; continue; }
-      const size = parseFloat(cs.fontSize); smallest = Math.min(smallest, size);
+      const size = Number.parseFloat(cs.fontSize); smallest = Math.min(smallest, size);
       const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
-      const bold = parseInt(cs.fontWeight, 10) >= 700; const large = size >= 24 || (size >= 18.66 && bold);
+      const weight = Number.parseInt(cs.fontWeight, 10) || 400;
+      const bold = weight >= 700; const large = size >= 24 || (size >= 18.66 && bold);
       const need = large ? 3 : 4.5;
       const lc = apcaLc(fg, bg);
-      const lcNeed = apcaRequired(size, parseInt(cs.fontWeight, 10) || 400);
+      const lcNeed = apcaRequired(size, weight);
       if (lcNeed !== null && Math.abs(lc) < lcNeed) {
         const akey = `apca|${el.tagName}.${el.className}|${cs.color}|${bg.r},${bg.g},${bg.b}|${size}`;
-        if (!apcaSeen.has(akey)) apcaSeen.set(akey, { element: el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).trim().split(/\s+/).join('.') : ''), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, lc: +lc.toFixed(1), lcRequired: +lcNeed.toFixed(1), fontSize: size, fontWeight: cs.fontWeight });
+        if (!apcaSeen.has(akey)) apcaSeen.set(akey, { element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, lc: +lc.toFixed(1), lcRequired: +lcNeed.toFixed(1), fontSize: size, fontWeight: cs.fontWeight });
       }
       if (r < need) {
         const key = `${el.tagName}.${el.className}|${cs.color}|${bg.r},${bg.g},${bg.b}`;
-        if (!seen.has(key)) seen.set(key, { element: el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).trim().split(/\s+/).join('.') : ''), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
+        if (!seen.has(key)) seen.set(key, { element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
       }
     }
     return {
