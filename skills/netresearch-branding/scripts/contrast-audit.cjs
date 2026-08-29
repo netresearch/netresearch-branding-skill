@@ -179,23 +179,23 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
       }
     }
     // Re-used by the interactive-state pass, which runs after this evaluate returns.
-    window.__measureStates = ({ state, selector }) => {
-      const out = [];
-      for (const el of document.querySelectorAll(selector)) {
-        if (el.closest('[data-contrast-demo]')) continue;
-        const cs = getComputedStyle(el);
-        if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) continue;
-        // Unlike the main pass, a wrapped label counts here: in <a><span>Read more</span></a>
-        // the colour that :hover changes sits on the <a>, and requiring a direct text node
-        // would skip exactly those controls.
-        if (!el.textContent.trim()) continue;
-        const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
-        const size = Number.parseFloat(cs.fontSize);
-        const bold = (Number.parseInt(cs.fontWeight, 10) || 400) >= 700;
-        const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
-        if (r < need) out.push({ state, element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
-      }
-      return out;
+    // Measures ONE element — the one currently forced into `state`. The caller hands
+    // it over by object reference (CDP DOM.resolveNode + Runtime.callFunctionOn), so
+    // nothing in the page has to be marked or mutated to find it again.
+    window.__measureOne = (el, state) => {
+      if (!el || el.closest('[data-contrast-demo]')) return null;
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) return null;
+      // Unlike the main pass, a wrapped label counts here: in <a><span>Read more</span></a>
+      // the colour that :hover changes sits on the <a>, and requiring a direct text node
+      // would skip exactly those controls.
+      if (!el.textContent.trim()) return null;
+      const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
+      const size = Number.parseFloat(cs.fontSize);
+      const bold = (Number.parseInt(cs.fontWeight, 10) || 400) >= 700;
+      const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
+      if (r >= need) return null;
+      return { state, element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
     };
 
     return {
@@ -219,16 +219,38 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
   // --- interactive states -------------------------------------------------------
   const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
   const cdp = await page.context().newCDPSession(page);
-  await cdp.send('DOM.enable'); await cdp.send('CSS.enable');
+  await cdp.send('DOM.enable'); await cdp.send('CSS.enable'); await cdp.send('Runtime.enable');
   const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
   const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: INTERACTIVE });
-  const force = async (classes) => { for (const nodeId of nodeIds) { try { await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: classes }); } catch (e) { /* detached */ } } };
+  // One element at a time. Forcing the whole set at once is a state no user can
+  // reach — every control hovered simultaneously — and an ancestor, sibling or
+  // :has() selector then resolves against that fiction. The reset sits in a
+  // finally so a forced state cannot leak into the next measurement.
   const stateFailures = [];
+  const seenState = new Set();
   for (const state of ['hover', 'focus-visible']) {
-    await force([state]);
-    const found = await page.evaluate((args) => window.__measureStates(args), { state, selector: INTERACTIVE });
-    stateFailures.push(...found);
-    await force([]);
+    for (const nodeId of nodeIds) {
+      let forced = false;
+      try {
+        await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [state] });
+        forced = true;
+        const { object } = await cdp.send('DOM.resolveNode', { nodeId });
+        const { result: r } = await cdp.send('Runtime.callFunctionOn', {
+          objectId: object.objectId, returnByValue: true,
+          functionDeclaration: `function (state) { return window.__measureOne(this, state); }`,
+          arguments: [{ value: state }],
+        });
+        await cdp.send('Runtime.releaseObject', { objectId: object.objectId }).catch(() => {});
+        const f = r.value;
+        if (f) {
+          const key = `${state}|${f.element}|${f.fg}|${f.bg}`;
+          if (!seenState.has(key)) { seenState.add(key); stateFailures.push(f); }
+        }
+      } catch (e) { /* node detached between the query and the force */ }
+      finally {
+        if (forced) { try { await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] }); } catch (e) { /* detached */ } }
+      }
+    }
   }
   result.stateFailures = stateFailures;
 
