@@ -105,7 +105,7 @@ The backend **module** icon should differ from the **extension** icon: the exten
 | `name` | `netresearch/<dashed-extension-key>` | `netresearch/rte-ckeditor-image` |
 | `description` | Must mention "Netresearch" | `Image support for CKEditor5 - by Netresearch` |
 | `homepage` | GitHub repository URL | `https://github.com/netresearch/t3x-rte_ckeditor_image` |
-| `license` | SPDX identifier | `AGPL-3.0-or-later` or `GPL-2.0-or-later` |
+| `license` | SPDX identifier | `AGPL-3.0-or-later`, or `GPL-2.0-or-later` beside GPL-2.0-only code — see "Licensing by artifact type" in `SKILL.md` |
 | `authors[].email` | Netresearch TYPO3 email | `typo3@netresearch.de` |
 | `authors[].homepage` | Company website | `https://www.netresearch.de/` |
 

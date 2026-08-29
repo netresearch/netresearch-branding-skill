@@ -275,6 +275,8 @@
     .anti { background: #fff; border: 1px dashed var(--nr-error); border-radius: 6px; padding: var(--space-md); }
     .specimens { display: flex; gap: 12px; flex-wrap: wrap; }
     .specimen { padding: 10px 16px; border-radius: 6px; }
+    .resolved-findings { margin-top: var(--space-lg); }
+    .resolved-findings > summary { cursor: pointer; font-family: var(--font-headline); font-weight: 600; color: var(--nr-text); padding: var(--space-sm) 0; }
 
     /* --- logo clear-space demo --- */
     .logo-demo { display: flex; gap: var(--space-2xl); flex-wrap: wrap; align-items: stretch; }
@@ -358,7 +360,7 @@
       <span class="pill">Logo &amp; TYPO3 rules</span>
       <span class="pill">30 checkpoints</span>
       <span class="pill">Live WCAG contrast</span>
-      <span class="pill">11 open questions</span>
+      <span class="pill" id="openQuestionCount">open questions</span>
     </div>
   </header>
 
@@ -938,7 +940,7 @@
         cite: "SKILL.md:59 · references/colors.md:274-300 · references/typography.md:903 · checkpoints.yaml:152 (NB-16)",
         body: "SKILL.md:59 prescribes --nr-primary/--nr-accent/--nr-text/--nr-border/--nr-bg, and checkpoint NB-16 greps for --nr-(primary|accent|text). But every CSS example in references/colors.md and references/typography.md defines --color-primary/--color-accent/--color-text-primary instead. A project that copies the reference snippets verbatim would FAIL NB-16.",
         ask: "Pick one canonical scheme. Either rewrite the reference CSS to --nr-*, or relax NB-16 to accept both. Add --nr-bg / --nr-border values while doing so (see F6)." },
-      { id: "F2", kind: "Resolved", title: "Hard-coded contrast ratios were internally inconsistent (and wrong)",
+      { id: "F2", kind: "Resolved", resolved: true, title: "Hard-coded contrast ratios were internally inconsistent (and wrong)",
         cite: "references/colors.md",
         body: "Contrast is symmetric, yet the doc used to list Turquoise-on-white as 3.8:1 and White-on-turquoise as 4.5:1 — the same pair, two numbers; same for orange (3.9 vs 3.2). Both are now the measured 3.38:1 and 3.33:1, with the verdict corrected to large text and UI only, and the doc names the text-bearing variants (#257880 for a fill under white text, #15585E for links and small labels). The verifier above compares against the current document, so this table should show no mismatch — if it does, the doc has drifted again.",
         ask: "Nothing outstanding. Kept here as the record of what the numbers used to say." },
@@ -970,17 +972,22 @@
         cite: "SKILL.md:60 · references/colors.md:62",
         body: "The rule 'accent orange is highlight-only and must not dominate surfaces' is qualitative — no percentage, area budget, or element allow-list. Two reviewers can disagree on whether a layout complies, and LLM checkpoints NB-22/NB-25 have no objective bar to test against.",
         ask: "Add a concrete heuristic (e.g. 'orange <= ~10% of visible surface; never a section/background fill; allowed on borders, small CTAs, badges')." },
-      { id: "F10", kind: "Inconsistency", title: "License guidance is inconsistent across the skill",
-        cite: "typo3-extension-branding.md:68,91,144 (AGPL/GPL) · README-branding.md & this repo (MIT + CC-BY-SA-4.0)",
-        body: "TYPO3 extension branding recommends AGPL-3.0-or-later (or GPL-2.0-or-later) for extensions, while the skill repo and README-branding examples use split MIT + CC-BY-SA-4.0. There is no statement of which license applies to which artifact type, so 'the Netresearch license' is ambiguous.",
-        ask: "State the licensing policy by artifact type: e.g. TYPO3 extensions -> (A)GPL; skills/tools -> MIT code + CC-BY-SA-4.0 content." },
+      { id: "F10", kind: "Resolved", resolved: true, title: "License guidance was inconsistent across the skill",
+        cite: "SKILL.md \u00a7 Licensing by artifact type \u00b7 typo3-extension-branding.md:108 \u00b7 README-branding.md:73",
+        body: "TYPO3 extension branding recommended AGPL-3.0-or-later (or GPL-2.0-or-later) while the skill repo and README-branding examples use split MIT + CC-BY-SA-4.0, with no statement of which applies to what. SKILL.md now carries the policy by artifact type: TYPO3 extensions AGPL-3.0-or-later (GPL-2.0-or-later beside GPL-2.0-only code, since TYPO3 core is GPL-2.0-or-later and an extension inherits that); skills, libraries, CLIs and internal tools split MIT for code and CC-BY-SA-4.0 for content, SPDX (MIT AND CC-BY-SA-4.0); brand assets CC-BY-SA-4.0 plus the trademark rules in logo.md, because a licence does not permit recolouring. Both reference files point at that table.",
+        ask: "Done. Kept as the record of what was ambiguous." },
       { id: "F11", kind: "Minor inconsistency", title: "Footer URL trailing slash: required vs optional",
         cite: "SKILL.md:44 & references/logo.md (with slash) · checkpoints.yaml NB-25 (slash optional)",
         body: "The hard validity rule and logo placement spec both write the footer link as https://www.netresearch.de/ (trailing slash), but NB-25 explicitly accepts the URL with or without the slash. Low-stakes, but the 'exact' framing of the hard rule and the relaxed checkpoint don't match.",
         ask: "Align the wording — either declare the slash optional in the hard rule too, or have NB-25 require it." }
     ];
     var fl = document.getElementById("findingsList");
-    findings.forEach(function (f) {
+    var openFindings = findings.filter(function (f) { return !f.resolved; });
+    var doneFindings = findings.filter(function (f) { return f.resolved; });
+    var counter = document.getElementById("openQuestionCount");
+    if (counter) counter.textContent = openFindings.length + " open questions";
+
+    function renderFinding(f, host) {
       var card = el("div", "rule finding");
       card.id = f.id;
 
@@ -1005,8 +1012,19 @@
       det.appendChild(ap);
       card.appendChild(det);
 
-      fl.appendChild(card);
-    });
+      host.appendChild(card);
+    }
+
+    openFindings.forEach(function (f) { renderFinding(f, fl); });
+
+    if (doneFindings.length) {
+      var box = el("details", "resolved-findings");
+      box.appendChild(el("summary", null, doneFindings.length + " resolved — kept as the record"));
+      var inner = el("div");
+      doneFindings.forEach(function (f) { renderFinding(f, inner); });
+      box.appendChild(inner);
+      fl.appendChild(box);
+    }
   })();
   </script>
 </body>

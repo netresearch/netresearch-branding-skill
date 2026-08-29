@@ -75,6 +75,19 @@ Operationalize references in every branded output:
 - `assets/markdown-pdf-logo.svg` — standalone Netresearch logo (brand-teal/grey) for general use.
 - `assets/markdown-pdf-logo-white.svg` — white-fill variant for the `.page-header` running header, where the teal/grey logo has no contrast on the teal background (`--nr-primary`). The sanctioned exception to "no recoloring" — do not use elsewhere.
 
+## Licensing by artifact type
+
+"The Netresearch licence" is not one licence. Pick by what the artifact is:
+
+| Artifact | Licence |
+|---|---|
+| TYPO3 extension (`netresearch/t3x-*`, any `typo3-cms-extension`) | `AGPL-3.0-or-later`, or `GPL-2.0-or-later` where the extension must sit alongside GPL-2.0-only code — TYPO3 core is GPL-2.0-or-later and an extension inherits that obligation |
+| Agent skill, library, CLI, internal tool | Split: code `MIT`, prose and reference content `CC-BY-SA-4.0`, shipped as `LICENSE-MIT` + `LICENSE-CC-BY-SA-4.0` with the SPDX expression `(MIT AND CC-BY-SA-4.0)` |
+| Brand assets (logo files, colour specs, this skill's references) | `CC-BY-SA-4.0`, and the logo additionally carries the trademark rules in `references/logo.md` — a licence does not permit recolouring or distortion |
+
+Details for each: `references/typo3-extension-branding.md` for extensions,
+`references/README-branding.md` for skills and tools.
+
 ## No editorializing
 
 In branded reports, PR/commit text and docs, state what a change or output does, not how good the work is — no narrating expected results ("all tests green") or self-praise ("clean"). Judged by tone, not a wordlist. See `references/no-editorializing.md`.
