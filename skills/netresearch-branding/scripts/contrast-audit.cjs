@@ -185,7 +185,10 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
         if (el.closest('[data-contrast-demo]')) continue;
         const cs = getComputedStyle(el);
         if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) continue;
-        if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
+        // Unlike the main pass, a wrapped label counts here: in <a><span>Read more</span></a>
+        // the colour that :hover changes sits on the <a>, and requiring a direct text node
+        // would skip exactly those controls.
+        if (!el.textContent.trim()) continue;
         const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
         const size = Number.parseFloat(cs.fontSize);
         const bold = (Number.parseInt(cs.fontWeight, 10) || 400) >= 700;

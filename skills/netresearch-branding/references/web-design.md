@@ -31,7 +31,9 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   is a teal fill `#257880`, secondary an orange fill `#CC3D00` (accent — use
   sparingly, never as the dominant action), outline is a white border on
   transparent for dark surfaces. Hover darkens the fill further
-  (`--nr-primary-text` `#15585E` / `--nr-accent-text` `#9A2E00`). The
+  (`--nr-primary-fill-hover` `#15585E` / `--nr-accent-fill-hover` `#9A2E00` —
+  a fill, not a text token: a text token is free to lift on a dark scheme, and
+  white over the lifted value fails with nothing able to measure it). The
   brand hues `#2F99A4` and `#FF4D00` are **not** used as fills under white
   label text: they give 3.38:1 and 3.33:1, and a 16px/600 label is normal
   text needing 4.5:1.

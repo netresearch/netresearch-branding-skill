@@ -36,6 +36,17 @@
   --nr-text-secondary: #6E6F78; /* 4.99:1 on white, 4.58:1 on #F5F5F5 */
   --nr-bg: #FFFFFF;
   --nr-bg-alt: #F5F5F5;
+  --nr-surface: #FFFFFF;      /* cards and other raised surfaces */
+  --nr-on-fill: #FFFFFF;      /* label colour ON a filled surface — white in BOTH
+                                 schemes, which is why it is not --nr-bg */
+  --nr-on-light: #15585E;     /* teal label on a constant white plate (the outline
+                                 button's hover) — also constant, for the mirror
+                                 reason: --nr-primary-text lifts on a dark scheme
+                                 and would give 2.00:1 there */
+  --nr-footer-bg: #585961;    /* the mandatory footer, per SKILL.md */
+  --nr-footer-fg: #FFFFFF;
+  --nr-footer-muted: #D5D6D9; /* 4.79:1 on the footer */
+  --nr-footer-link-hover: #A8E4EB; /* 4.96:1 on the footer */
   --nr-border: #CCCDCC;        /* dividers and decoration only: 1.59:1 on white */
   --nr-border-strong: #8A8B93; /* boundaries of interactive controls: 3.39:1 (SC 1.4.11 needs 3:1) */
   --nr-border-light: #E5E5E5;
@@ -70,6 +81,48 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+/* ============================================
+   DARK SCHEME
+   Values from references/colors.md. The brand hues do not survive a dark
+   surface as text — #2F99A4 is 5.28:1 on #14181B but 3.38:1 on a lifted row —
+   so the text roles lift and the non-text roles keep the brand hue. Every pair
+   below is measured; the audit runs `--scheme dark` over this.
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --nr-bg: #14181B;
+    --nr-bg-alt: #1A2024;
+    --nr-surface: #1E2429;
+
+    --nr-text-primary: #E8EDEF;
+    --nr-text: #E8EDEF;             /* 13.28:1 on the surface */
+    --nr-text-secondary: #A9B2B8;   /* 7.28:1 */
+
+    --nr-primary-fill: #1B6C74;     /* white text on it: 6.10:1 */
+    --nr-primary-text: #5FC6D2;     /* 7.83:1 on the surface */
+    --nr-primary-deep: #7FD6E0;     /* hover lifts here, it does not darken */
+    --nr-accent-text: #FF9166;      /* 7.09:1 */
+
+    --nr-hero-from: #1B6C74;        /* white on it: 6.10:1 */
+    --nr-hero-to: #0F4A50;          /* white on it: 9.93:1 */
+    --nr-primary-fill-hover: #0F4A50;
+    --nr-accent-fill-hover: #B23600; /* white on it: 6.14:1 */
+
+    --nr-border: #2A3238;
+    --nr-border-strong: #6B7680;    /* 3.38:1 on the surface, SC 1.4.11 */
+    --nr-border-light: #232A30;
+
+    --nr-footer-bg: #10161A;
+    --nr-footer-fg: #E8EDEF;
+    --nr-footer-muted: #A9B2B8;
+    --nr-footer-link-hover: #7FD6E0;
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+  }
 }
 
 /* ============================================
@@ -195,7 +248,7 @@ a:hover {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: var(--nr-bg);
+  background: var(--nr-surface);
   box-shadow: var(--shadow-sm);
   padding: var(--spacing-md) 0;
 }
@@ -267,7 +320,7 @@ a:hover {
      backgroundColor to read. */
   background-color: var(--nr-hero-from);
   background-image: linear-gradient(135deg, var(--nr-hero-from) 0%, var(--nr-hero-to) 100%);
-  color: var(--nr-bg);
+  color: var(--nr-on-fill);
   text-align: center;
 }
 
@@ -277,7 +330,7 @@ a:hover {
 }
 
 .hero-title {
-  color: var(--nr-bg);
+  color: var(--nr-on-fill);
   margin-bottom: var(--spacing-lg);
 }
 
@@ -317,7 +370,7 @@ a:hover {
 
 .btn-primary {
   background-color: var(--nr-primary-fill);
-  color: var(--nr-bg);
+  color: var(--nr-on-fill);
 }
 
 /* These buttons are often anchors, and `a:hover` would otherwise repaint their
@@ -326,7 +379,7 @@ a:hover {
 .btn-secondary:hover,
 .btn-large:hover,
 .btn-small:hover {
-  color: var(--nr-bg);
+  color: var(--nr-on-fill);
 }
 
 .btn-primary:hover {
@@ -337,7 +390,7 @@ a:hover {
 
 .btn-secondary {
   background-color: var(--nr-accent-dark);
-  color: var(--nr-bg);
+  color: var(--nr-on-fill);
 }
 
 .btn-secondary:hover {
@@ -347,13 +400,13 @@ a:hover {
 
 .btn-outline {
   background-color: transparent;
-  color: var(--nr-bg);
-  border: 2px solid var(--nr-bg);
+  color: var(--nr-on-fill);
+  border: 2px solid var(--nr-on-fill);
 }
 
 .btn-outline:hover {
-  background-color: var(--nr-bg);
-  color: var(--nr-primary-text);
+  background-color: var(--nr-on-fill);
+  color: var(--nr-on-light);
 }
 
 .btn-large {
@@ -370,7 +423,7 @@ a:hover {
    CARDS
    ============================================ */
 .card {
-  background: var(--nr-bg);
+  background: var(--nr-surface);
   border-radius: 8px;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
@@ -464,7 +517,7 @@ a:hover {
      3:1 — --nr-border is 1.59:1 and is for dividers. */
   border: 1px solid var(--nr-border-strong);
   border-radius: 4px;
-  background: var(--nr-bg);
+  background: var(--nr-surface);
   transition: all 0.3s ease;
 }
 
@@ -489,8 +542,10 @@ a:hover {
    FOOTER
    ============================================ */
 .footer {
-  background-color: var(--nr-text);
-  color: var(--nr-bg);
+  /* Not --nr-text: on a dark scheme that token is near-white and would paint a
+     white footer. The footer has its own surface. */
+  background-color: var(--nr-footer-bg);
+  color: var(--nr-footer-fg);
   padding: var(--spacing-4xl) 0 var(--spacing-lg);
 }
 
@@ -507,7 +562,7 @@ a:hover {
 .footer-section h4 {
   font-size: var(--font-size-lg);
   font-weight: 600;
-  color: var(--nr-bg);
+  color: var(--nr-footer-fg);
   margin-bottom: var(--spacing-md);
 }
 
@@ -522,13 +577,13 @@ a:hover {
 }
 
 .footer-section a {
-  color: var(--nr-bg);
+  color: var(--nr-footer-fg);
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 .footer-section a:hover {
-  color: #A8E4EB; /* 4.96:1 on the anthracite footer; #2F99A4 is 2.06:1 there */
+  color: var(--nr-footer-link-hover); /* 4.96:1 on the light footer, 10.9:1 on the dark one */
 }
 
 .footer-bottom {
@@ -538,7 +593,7 @@ a:hover {
 }
 
 .footer-bottom p {
-  color: #D5D6D9; /* opaque: 4.79:1 on the anthracite footer */
+  color: var(--nr-footer-muted); /* opaque: 4.79:1 light, 8.5:1 dark */
   font-size: var(--font-size-sm);
   margin: 0;
 }

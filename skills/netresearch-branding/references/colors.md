@@ -30,17 +30,21 @@ Complete color palette with technical specifications and usage guidelines.
 **Web Implementation:**
 ```css
 :root {
-  --nr-primary: #2F99A4;
+  --nr-primary: #2F99A4;       /* surfaces, borders, icons, display type */
   --nr-primary-rgb: 47, 153, 164;
+  --nr-primary-fill: #257880;  /* a fill under white text: 5.15:1 */
+  --nr-primary-text: #15585E;  /* links and labels on white: 8.11:1 */
 }
 
+/* The brand hue is 3.38:1 on white. A 16px button label is normal text and
+   needs 4.5:1, so a filled button takes the -fill value, not --nr-primary. */
 .btn-primary {
-  background-color: var(--nr-primary);
+  background-color: var(--nr-primary-fill);
   color: #FFFFFF;
 }
 
 .link-primary {
-  color: var(--nr-primary);
+  color: var(--nr-primary-text);
 }
 ```
 
@@ -74,8 +78,9 @@ Complete color palette with technical specifications and usage guidelines.
   --nr-accent-rgb: 255, 77, 0;
 }
 
+/* Same rule for the accent: #FF4D00 is 3.33:1 under white text. */
 .btn-secondary {
-  background-color: var(--nr-accent);
+  background-color: var(--nr-accent-dark);
   color: #FFFFFF;
 }
 
@@ -143,8 +148,9 @@ body, p, h1, h2, h3 {
 **Web Implementation:**
 ```css
 :root {
-  --nr-border: #CCCDCC;
-  --nr-border-light: #CCCDCC;
+  --nr-border: #CCCDCC;        /* dividers and decoration */
+  --nr-border-strong: #8A8B93; /* the boundary of an interactive control */
+  --nr-border-light: #E5E5E5;  /* hairlines */
 }
 
 .card {
@@ -396,7 +402,7 @@ It needs resolved CSS and a compositing model, so it belongs in a browser:
 
   /* Neutral Colors */
   --nr-text: #585961;
-  --nr-text-secondary: #8A8B93;
+  --nr-text-secondary: #6E6F78;
   --nr-bg: #FFFFFF;
   --nr-bg-alt: #F5F5F5;
   --nr-border: #CCCDCC;        /* dividers, decoration */
@@ -416,27 +422,33 @@ It needs resolved CSS and a compositing model, so it belongs in a browser:
 ## Sass/SCSS Variables
 
 ```scss
-// Primary Colors
-$color-primary: #2F99A4;
-$color-accent: #FF4D00;
+// Same names as the custom properties, same roles.
+// Brand hues — surfaces, borders, icons, display type
+$nr-primary: #2F99A4;
+$nr-accent: #FF4D00;
 
-// Neutral Colors
-$color-anthracite: #585961;
-$color-light-grey: #CCCDCC;
-$color-white: #FFFFFF;
+// The text-bearing variants. Never derive these with lighten()/darken():
+// a computed value has no measured ratio, and lighten($nr-text, 15%) lands
+// around #7C7E88, which is 4.0:1 on white and fails AA for body text.
+$nr-primary-fill: #257880;  // white text on it: 5.15:1
+$nr-primary-text: #15585E;  // on white: 8.11:1
+$nr-primary-deep: #0A5057;  // hover: 9.14:1
+$nr-accent-dark: #CC3D00;   // white text on it: 4.96:1
+$nr-accent-text: #9A2E00;   // on white: 7.60:1
+
+// Neutral
+$nr-text: #585961;           // 6.96:1
+$nr-text-secondary: #6E6F78; // 4.99:1 on white, 4.58:1 on #F5F5F5
+$nr-white: #FFFFFF;
 
 // Backgrounds
-$color-bg-primary: $color-white;
-$color-bg-secondary: #F5F5F5;
-
-// Text
-$color-text-primary: $color-anthracite;
-$color-text-secondary: lighten($color-anthracite, 15%);
+$nr-bg: $nr-white;
+$nr-bg-alt: #F5F5F5;
 
 // Borders
-$color-border: $color-light-grey;
-$color-border-strong: #8A8B93;
-$color-border-light: #E5E5E5;
+$nr-border: #CCCDCC;        // dividers, decoration
+$nr-border-strong: #8A8B93; // boundary of an interactive control, 3:1
+$nr-border-light: #E5E5E5;
 ```
 
 ---
