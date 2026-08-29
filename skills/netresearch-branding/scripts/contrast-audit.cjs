@@ -228,6 +228,10 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
   // finally so a forced state cannot leak into the next measurement.
   const stateFailures = [];
   const seenState = new Set();
+  // A node can legitimately disappear between the query and the force. Anything else
+  // is a real failure and must not be swallowed: an element silently dropped here is
+  // an element whose hover colour nobody measured, and the run would still exit 0.
+  const isDetached = (e) => /Could not find node|No node (found )?with given id|Node with given id does not belong/i.test(String(e && e.message));
   for (const state of ['hover', 'focus-visible']) {
     for (const nodeId of nodeIds) {
       let forced = false;
@@ -235,20 +239,30 @@ const url = /^https?:/.test(target) ? target : 'file://' + path.resolve(target);
         await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [state] });
         forced = true;
         const { object } = await cdp.send('DOM.resolveNode', { nodeId });
-        const { result: r } = await cdp.send('Runtime.callFunctionOn', {
-          objectId: object.objectId, returnByValue: true,
-          functionDeclaration: `function (state) { return window.__measureOne(this, state); }`,
-          arguments: [{ value: state }],
-        });
-        await cdp.send('Runtime.releaseObject', { objectId: object.objectId }).catch(() => {});
-        const f = r.value;
+        let f;
+        try {
+          const { result: r, exceptionDetails } = await cdp.send('Runtime.callFunctionOn', {
+            objectId: object.objectId, returnByValue: true,
+            functionDeclaration: `function (state) { return window.__measureOne(this, state); }`,
+            arguments: [{ value: state }],
+          });
+          // callFunctionOn reports a thrown measurement through exceptionDetails and
+          // still resolves; reading only `result.value` would drop the element quietly.
+          if (exceptionDetails) {
+            throw new Error(`measurement threw: ${exceptionDetails.exception?.description || exceptionDetails.text}`);
+          }
+          f = r.value;
+        } finally {
+          await cdp.send('Runtime.releaseObject', { objectId: object.objectId }).catch(() => {});
+        }
         if (f) {
           const key = `${state}|${f.element}|${f.fg}|${f.bg}`;
           if (!seenState.has(key)) { seenState.add(key); stateFailures.push(f); }
         }
-      } catch (e) { /* node detached between the query and the force */ }
-      finally {
-        if (forced) { try { await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] }); } catch (e) { /* detached */ } }
+      } catch (e) {
+        if (!isDetached(e)) throw e;
+      } finally {
+        if (forced) { try { await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] }); } catch (e) { if (!isDetached(e)) throw e; } }
       }
     }
   }
