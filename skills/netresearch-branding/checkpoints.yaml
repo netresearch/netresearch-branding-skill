@@ -31,7 +31,12 @@ mechanical:
   # exit code drives pass/fail.
   #
   # Single-pipeline construction is required by the runner allowlist
-  # (no `;`, `&&`, `||`, `$()`, or backticks).
+  # (no `;`, `&&`, `||`, `$()`, or backticks). NB-10 is the exception: its jq
+  # program does not fit the 280-column yamllint limit on one line, so it is a
+  # `type: script` and spells the same guard as
+  # `grep … || test -f ext_emconf.php || exit 0`. Those operators are legal
+  # there because the runner screens a multi-line body as a script, not
+  # against the one-liner allowlist.
 
   # === EXTENSION ICON CHECKS (TYPO3-only) ===
   - id: NB-01
@@ -45,6 +50,18 @@ mechanical:
     pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} grep -qF "#2F99A4" Resources/Public/Icons/Extension.svg'
     severity: error
     desc: "Extension icon must use Netresearch teal #2F99A4 (TYPO3 extensions only)"
+
+  # NB-02 alone is satisfied by any teal SVG. The mark is pinned by the PAIR:
+  # the checklist in references/typo3-extension-branding.md (line 153) requires
+  # both brand colours — "Colors: Frame `#2F99A4`, Letter `#585961`" — and the
+  # SVG source it prescribes (same file, lines 13-31) carries `.nr-frame`
+  # `#2F99A4` and `.nr-letter` `#585961`. NB-11/NB-12 stay retired (see below);
+  # a retired id is never reused, hence NB-34.
+  - id: NB-34
+    type: command
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} grep -qF "#585961" Resources/Public/Icons/Extension.svg'
+    severity: error
+    desc: "Extension icon must use Netresearch anthracite #585961 for the letter 'n' (TYPO3 extensions only)"
 
   # PNG fallback was needed for TYPO3 v11 and earlier. v12+ renders SVG
   # icons natively in the BE; PNG is dead weight on modern projects.
@@ -102,27 +119,43 @@ mechanical:
     severity: error
     desc: "Composer package name must use netresearch/ vendor prefix (TYPO3 extensions only)"
 
+  # The Netresearch tie in `authors[]` lives in `homepage`/`email`, not in
+  # `name`: references/typo3-extension-branding.md prescribes
+  # `"name": "<Developer Name>"` and makes `authors[].email`
+  # (`typo3@netresearch.de`) and `authors[].homepage`
+  # (`https://www.netresearch.de/`) the mandatory fields — its own validation
+  # command greps `.authors[].homepage`. Either field satisfies this check; an
+  # author list with neither, or no author list at all, fails it.
+  #
+  # Both fields are matched on a DOMAIN BOUNDARY, not as a substring: a
+  # `contains("netresearch.de")` test also accepts `developer@notnetresearch.de`
+  # and `https://example.test/?site=netresearch.de`. The email must end in
+  # `@netresearch.de` (or a subdomain of it); the homepage HOST must be
+  # `netresearch.de` or a subdomain, which is what the `([/?#]|$)` terminator
+  # pins. `[…] | any` reduces the author list to a single boolean, so the
+  # checkpoint is exit-code only and never emits author objects (names, emails,
+  # homepages).
   - id: NB-10
-    type: command
-    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} jq -e ".authors[] | select(.name == \"Netresearch DTT GmbH\")" composer.json'
+    type: script
+    command: |
+      grep -qE "typo3-cms-(extension|framework)" composer.json 2>/dev/null || test -f ext_emconf.php || exit 0
+      jq -e '[.authors[]?
+               | ((.email // "") | ascii_downcase | test("@netresearch[.]de$"))
+                 or ((.homepage // "") | ascii_downcase
+                     | test("^https?://([a-z0-9-]+[.])*netresearch[.]de([/?#]|$)"))
+             ] | any' composer.json > /dev/null
     severity: warning
-    desc: "Composer should list Netresearch DTT GmbH as author (TYPO3 extensions only)"
+    desc: "Composer authors must tie to Netresearch via the authors[].homepage host or the authors[].email domain (TYPO3 extensions only)"
 
-  # === NETRESEARCH LOGO ([n]) CHECKS (TYPO3-only) ===
-  # SVG-only on TYPO3 v12+. The brand asset gives extensions visual
-  # identity in About pages, README rendering, and any custom UI.
-  - id: NB-11
-    type: command
-    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} test -f Resources/Public/Images/netresearch-logo.svg'
-    severity: info
-    desc: "Netresearch [n] logo (SVG) should be present for brand identity (TYPO3 extensions only)"
-
-  # PNG fallback obsolete on v12+ (same logic as NB-03). Pass when absent.
-  - id: NB-12
-    type: command
-    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} test ! -f Resources/Public/Images/netresearch-logo.png'
-    severity: info
-    desc: "Netresearch logo PNG fallback should NOT exist on TYPO3 v12+ projects (SVG renders natively). Only keep PNG if targeting v11 or older."
+  # NB-11 and NB-12 are retired IDs — do not reuse. The documented home of the
+  # [n] symbol-only logo in an extension is the extension icon
+  # `Resources/Public/Icons/Extension.svg` (references/typo3-extension-branding.md,
+  # "Extension Icon", File Location line 9), enforced by NB-01 (file exists),
+  # NB-02 (frame `#2F99A4`) and NB-34 (letter `#585961`) at severity error.
+  # `assets/logos/netresearch-symbol-only.svg` is this SKILL's own asset, used
+  # to reconstruct the mark for generated output (SKILL.md lines 27/37,
+  # references/logo.md lines 7/11) — never a path required of an audited
+  # extension.
 
   # === EXT_EMCONF BRANDING (TYPO3-only) ===
   - id: NB-13
@@ -153,27 +186,84 @@ mechanical:
     severity: info
     desc: "CSS should use brand CSS variables (--nr-primary, --nr-accent, --nr-text)"
 
-  # === FOOTER LINK ===
+  # === BRANDED PAGE CHECKS (NB-17..NB-19) ===
+  # These three carry SKILL.md's hard-validity rules at the scope SKILL.md
+  # gives them, "user-facing branded pages": rule 4 — "Footer includes link to
+  # https://www.netresearch.de/ and text Netresearch DTT GmbH" — for NB-17 and
+  # NB-19, and rule 1 — "Header logo" — for NB-18.
+  #
+  # That scope is the standalone HTML pages a repository publishes: the repo
+  # root (top level only — a nested `Classes/`, `Tests/` or `Resources/` path is
+  # not a published page) plus EVERYTHING below `docs/`, `site/` and
+  # `Documentation/`. Not the TYPO3 Fluid tree: `Resources/Private/Templates/`
+  # holds backend module templates, which render inside the TYPO3 backend
+  # chrome and inherit its styling; a marketing footer and an [n] logo do not
+  # belong there, and NB-24 below says the same ("Not all extensions need the
+  # [n] logo. This is more relevant for user-facing features.").
+  #
+  # `type: script` with `find`, not a glob target: the runner brace-expands a
+  # target through `eval` with globstar off, so a `**` inside `{...}` collapses
+  # to depth 1 — `docs/guide/index.html` and `site/assets/pages/*.html` were
+  # dropped from evaluation entirely rather than checked.
+  #
+  # EVERY enumerated page must satisfy the check. The glob form passed as soon
+  # as ONE matched file did, which left every other page unevaluated. A
+  # repository publishing no such page enumerates nothing and the checkpoint
+  # passes trivially (= correctly N/A); `type: script` has no `skip` outcome.
+  #
+  # NB-17 and NB-19 match INSIDE the `<footer>...</footer>` element (awk range),
+  # because that is where SKILL.md rule 4 puts them: scanning the whole
+  # document passed a page that mentions netresearch.de in its body and has no
+  # footer at all. NB-18 stays document-wide on purpose — rule 1 puts the logo
+  # in the HEADER, and the skill's own `templates/landing-page.html` renders it
+  # in the navbar (line 16) with no logo in its footer, so footer-scoping NB-18
+  # would fail every page built from that template.
   - id: NB-17
-    type: regex
-    target: "Resources/Private/Templates/**/*.html"
-    pattern: "netresearch\\.de"
+    type: script
+    command: |
+      missing=0
+      while IFS= read -r f; do
+        test -n "$f" || continue
+        awk '/<footer/,/<\/footer>/' "$f" \
+          | grep -qiE 'href=.https?://(www\.)?netresearch\.de' || missing=1
+      done < <(find . -maxdepth 1 -type f -name '*.html' 2>/dev/null
+               find docs site Documentation -type f -name '*.html' \
+                 -not -path '*/node_modules/*' -not -path '*/vendor/*' \
+                 -not -path '*Documentation-GENERATED-temp*' 2>/dev/null)
+      exit $missing
     severity: info
-    desc: "Templates with footer should link to netresearch.de"
+    desc: "Every published HTML page (repo root top level, plus docs/, site/, Documentation/ recursively) must link to netresearch.de from inside its <footer> element"
 
   - id: NB-18
-    type: regex
-    target: "Resources/Private/Templates/**/*.html"
-    pattern: "netresearch-(symbol-only|logo)\\.svg|aria-label=\"Netresearch symbol logo\"|<title>Netresearch DTT GmbH</title>"
+    type: script
+    command: |
+      missing=0
+      while IFS= read -r f; do
+        test -n "$f" || continue
+        grep -qE 'netresearch-(symbol-only|logo)\.svg|aria-label="Netresearch symbol logo"|<title>Netresearch DTT GmbH</title>' "$f" || missing=1
+      done < <(find . -maxdepth 1 -type f -name '*.html' 2>/dev/null
+               find docs site Documentation -type f -name '*.html' \
+                 -not -path '*/node_modules/*' -not -path '*/vendor/*' \
+                 -not -path '*Documentation-GENERATED-temp*' 2>/dev/null)
+      exit $missing
     severity: warning
-    desc: "Branded templates should include the Netresearch logo (NB-11 SVG asset path or an inline SVG with the brand-labeled aria-label/title)"
+    desc: "Every published HTML page (repo root top level, plus docs/, site/, Documentation/ recursively) must include the Netresearch logo — brand SVG asset path, or an inline SVG carrying the brand aria-label/title"
 
   - id: NB-19
-    type: regex
-    target: "Resources/Private/Templates/**/*.html"
-    pattern: "Netresearch DTT GmbH"
+    type: script
+    command: |
+      missing=0
+      while IFS= read -r f; do
+        test -n "$f" || continue
+        awk '/<footer/,/<\/footer>/' "$f" \
+          | grep -qF 'Netresearch DTT GmbH' || missing=1
+      done < <(find . -maxdepth 1 -type f -name '*.html' 2>/dev/null
+               find docs site Documentation -type f -name '*.html' \
+                 -not -path '*/node_modules/*' -not -path '*/vendor/*' \
+                 -not -path '*Documentation-GENERATED-temp*' 2>/dev/null)
+      exit $missing
     severity: warning
-    desc: "Footer should include exact company name 'Netresearch DTT GmbH'"
+    desc: "Every published HTML page (repo root top level, plus docs/, site/, Documentation/ recursively) must carry the exact company name 'Netresearch DTT GmbH' inside its <footer> element"
 
   # ============================================================
   # README HEADLINE & FOOTER BRANDING (universal, non-TYPO3 too)
