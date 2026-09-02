@@ -102,27 +102,23 @@ mechanical:
     severity: error
     desc: "Composer package name must use netresearch/ vendor prefix (TYPO3 extensions only)"
 
+  # The Netresearch tie in `authors[]` lives in `homepage`/`email`, not in
+  # `name`: references/typo3-extension-branding.md prescribes
+  # `"name": "<Developer Name>"` and makes `authors[].email`
+  # (`typo3@netresearch.de`) and `authors[].homepage`
+  # (`https://www.netresearch.de/`) the mandatory fields — its own validation
+  # command greps `.authors[].homepage`. Either field satisfies this check; an
+  # author list with neither, or no author list at all, fails it.
   - id: NB-10
     type: command
-    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} jq -e ".authors[] | select(.name == \"Netresearch DTT GmbH\")" composer.json'
+    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} jq -e ".authors[]? | select(((.homepage // \"\") + \" \" + (.email // \"\")) | contains(\"netresearch.de\"))" composer.json'
     severity: warning
-    desc: "Composer should list Netresearch DTT GmbH as author (TYPO3 extensions only)"
+    desc: "Composer authors must tie to Netresearch via authors[].homepage or authors[].email (TYPO3 extensions only)"
 
-  # === NETRESEARCH LOGO ([n]) CHECKS (TYPO3-only) ===
-  # SVG-only on TYPO3 v12+. The brand asset gives extensions visual
-  # identity in About pages, README rendering, and any custom UI.
-  - id: NB-11
-    type: command
-    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} test -f Resources/Public/Images/netresearch-logo.svg'
-    severity: info
-    desc: "Netresearch [n] logo (SVG) should be present for brand identity (TYPO3 extensions only)"
-
-  # PNG fallback obsolete on v12+ (same logic as NB-03). Pass when absent.
-  - id: NB-12
-    type: command
-    pattern: 'cat composer.json ext_emconf.php 2>/dev/null | grep -E "typo3-cms-(extension|framework)|EM_CONF\[" | head -1 | xargs -r -I{} test ! -f Resources/Public/Images/netresearch-logo.png'
-    severity: info
-    desc: "Netresearch logo PNG fallback should NOT exist on TYPO3 v12+ projects (SVG renders natively). Only keep PNG if targeting v11 or older."
+  # NB-11 and NB-12 are retired IDs — do not reuse. The documented home of the
+  # [n] symbol-only logo in an extension is the extension icon
+  # `Resources/Public/Icons/Extension.svg` (references/typo3-extension-branding.md,
+  # "Extension Icon"), enforced by NB-01 and NB-02 at severity error.
 
   # === EXT_EMCONF BRANDING (TYPO3-only) ===
   - id: NB-13
@@ -153,27 +149,44 @@ mechanical:
     severity: info
     desc: "CSS should use brand CSS variables (--nr-primary, --nr-accent, --nr-text)"
 
-  # === FOOTER LINK ===
+  # === BRANDED PAGE FOOTER (NB-17..NB-19) ===
+  # These three carry SKILL.md's hard-validity rule 4 — "Footer includes link
+  # to https://www.netresearch.de/ and text Netresearch DTT GmbH" — at the
+  # scope SKILL.md gives it: "user-facing branded pages".
+  #
+  # That scope is the standalone HTML pages a repository publishes (repo root,
+  # `docs/`, `site/`, `Documentation/`), not the TYPO3 Fluid tree.
+  # `Resources/Private/Templates/` holds backend module templates, which render
+  # inside the TYPO3 backend chrome and inherit its styling; a marketing footer
+  # and an [n] logo do not belong there, and NB-24 below says the same ("Not
+  # all extensions need the [n] logo. This is more relevant for user-facing
+  # features."). NB-18's `<title>Netresearch DTT GmbH</title>` alternative can
+  # only occur in a standalone document — a Fluid template has no `<title>`.
+  #
+  # Depth-1 globs on purpose: the runner brace-expands the target through
+  # `eval` with globstar off, so a `**` here pre-expands to depth 1 and drops
+  # anything deeper. A repository publishing no such page matches nothing, and
+  # the checkpoint reports skip.
   - id: NB-17
     type: regex
-    target: "Resources/Private/Templates/**/*.html"
+    target: "{*.html,docs/*.html,site/*.html,Documentation/*.html}"
     pattern: "netresearch\\.de"
     severity: info
-    desc: "Templates with footer should link to netresearch.de"
+    desc: "Published HTML pages should link to netresearch.de in the footer"
 
   - id: NB-18
     type: regex
-    target: "Resources/Private/Templates/**/*.html"
+    target: "{*.html,docs/*.html,site/*.html,Documentation/*.html}"
     pattern: "netresearch-(symbol-only|logo)\\.svg|aria-label=\"Netresearch symbol logo\"|<title>Netresearch DTT GmbH</title>"
     severity: warning
-    desc: "Branded templates should include the Netresearch logo (NB-11 SVG asset path or an inline SVG with the brand-labeled aria-label/title)"
+    desc: "Published HTML pages should include the Netresearch logo (brand SVG asset path, or an inline SVG carrying the brand aria-label/title)"
 
   - id: NB-19
     type: regex
-    target: "Resources/Private/Templates/**/*.html"
+    target: "{*.html,docs/*.html,site/*.html,Documentation/*.html}"
     pattern: "Netresearch DTT GmbH"
     severity: warning
-    desc: "Footer should include exact company name 'Netresearch DTT GmbH'"
+    desc: "Published HTML page footer should include the exact company name 'Netresearch DTT GmbH'"
 
   # ============================================================
   # README HEADLINE & FOOTER BRANDING (universal, non-TYPO3 too)
