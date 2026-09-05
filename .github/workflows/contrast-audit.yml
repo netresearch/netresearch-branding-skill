@@ -41,7 +41,7 @@ jobs:
       contents: read
     with:
       pre-command: |
-        npm install --no-save --no-audit --no-fund playwright@1.62.1
+        npm install --no-save --no-audit --no-fund playwright@1.63.0
         npx playwright install --with-deps chromium
       check-cmd: |
         node skills/netresearch-branding/scripts/tests/contrast-audit-error-paths.test.cjs
