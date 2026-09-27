@@ -28,7 +28,8 @@ ignored: #2F99A4 at any opacity is the brand colour.
 Notations covered, all read by a parser rather than by a pattern:
   - hex #rgb, #rgba, #rrggbb, #rrggbbaa
   - rgb(), rgba(), hsl(), hsla(), hwb(), lab(), lch(), oklab(), oklch(),
-    color(), in comma and space syntax, any letter case
+    color(), in comma and space syntax, ASCII case-insensitive (tinycss2's
+    lower_name)
   - literal colour arguments of any other function: color-mix(in srgb,
     #2999a4, white), Sass darken(#2999a4, 5%), relative colour syntax
     rgb(from #2999a4 r g b), and a colour function coloraide cannot parse,
@@ -50,7 +51,8 @@ Notations covered, all read by a parser rather than by a pattern:
     verbatim; the data: prefix is optional there)
   - SVG carried by a data: URL whose MIME type is image/svg+xml, decoded
     by the Fetch Standard's data: URL processor (parse_data_url below): the
-    header may carry spaces ("data: image/svg+xml; base64 ,") and any case,
+    header may carry spaces ("data: image/svg+xml; base64 ,") and is matched
+    ASCII case-insensitively ("DATA:", "BASE64"; ";ba\u017fe64" is not base64),
     the body is percent-decoded and then, for base64, forgiving-base64
     decoded (whitespace dropped, padding optional). A raw # ends the body,
     because the processor excludes the URL's fragment. The SVG is decoded
@@ -92,7 +94,10 @@ Where colours are read:
     function arguments); comments and strings are skipped. An ID selector
     that happens to be a valid hex colour near a brand colour would be
     reported; the repository has none.
-  - *.svg, *.html (html.parser; an svg: prefix on tag names is ignored):
+  - *.svg, *.html (html.parser; an svg: prefix on tag names is ignored; in
+    SVG, and in an SVG from a data: URL, the internal DTD's general entities,
+    read by expat, are expanded in attribute values and <style>, as a browser
+    expands them; an HTML document gets no expansion, as in a browser):
     <style> elements; style= attributes; the colour presentation attributes
     fill, stroke, stop-color, flood-color, lighting-color, color; bgcolor;
     text, link, vlink, alink on <body>; <meta name="theme-color">;
@@ -134,8 +139,10 @@ from __future__ import annotations
 import base64
 import json
 import re
+import string
 import subprocess
 import sys
+import xml.parsers.expat
 from collections.abc import Iterator
 from html.parser import HTMLParser
 from urllib.parse import parse_qs, unquote, unquote_to_bytes, urlsplit
@@ -176,12 +183,17 @@ FENCE_LANGUAGES = {
     "md": MARKDOWN,
 }
 DATA_SCHEME = "data:"
+ENTITY_REFERENCE = re.compile(r"&([A-Za-z_:][\w.:-]*);")
+MAX_ENTITY_DEPTH = 8
+MAX_ENTITY_TEXT = 1_000_000
 # Character classes of the WHATWG specs the URL parsers below follow.
 ASCII_WHITESPACE = "\t\n\f\r "
 HTTP_WHITESPACE = "\n\r\t "
 C0_CONTROL_OR_SPACE = "".join(chr(c) for c in range(0x21))
 TAB_OR_NEWLINE = re.compile(r"[\t\n\r]")
-BASE64_SUFFIX = re.compile(r";\x20*base64$", re.IGNORECASE)
+# re.ASCII: "ASCII case-insensitive" in the spec. Without it IGNORECASE
+# folds U+017F LATIN SMALL LETTER LONG S to s and U+212A KELVIN SIGN to k.
+BASE64_SUFFIX = re.compile(r";\x20*base64\Z", re.IGNORECASE | re.ASCII)
 BASE64_ALPHABET = re.compile(r"[A-Za-z0-9+/]*")
 HTTP_TOKEN = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]+")
 SRCSET_SEPARATORS = ASCII_WHITESPACE + ","
@@ -190,6 +202,7 @@ SRCSET_SEPARATORS = ASCII_WHITESPACE + ","
 NON_NEGATIVE_INTEGER = re.compile(r"\d+", re.ASCII)
 FLOATING_POINT = re.compile(r"-?(?=\.?\d)\d*(?:\.\d+)?(?:[eE][+-]?\d+)?", re.ASCII)
 # States of the srcset descriptor tokenizer.
+ASCII_LOWER = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
 IN_DESCRIPTOR, IN_PARENS, AFTER_DESCRIPTOR = (
     "in descriptor",
     "in parens",
@@ -222,6 +235,13 @@ SHIELDS_NAMED_COLOURS = {
     "inactive": "#939393",
 }
 BLOCKS = ("() block", "[] block", "{} block")
+
+
+def ascii_lower(text: str) -> str:
+    """ASCII lowercase (https://infra.spec.whatwg.org/#ascii-lowercase):
+    only A-Z change. str.lower() also maps U+212A KELVIN SIGN to k and
+    U+0130 to i plus a combining dot, which the specs' comparisons do not."""
+    return text.translate(ASCII_LOWER)
 
 
 class Unparsed(str):
@@ -310,7 +330,7 @@ def data_url_colours(url: str) -> Iterator[str]:
     parsed = parse_data_url(url)
     if parsed is None or parsed[0] != "image/svg+xml":
         return
-    yield from markup_colours(parsed[1].decode("utf-8", errors="replace"))
+    yield from markup_colours(parsed[1].decode("utf-8", errors="replace"), xml=True)
 
 
 def parse_data_url(url: str) -> tuple[str, bytes] | None:
@@ -327,7 +347,7 @@ def parse_data_url(url: str) -> tuple[str, bytes] | None:
     reject unpadded base64, "; base64" and an uppercase "BASE64".
     """
     url = TAB_OR_NEWLINE.sub("", url.strip(C0_CONTROL_OR_SPACE))
-    if url[: len(DATA_SCHEME)].lower() != DATA_SCHEME:  # 1. scheme is data
+    if ascii_lower(url[: len(DATA_SCHEME)]) != DATA_SCHEME:  # 1. scheme is data
         return None
     url = url.split("#", 1)[0]  # 2. serialize, excluding the fragment
     rest = url[len(DATA_SCHEME) :]  # 3. remove the leading "data:"
@@ -347,7 +367,7 @@ def parse_data_url(url: str) -> tuple[str, bytes] | None:
     # text/plain without it; the step is kept so the code follows the spec.
     if mime_type.startswith(";"):
         mime_type = "text/plain" + mime_type
-    return mime_type_essence(mime_type), body  # 13.-15.
+    return mime_type_essence(mime_type), body  # 13.-15. (14. failure: text/plain)
 
 
 def forgiving_base64_decode(data: str) -> bytes | None:
@@ -359,19 +379,19 @@ def forgiving_base64_decode(data: str) -> bytes | None:
         return None
     if not BASE64_ALPHABET.fullmatch(data):  # 4.
         return None
-    return base64.b64decode(data + "=" * (-len(data) % 4))  # 5.-9.
+    return base64.b64decode(data + "=" * (-len(data) % 4))  # 5.-10.
 
 
 def mime_type_essence(text: str) -> str:
-    """The essence (type/subtype, lower case) of a MIME type, following
-    https://mimesniff.spec.whatwg.org/#parse-a-mime-type steps 1-9; a
-    failure is text/plain, as the data: URL processor's step 13 says."""
+    """The essence (type/subtype, ASCII lowercase) of a MIME type, following
+    https://mimesniff.spec.whatwg.org/#parse-a-mime-type steps 1-10; a
+    failure is text/plain, as the data: URL processor's step 14 says."""
     text = text.strip(HTTP_WHITESPACE)  # 1.
-    type_, slash, rest = text.partition("/")  # 2.-5.
-    subtype = rest.split(";", 1)[0].rstrip(HTTP_WHITESPACE)  # 6.-7.
+    type_, slash, rest = text.partition("/")  # 2.-3. type; 6. skip the "/"
+    subtype = rest.split(";", 1)[0].rstrip(HTTP_WHITESPACE)  # 7.-8.
     if not (slash and HTTP_TOKEN.fullmatch(type_) and HTTP_TOKEN.fullmatch(subtype)):
-        return "text/plain"  # 3., 4., 8.
-    return f"{type_}/{subtype}".lower()  # 9.
+        return "text/plain"  # 4. bad type, 5. no "/", 9. bad subtype
+    return ascii_lower(f"{type_}/{subtype}")  # 10.
 
 
 def badge_colours(url: str) -> Iterator[str]:
@@ -391,31 +411,49 @@ def badge_colours(url: str) -> Iterator[str]:
         # shields embeds a custom logo verbatim; parse_qs turned its + into
         # spaces, and the data: prefix is optional
         logo = logo.replace(" ", "+").strip()
-        if logo[: len(DATA_SCHEME)].lower() != DATA_SCHEME:
+        if ascii_lower(logo[: len(DATA_SCHEME)]) != DATA_SCHEME:
             logo = DATA_SCHEME + logo
         yield from data_url_colours(logo)
 
 
 def _badge_colour(value: str) -> str:
     """A shields colour as a CSS colour: its own names first, bare hex gets #."""
-    if value.lower() in SHIELDS_NAMED_COLOURS:
-        return SHIELDS_NAMED_COLOURS[value.lower()]
+    # shields matches its names case-sensitively (`color in namedColors`)
+    if value in SHIELDS_NAMED_COLOURS:
+        return SHIELDS_NAMED_COLOURS[value]
     return "#" + value if BARE_HEX.fullmatch(value) else value
 
 
 class _MarkupColours(HTMLParser):
-    """Colours in the places of SVG and HTML listed in the module docstring."""
+    """Colours in the places of SVG and HTML listed in the module docstring.
+    ENTITIES maps an SVG's internal DTD entities to their replacement text;
+    html.parser leaves an unknown &name; as it is, and it is replaced here."""
 
-    def __init__(self) -> None:
+    def __init__(self, entities: dict[str, str]) -> None:
         super().__init__(convert_charrefs=True)
         self.found: list[str] = []
         self._in_style = False
+        self._entities = entities
+
+    def _expand(self, text: str) -> str:
+        for _ in range(MAX_ENTITY_DEPTH):  # entities may refer to entities
+            expanded = ENTITY_REFERENCE.sub(
+                lambda m: self._entities.get(m.group(1), m.group(0)), text
+            )
+            if expanded == text or len(expanded) > MAX_ENTITY_TEXT:
+                return expanded
+            text = expanded
+        return text
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.rsplit(":", 1)[-1]
         if tag == "style":
             self._in_style = True
-        values = {name: value for name, value in attrs if value}
+        values = {
+            name: self._expand(value) if self._entities else value
+            for name, value in attrs
+            if value
+        }
         for name, value in values.items():
             self.found.extend(_attribute_colours(tag, name, value, values))
 
@@ -429,13 +467,15 @@ class _MarkupColours(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         if self._in_style:
-            self.found.extend(css_colours(data))
+            self.found.extend(css_colours(self._expand(data)))
 
 
 def _attribute_colours(
     tag: str, name: str, value: str, attrs: dict[str, str]
 ) -> Iterator[str]:
-    value = value.strip()
+    # ASCII whitespace, as the legacy colour and URL parsers strip it; not
+    # str.strip(), which also removes U+00A0 and other Unicode spaces
+    value = value.strip(ASCII_WHITESPACE)
     # Any attribute, on any element and under any namespace prefix, can carry
     # a data: SVG or a badge URL (src, srcset, data, poster, background, ...).
     yield from _url_colours(name, value)
@@ -491,30 +531,35 @@ def _srcset_descriptors(value: str, position: int) -> tuple[list[str], int]:
     while position < len(value) and value[position] in ASCII_WHITESPACE:
         position += 1
     descriptors: list[str] = []
-    current = ""
+    current: list[str] = []  # a list, so a long descriptor stays linear
     state = IN_DESCRIPTOR
     while position < len(value):
         char = value[position]
         position += 1
         if char == "," and state != IN_PARENS:
             break
-        state, current, finished = _descriptor_step(state, char, current)
-        if finished:
-            descriptors.append(finished)
+        state = _descriptor_step(state, char, current, descriptors)
     if current:
-        descriptors.append(current)  # end of input, or the comma
+        descriptors.append("".join(current))  # end of input, or the comma
     return descriptors, position
 
 
-def _descriptor_step(state: str, char: str, current: str) -> tuple[str, str, str]:
-    """One tokenizer step for any character but a comma outside parens:
-    (next state, current descriptor, descriptor finished by this step)."""
+def _descriptor_step(
+    state: str, char: str, current: list[str], descriptors: list[str]
+) -> str:
+    """One tokenizer step for any character but a comma outside parens; it
+    extends current or moves it to descriptors, and returns the next state."""
     if state == IN_PARENS:
-        return (IN_DESCRIPTOR if char == ")" else state), current + char, ""
+        current.append(char)
+        return IN_DESCRIPTOR if char == ")" else state
     if char in ASCII_WHITESPACE:
-        return AFTER_DESCRIPTOR, "", current
+        if current:
+            descriptors.append("".join(current))
+            current.clear()
+        return AFTER_DESCRIPTOR
     # "in descriptor", or "after descriptor" reconsuming it "in descriptor"
-    return (IN_PARENS if char == "(" else IN_DESCRIPTOR), current + char, ""
+    current.append(char)
+    return IN_PARENS if char == "(" else IN_DESCRIPTOR
 
 
 def _srcset_descriptors_valid(descriptors: list[str]) -> bool:
@@ -546,7 +591,7 @@ def _is_theme_colour(tag: str, name: str, attrs: dict[str, str]) -> bool:
     return (
         tag == "meta"
         and name == "content"
-        and attrs.get("name", "").lower() == "theme-color"
+        and ascii_lower(attrs.get("name", "")) == "theme-color"
     )
 
 
@@ -555,21 +600,45 @@ def _is_colour_animation(tag: str, name: str, attrs: dict[str, str]) -> bool:
     return (
         tag in ("animate", "set")
         and name in ANIMATION_ATTRIBUTES
-        and attrs.get("attributename", "").lower() in COLOUR_ATTRIBUTES
+        and ascii_lower(attrs.get("attributename", "")) in COLOUR_ATTRIBUTES
     )
 
 
-def markup_colours(text: str) -> list[str]:
-    parser = _MarkupColours()
+def markup_colours(text: str, xml: bool = False) -> list[str]:
+    """Colours in HTML, or, with XML=True, in SVG, whose internal DTD
+    entities (<!DOCTYPE svg [<!ENTITY c "#2999a4">]> ... fill="&c;") a
+    browser expands; an HTML document's DOCTYPE declares none."""
+    entities = dtd_entities(text) if xml and "<!ENTITY" in text else {}
+    parser = _MarkupColours(entities)
     parser.feed(text)
     parser.close()
     return parser.found
 
 
+def dtd_entities(text: str) -> dict[str, str]:
+    """General entities declared in an XML document's internal DTD subset,
+    read by expat (the parser, not a pattern). Declarations before a
+    well-formedness error still count; libexpat's own amplification limit
+    guards against entity expansion attacks."""
+    entities: dict[str, str] = {}
+
+    def declare(name: str, is_parameter: int, value: str | None, *_: object) -> None:
+        if value is not None and not is_parameter:
+            entities.setdefault(name, value)  # the first declaration wins
+
+    parser = xml.parsers.expat.ParserCreate()
+    parser.EntityDeclHandler = declare
+    try:
+        parser.Parse(text, True)
+    except xml.parsers.expat.ExpatError:
+        pass
+    return entities
+
+
 def markdown_colours(text: str) -> Iterator[str]:
     for token in MarkdownIt().parse(text):
         if token.type == "fence":
-            language = (token.info.split() or [""])[0].lower()
+            language = ascii_lower((token.info.split() or [""])[0])
             kind = FENCE_LANGUAGES.get(language)
             if kind:
                 yield from _fence_colours(kind, token.content)
@@ -625,7 +694,7 @@ def colours_in(kind: str, text: str) -> Iterator[str]:
     if kind in (CSS, ".scss"):
         yield from css_colours(text)
     elif kind in (MARKUP, ".html"):
-        yield from markup_colours(text)
+        yield from markup_colours(text, xml=kind == MARKUP)
     elif kind == MARKDOWN:
         yield from markdown_colours(text)
     elif kind == JSON:
@@ -672,7 +741,7 @@ def near_miss(value: str) -> tuple[str, int, float] | None:
 
 def scan(path: str, text: str) -> tuple[int, int, list[str]]:
     """(colour values read, unparsed colour functions, near-miss messages)."""
-    kind = "." + path.rsplit(".", 1)[-1].lower()
+    kind = "." + ascii_lower(path.rsplit(".", 1)[-1])
     try:
         found = list(colours_in(kind, text))
     except (json.JSONDecodeError, yaml.YAMLError) as error:

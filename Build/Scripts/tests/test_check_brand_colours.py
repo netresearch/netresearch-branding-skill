@@ -54,6 +54,12 @@ UTF16_B64 = base64.b64encode(
     '<svg><path fill="#2999a4"/></svg>'.encode("utf-16")
 ).decode()
 DATA_SVG = "data:image/svg+xml;base64,"
+# An SVG whose fill comes from an internal DTD entity.
+ENTITY_SVG = (
+    '<?xml version="1.0"?><!DOCTYPE svg [<!ENTITY c "#2999a4">]>'
+    '<svg xmlns="http://www.w3.org/2000/svg"><path fill="&c;"/></svg>'
+)
+ENTITY_B64 = base64.b64encode(ENTITY_SVG.encode()).decode()
 assert "+" in LOGO_B64
 assert LOGO_B64.endswith("==")
 assert PLAIN_B64.endswith("=")
@@ -342,6 +348,34 @@ NEAR_MISSES = {
         "i4.html",
         f'<img src="{DATA_SVG}{LATIN1_B64}" alt="">',
     ),
+    # Round 6.
+    "data: header ';ba\u017fe64' is not base64 (plain body)": (
+        "j1.html",
+        '<img src="data:image/svg+xml;ba\u017fe64,%3Csvg%3E%3Cpath fill=%22%232999a4%22/%3E%3C/svg%3E" alt="">',
+    ),
+    "svg internal DTD entity": ("j2.svg", ENTITY_SVG),
+    "data: SVG with an internal DTD entity": (
+        "j3.html",
+        f'<img src="{DATA_SVG}{ENTITY_B64}" alt="">',
+    ),
+    "svg nested DTD entities": (
+        "j4.svg",
+        (
+            '<!DOCTYPE svg [<!ENTITY a "#2999"><!ENTITY c "&a;a4">]>'
+            '<svg xmlns="http://www.w3.org/2000/svg"><path fill="&c;"/></svg>'
+        ),
+    ),
+    "svg DTD entity in <style>": (
+        "j5.svg",
+        (
+            '<!DOCTYPE svg [<!ENTITY c "#2999a4">]>'
+            '<svg xmlns="http://www.w3.org/2000/svg"><style>.x{fill:&c;}</style></svg>'
+        ),
+    ),
+    "srcset candidate after a parenthesised descriptor": (
+        "j6.html",
+        f'<img srcset="x.png (a), {DATA_SVG}{PLAIN_B64} 1x" alt="">',
+    ),
     "tab and newline inside the URL are removed": (
         "i5.html",
         f'<img src="{DATA_SVG}{PLAIN_B64[:8]}\t{PLAIN_B64[8:16]}\n{PLAIN_B64[16:]}" alt="">',
@@ -422,6 +456,20 @@ PASSES = {
     "base64 body with a length of 1 modulo 4 fails": (
         "z5.html",
         f'<img src="{DATA_SVG}{UNPADDED_2}AAA" alt="">',
+    ),
+    "DTD entity in HTML (browsers expand none there)": (
+        "k1.html",
+        '<!DOCTYPE html [<!ENTITY c "#2999a4">]><p style="color:&c;">x</p>',
+    ),
+    "no-break space before data: is not stripped (the URL is relative)": (
+        "k2.html",
+        f'<img src="&nbsp;{DATA_SVG}{PLAIN_B64}" alt="">',
+    ),
+    "animate attributeName with a Kelvin sign is not stroke": (
+        "k3.svg",
+        SVG.format(
+            '<rect><animate attributeName="stro\u212ae" values="#2999a4"/></rect>'
+        ),
     ),
     "UTF-16 SVG (not covered: decoded as UTF-8)": (
         "z6.html",
@@ -544,6 +592,30 @@ class SpecAlgorithms(unittest.TestCase):
         self.assertEqual(urls("a.png 2q"), [])  # unknown descriptor
         self.assertEqual(urls("a.png 1.5"), [])  # no descriptor letter
         self.assertEqual(urls("a.png 1.5x, b.png -1x"), ["a.png"])
+        self.assertEqual(urls("a.png \u0662x"), [])  # Arabic-Indic digit: not ASCII
+        self.assertEqual(urls("a.png \u0661\u0660w"), [])
+        self.assertEqual(urls("a.png (a), b.png 1x"), ["b.png"])  # ")" leaves parens
+
+    def test_ascii_lower(self) -> None:
+        self.assertEqual(guard.ascii_lower("DATA:Image"), "data:image")
+        # U+212A KELVIN SIGN and U+0130 stay; str.lower() would change both
+        self.assertEqual(guard.ascii_lower("\u212a\u0130"), "\u212a\u0130")
+
+    def test_shields_names_are_case_sensitive(self) -> None:
+        self.assertEqual(guard._badge_colour("orange"), "#ea7233")
+        self.assertEqual(guard._badge_colour("Orange"), "Orange")  # CSS orange
+
+    def test_dtd_entities(self) -> None:
+        self.assertEqual(guard.dtd_entities(ENTITY_SVG), {"c": "#2999a4"})
+        # declarations before a well-formedness error still count
+        self.assertEqual(
+            guard.dtd_entities('<!DOCTYPE svg [<!ENTITY c "x">]><svg><p></svg>'),
+            {"c": "x"},
+        )
+        # a parameter entity is not a general entity
+        self.assertEqual(
+            guard.dtd_entities('<!DOCTYPE svg [<!ENTITY % p "x">]><svg/>'), {}
+        )
 
 
 class RealFiles(unittest.TestCase):
