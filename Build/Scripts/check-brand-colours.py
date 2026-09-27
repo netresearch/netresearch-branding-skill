@@ -101,9 +101,14 @@ Where colours are read:
     nested to any depth, including entities that hold markup; external
     entities and DTDs are parsed as empty and never opened or fetched. Its
     amplification limit (libexpat 2.4.0 or later; the script refuses to
-    read SVG with an older one) stops billion-laughs expansions. An SVG that
-    is not well-formed, or trips that limit, yields no colours; an .svg file
-    is then reported as unparseable. Chrome and Firefox differ on a few DTD
+    read SVG with an older one) caps an expansion at 100 times its input once
+    it passes 8 MiB, which stops billion-laughs expansions; below the cap an
+    expansion is read in full, so a 1 MB file may still expand to tens of
+    MB. near_miss() is memoised and one finding is reported per distinct
+    value and file, with the number of occurrences, so a repeated value costs
+    one comparison and one line. An SVG that is not well-formed, or trips
+    the limit, yields no colours; an .svg file is then reported as
+    unparseable. Chrome and Firefox differ on a few DTD
     corner cases (a parameter entity that declares a general entity, an
     external parameter entity in a standalone="no" document); where either
     browser paints the colour, the guard reads it.
@@ -127,7 +132,10 @@ Where colours are read:
     tags (!tagged_iterator and the like) are read as plain values. A JSON or
     YAML file that does not parse is reported as a finding, because its
     colours cannot be checked; a fenced json or yaml block in Markdown that
-    does not parse (an excerpt with "..." in it) is skipped.
+    does not parse (an excerpt with "..." in it) is skipped. A fenced svg or
+    xml block that is not well-formed XML is read by html.parser instead: a
+    Markdown renderer shows it as text either way, and its colours are
+    still documentation someone may copy.
 
 Deliberate quotes of the old values, six files, and why none is reported:
   - evals/evals.json:182 quotes #2e98a3 / #ff4e01 inside an eval prompt: a
@@ -149,12 +157,14 @@ arguments and scans every tracked file of the types above)
 from __future__ import annotations
 
 import base64
+import functools
 import json
 import re
 import string
 import subprocess
 import sys
 import xml.parsers.expat
+from collections import Counter
 from collections.abc import Iterator
 from html.parser import HTMLParser
 from urllib.parse import parse_qs, unquote, unquote_to_bytes, urlsplit
@@ -716,7 +726,9 @@ def markdown_colours(text: str) -> Iterator[str]:
 def _fence_colours(kind: str, text: str) -> Iterator[str]:
     try:
         yield from list(colours_in(kind, text))
-    except (json.JSONDecodeError, yaml.YAMLError, NotWellFormed):
+    except NotWellFormed:
+        yield from markup_colours(text)  # shown as text; read it leniently
+    except (json.JSONDecodeError, yaml.YAMLError):
         return
 
 
@@ -786,6 +798,7 @@ def _plain_node(loader: yaml.SafeLoader, _suffix: str, node: yaml.Node) -> objec
 _TaggedSafeLoader.add_multi_constructor("!", _plain_node)
 
 
+@functools.lru_cache(maxsize=4096)
 def near_miss(value: str) -> tuple[str, int, float] | None:
     """(brand colour, channel distance, dE00) when VALUE nearly matches one."""
     rgb = to_rgb(value)
@@ -809,22 +822,28 @@ def near_miss(value: str) -> tuple[str, int, float] | None:
 def scan(path: str, text: str) -> tuple[int, int, list[str]]:
     """(colour values read, unparsed colour functions, near-miss messages)."""
     kind = "." + ascii_lower(path.rsplit(".", 1)[-1])
+    counts: Counter[str] = Counter()  # distinct values, in the order first read
+    unparsed = 0
     try:
-        found = list(colours_in(kind, text))
+        for value in colours_in(kind, text):
+            if isinstance(value, Unparsed):
+                unparsed += 1
+            else:
+                counts[value] += 1
     except (json.JSONDecodeError, yaml.YAMLError, NotWellFormed) as error:
         reason = str(error).splitlines()[0]
         return 0, 0, [f"{path}: does not parse ({reason}); its colours were not read"]
-    values = [v for v in found if not isinstance(v, Unparsed)]
     messages = []
-    for value in values:
-        match = near_miss(value)
+    for value, count in counts.items():
+        match = near_miss(str(value))
         if match:
             brand, distance, delta_e = match
+            times = f", {count} occurrences" if count > 1 else ""
             messages.append(
                 f"{path}: {value} is a near miss of {brand} ({BRAND[brand]}; "
-                f"channel distance {distance}, dE00 {delta_e:.2f}); use {brand}"
+                f"channel distance {distance}, dE00 {delta_e:.2f}{times}); use {brand}"
             )
-    return len(values), len(found) - len(values), messages
+    return counts.total(), unparsed, messages
 
 
 def findings_in(path: str, text: str) -> tuple[int, list[str]]:

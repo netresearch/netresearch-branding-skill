@@ -175,6 +175,19 @@ NEAR_MISSES = {
         "d0.md",
         "![b](https://img.shields.io/badge/a-b-blue?color=%232999A4)\n",
     ),
+    # Round 8: a malformed svg fence falls back to html.parser.
+    "md fenced svg that is not well-formed": (
+        "da.md",
+        '```svg\n<svg><path fill="#2999a4"><g></svg>\n```\n',
+    ),
+    # an ATTLIST default attribute, which both browsers paint
+    "svg ATTLIST default fill": (
+        "db.svg",
+        (
+            '<!DOCTYPE svg [<!ATTLIST rect fill CDATA "#2999a4">]>'
+            '<svg xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40"/></svg>'
+        ),
+    ),
     "md fenced html that is not XML": (
         "d9.md",
         '```html\n<p style="color:#2999a4">x<br></p>\n```\n',
@@ -498,6 +511,10 @@ PASSES = {
         "z5.html",
         f'<img src="{DATA_SVG}{UNPADDED_2}AAA" alt="">',
     ),
+    "md html fence with a DTD entity (read as HTML, not expanded)": (
+        "k0.md",
+        '```html\n<!DOCTYPE html [<!ENTITY c "#2999a4">]><p style="color:&c;">x</p>\n```\n',
+    ),
     "DTD entity in HTML (browsers expand none there)": (
         "k1.html",
         '<!DOCTYPE html [<!ENTITY c "#2999a4">]><p style="color:&c;">x</p>',
@@ -817,6 +834,44 @@ class SvgEntities(unittest.TestCase):
                 guard.svg_colours(f"<svg {NS}/>")
         finally:
             guard.EXPAT_PROTECTED = saved
+
+
+class RepeatedValues(unittest.TestCase):
+    """A value repeated by entity expansion (under libexpat's 8 MiB
+    threshold) costs one comparison and yields one finding."""
+
+    SMALL = (
+        '<!DOCTYPE svg [<!ENTITY b "'
+        + "#2999a4 " * 1000
+        + '"><!ENTITY a "'
+        + "&b;" * 250
+        + '">]>'
+        '<svg xmlns="http://www.w3.org/2000/svg"><rect fill="&a;"/></svg>'
+    )
+
+    def test_one_finding_per_distinct_value(self) -> None:
+        read, _, findings = guard.scan(
+            "a.css", ".a{color:#2999a4}.b{color:#2999a4}.c{color:#595a62}"
+        )
+        self.assertEqual(read, 3)
+        self.assertEqual(len(findings), 2)
+        self.assertIn("#2999a4 is a near miss", findings[0])
+        self.assertIn("2 occurrences", findings[0])
+        self.assertNotIn("occurrences", findings[1])
+
+    def test_near_miss_is_memoised(self) -> None:
+        guard.near_miss.cache_clear()
+        guard.scan("a.css", ".a{color:#2999a4}")
+        guard.scan("b.css", ".b{color:#2999a4}")
+        self.assertEqual(guard.near_miss.cache_info().hits, 1)
+
+    def test_8_9_kb_expanding_to_2_mb(self) -> None:
+        start = time.perf_counter()
+        read, _, findings = guard.scan("a.svg", self.SMALL)
+        self.assertEqual(read, 250_000)
+        self.assertEqual(len(findings), 1)
+        self.assertIn("250000 occurrences", findings[0])
+        self.assertLess(time.perf_counter() - start, 5)  # 9.8 s before the memo
 
 
 class TrackedFiles(unittest.TestCase):
