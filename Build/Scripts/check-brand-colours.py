@@ -130,18 +130,19 @@ COLOUR_ATTRIBUTES = {
 }  # fmt: skip
 LEGACY_ATTRIBUTES = {"bgcolor", "text", "link", "vlink", "alink"}
 ANIMATION_ATTRIBUTES = ("from", "to", "by", "values")
+CSS, MARKUP, MARKDOWN, JSON, YAML = ".css", ".svg", ".md", ".json", ".yaml"
 FENCE_LANGUAGES = {
-    "css": ".css",
-    "scss": ".css",
-    "less": ".css",
-    "svg": ".svg",
-    "html": ".svg",
-    "xml": ".svg",
-    "json": ".json",
-    "yaml": ".yaml",
-    "yml": ".yaml",
-    "markdown": ".md",
-    "md": ".md",
+    "css": CSS,
+    "scss": CSS,
+    "less": CSS,
+    "svg": MARKUP,
+    "html": MARKUP,
+    "xml": MARKUP,
+    "json": JSON,
+    "yaml": YAML,
+    "yml": YAML,
+    "markdown": MARKDOWN,
+    "md": MARKDOWN,
 }
 BARE_HEX = re.compile(r"[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?")
 BADGE_EXTENSION = re.compile(r"\.(svg|png|json)$")
@@ -381,15 +382,15 @@ def data_colours(documents: list) -> Iterator[str]:
 
 
 def colours_in(kind: str, text: str) -> Iterator[str]:
-    if kind in (".css", ".scss"):
+    if kind in (CSS, ".scss"):
         yield from css_colours(text)
-    elif kind in (".svg", ".html"):
+    elif kind in (MARKUP, ".html"):
         yield from markup_colours(text)
-    elif kind == ".md":
+    elif kind == MARKDOWN:
         yield from markdown_colours(text)
-    elif kind == ".json":
+    elif kind == JSON:
         yield from data_colours([json.loads(text)])
-    elif kind in (".yaml", ".yml"):
+    elif kind in (YAML, ".yml"):
         yield from data_colours(list(yaml.safe_load_all(text)))
 
 
