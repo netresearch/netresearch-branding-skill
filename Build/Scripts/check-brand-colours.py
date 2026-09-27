@@ -46,12 +46,16 @@ Notations covered, all read by a parser rather than by a pattern:
     function, a CSS colour name, or one of shields' own names (brightgreen,
     blue, ... and their aliases, mapped to shields' values, none of which is
     near a brand colour). The badge in outputStyles/branded-docs.md is one.
+  - an SVG logo in a shields.io logo= query value (shields embeds it
+    verbatim; the data: prefix is optional there)
   - SVG carried by a data:image/svg+xml URL, plain, percent-encoded or
-    standard base64: in CSS url(), and in src=, href= and xlink:href= of
-    HTML and SVG (also inside Markdown inline HTML and HTML blocks). A
-    Markdown image or link with a data:image/svg+xml URL is not a link at
-    all: CommonMark's link validation (markdown-it) rejects it, so it renders
-    as text.
+    base64 (whitespace dropped, padding optional, as forgiving-base64 does):
+    in CSS url(), and in every attribute of every HTML and SVG element under
+    any namespace prefix (src, srcset, data, poster, background, x:href,
+    ...), also inside Markdown inline HTML and HTML blocks. A Markdown image
+    or link with a data:image/svg+xml URL is not read: markdown-it's
+    validateLink rejects it, so markdown-it renders it as text, and GitHub
+    renders it as an empty <img>.
 
 Not covered, each measured as a bypass in review:
   - CSS colour names (`teal`) everywhere except the legacy HTML attributes
@@ -62,7 +66,6 @@ Not covered, each measured as a bypass in review:
     from var(), e.g. rgb(var(--r, 41) 153 164).
   - CSS string contents other than data: URLs inside url(), e.g.
     content: "#2999a4" or a data: URL given as a plain string to image-set()
-  - a data: URL in URL-safe base64 (- and _), which is not standard base64
   - Markdown HTML that markdown-it splits across blocks, e.g. a <style>
     element with a blank line inside a <div>, or <style> inline in a paragraph
   - Markdown outside fences except inline HTML, HTML blocks and badge URLs:
@@ -71,6 +74,7 @@ Not covered, each measured as a bypass in review:
     "1px solid #2999a4" or "linear-gradient(...)", and hex without # in
     them; see "Where colours are read"
   - fenced blocks in any language other than those listed below
+  - non-standard colour attributes such as bordercolor
   - colours inside raster images
 
 Where colours are read:
@@ -84,8 +88,9 @@ Where colours are read:
     fill, stroke, stop-color, flood-color, lighting-color, color; bgcolor;
     text, link, vlink, alink on <body>; <meta name="theme-color">;
     <animate>/<set> from, to, by and values when attributeName is a colour
-    attribute; shields.io badges and data: SVG in src=, href= and
-    xlink:href=. Comments and <script> are not read.
+    attribute; shields.io badges and data: SVG in any attribute. Attribute
+    values are stripped of surrounding whitespace. Comments and <script> are
+    not read.
   - *.md (markdown-it-py): fenced blocks tagged css, scss, less, svg, html,
     xml, json, yaml, yml, markdown or md, read as the matching file type;
     inline HTML and HTML blocks, read as HTML; image and link URLs, read for
@@ -162,6 +167,7 @@ FENCE_LANGUAGES = {
     "markdown": MARKDOWN,
     "md": MARKDOWN,
 }
+WHITESPACE = re.compile(r"\s+")
 BARE_HEX = re.compile(r"[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?")
 BADGE_EXTENSION = re.compile(r"\.(svg|png|json)$")
 # Query parameters shields.io reads a colour from; colorA/colorB are the
@@ -272,10 +278,13 @@ def _channel_triple(rest: list) -> str | None:
 
 def data_url_colours(url: str) -> Iterator[str]:
     """Colours in an SVG carried by a data: URL."""
-    header, _, payload = url.partition(",")
+    header, _, payload = url.strip().partition(",")
     if not header.lower().startswith("data:image/svg+xml"):
         return
     if header.lower().endswith(";base64"):
+        # forgiving-base64: whitespace is dropped and padding is optional
+        payload = WHITESPACE.sub("", payload)
+        payload += "=" * (-len(payload) % 4)
         try:
             payload = base64.b64decode(payload).decode("utf-8")
         except (binascii.Error, UnicodeDecodeError):
@@ -298,6 +307,13 @@ def badge_colours(url: str) -> Iterator[str]:
         candidates.append(segment.replace("--", "\0").split("-")[-1])
     for candidate in candidates:
         yield _badge_colour(candidate.strip())
+    for logo in query.get("logo", []):
+        # shields embeds a custom logo verbatim; parse_qs turned its + into
+        # spaces, and the data: prefix is optional
+        logo = logo.replace(" ", "+").strip()
+        if not logo.lower().startswith("data:"):
+            logo = "data:" + logo
+        yield from data_url_colours(logo)
 
 
 def _badge_colour(value: str) -> str:
@@ -339,16 +355,31 @@ class _MarkupColours(HTMLParser):
 def _attribute_colours(
     tag: str, name: str, value: str, attrs: dict[str, str]
 ) -> Iterator[str]:
+    value = value.strip()
+    # Any attribute, on any element and under any namespace prefix, can carry
+    # a data: SVG or a badge URL (src, srcset, data, poster, background, ...).
+    yield from _url_colours(name, value)
     if name == "style" or name in COLOUR_ATTRIBUTES:
         yield from css_colours(value)
     elif name == "bgcolor" or (tag == "body" and name in BODY_COLOUR_ATTRIBUTES):
         yield "#" + value if BARE_HEX.fullmatch(value) else value
-    elif name in ("src", "href", "xlink:href"):
-        yield from badge_colours(value)
-        yield from data_url_colours(value)
     elif _is_theme_colour(tag, name, attrs) or _is_colour_animation(tag, name, attrs):
         for part in value.split(";"):
             yield from css_colours(part)
+
+
+def _url_colours(name: str, value: str) -> Iterator[str]:
+    """data: SVG and shields.io badges in an attribute value. A srcset lists
+    `URL descriptor,` pairs; it is split on whitespace, never on commas,
+    because a data: URL contains one. A comma left at the end of a token
+    needs no removal: base64 decoding drops it, and in a plain SVG payload
+    it is text after the markup."""
+    urls = value.split() if name.endswith("srcset") else [value]
+    for url in urls:
+        if url.lower().startswith("data:"):
+            yield from data_url_colours(url)
+        else:
+            yield from badge_colours(url)
 
 
 def _is_theme_colour(tag: str, name: str, attrs: dict[str, str]) -> bool:

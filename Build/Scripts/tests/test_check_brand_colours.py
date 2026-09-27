@@ -30,6 +30,12 @@ guard = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(guard)
 
 SVG = '<svg xmlns="http://www.w3.org/2000/svg">{}</svg>'
+# An SVG whose base64 contains "+" and ends in "==" padding.
+LOGO_SVG = '<svg xmlns="http://www.w3.org/2000/svg"><path fill="#2999a4"/>>></svg>'
+LOGO_B64 = base64.b64encode(LOGO_SVG.encode()).decode()
+PLAIN_B64 = base64.b64encode(b'<svg><path fill="#2999a4" /></svg>').decode()
+assert "+" in LOGO_B64 and LOGO_B64.endswith("==")
+assert PLAIN_B64.endswith("=")
 
 # One near miss per notation and file type. Every case was a miss of the
 # first version of the guard except the first five.
@@ -188,6 +194,83 @@ NEAR_MISSES = {
         ),
     ),
     "yaml application tag": ("e6.yaml", 'primary: !brand "#2999a4"\n'),
+    # Round 4: shields.io logo=, data: SVG in any attribute, padding, spaces.
+    "shields ?logo=data: base64 with +": (
+        "f1.md",
+        "![b](https://img.shields.io/badge/a-b-blue?logo=data:image/svg%2bxml;base64,"
+        + LOGO_B64.replace("+", "%2B")
+        + ")\n",
+    ),
+    "shields ?logo= without data:, + as space": (
+        "f2.html",
+        '<img src="https://img.shields.io/badge/a-b-blue?logo=image/svg+xml;base64,'
+        + LOGO_B64
+        + '" alt="">',
+    ),
+    "html img srcset data:": (
+        "f3.html",
+        '<img srcset="data:image/svg+xml;base64,'
+        + PLAIN_B64
+        + ' 1x, other.png 2x" alt="">',
+    ),
+    "html source srcset data: second entry": (
+        "f4.html",
+        '<picture><source srcset="a.png 1x, data:image/svg+xml;base64,'
+        + PLAIN_B64
+        + ' 2x"></picture>',
+    ),
+    "html object data=": (
+        "f5.html",
+        '<object data="data:image/svg+xml;base64,' + PLAIN_B64 + '"></object>',
+    ),
+    "html body background=": (
+        "f6.html",
+        '<body background="data:image/svg+xml;base64,' + PLAIN_B64 + '">x</body>',
+    ),
+    "html video poster=": (
+        "f7.html",
+        '<video poster="data:image/svg+xml;base64,' + PLAIN_B64 + '"></video>',
+    ),
+    "svg image with another xlink prefix": (
+        "f8.svg",
+        '<svg xmlns="http://www.w3.org/2000/svg" xmlns:x="http://www.w3.org/1999/xlink">'
+        '<image x:href="data:image/svg+xml;base64,' + PLAIN_B64 + '"/></svg>',
+    ),
+    "html img src with surrounding spaces": (
+        "f9.html",
+        '<img src="  data:image/svg+xml;base64,' + PLAIN_B64 + '  " alt="">',
+    ),
+    "html img src unpadded base64": (
+        "g1.html",
+        '<img src="data:image/svg+xml;base64,' + PLAIN_B64.rstrip("=") + '" alt="">',
+    ),
+    "css url() unpadded base64": (
+        "g2.css",
+        '.x{background:url("data:image/svg+xml;base64,' + PLAIN_B64.rstrip("=") + '")}',
+    ),
+    "html img src unpadded base64 with whitespace inside": (
+        "g7.html",
+        '<img src="data:image/svg+xml;base64,'
+        + PLAIN_B64[:20]
+        + "\n"
+        + PLAIN_B64[20:].rstrip("=")
+        + '" alt="">',
+    ),
+    "html img srcset data: directly followed by a comma": (
+        "g8.html",
+        '<img srcset="data:image/svg+xml;base64,' + PLAIN_B64 + ', b.png 2x" alt="">',
+    ),
+    "css url() quoted with surrounding spaces": (
+        "g9.css",
+        '.x{background:url("  data:image/svg+xml;base64,' + PLAIN_B64 + '  ")}',
+    ),
+    "html body text= with spaces": ("g3.html", '<body text=" #2999a4 ">x</body>'),
+    "html bgcolor= with a trailing space": ("g4.html", '<td bgcolor="2999a4 ">x</td>'),
+    "shields ?color=%20%23hex": (
+        "g5.md",
+        "![b](https://img.shields.io/badge/a-b-blue?color=%20%232999a4)\n",
+    ),
+    "yaml tagged mapping": ("g6.yaml", 'x: !tag {c: "#2999a4"}\n'),
 }
 
 PASSES = {
@@ -231,6 +314,18 @@ PASSES = {
     "link= on a non-body element": ("s.html", '<a link="2999a4" href="#">x</a>'),
     "shields named colour": ("t.md", "![b](https://img.shields.io/badge/a-b-orange)\n"),
     "bgcolor with a CSS name": ("u.html", '<td bgcolor="teal">x</td>'),
+    "shields logo slug": (
+        "w.md",
+        "![b](https://img.shields.io/badge/a-b-blue?logo=github)\n",
+    ),
+    "srcset without data:": (
+        "x.html",
+        '<img srcset="a-2999a4.png 1x, b.png 2x" alt="">',
+    ),
+    "png data: URL in an attribute": (
+        "y.html",
+        '<img src="data:image/png;base64,iVBORw0KGgo=" alt="">',
+    ),
 }
 
 
