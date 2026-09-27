@@ -773,8 +773,9 @@ class SvgEntities(unittest.TestCase):
         # an external entity in content is parsed as empty: nothing opened
         self.assertEqual(guard.svg_colours(svg), ["#2999a4"])
         # in an attribute value it is not well-formed XML
+        in_attribute = svg.replace("<g>&c;</g>", '<g fill="&c;"/>')
         with self.assertRaises(guard.NotWellFormed):
-            guard.svg_colours(svg.replace("<g>&c;</g>", '<g fill="&c;"/>'))
+            guard.svg_colours(in_attribute)
 
     def test_refuses_without_amplification_protection(self) -> None:
         saved = guard.EXPAT_PROTECTED
