@@ -48,14 +48,21 @@ Notations covered, all read by a parser rather than by a pattern:
     near a brand colour). The badge in outputStyles/branded-docs.md is one.
   - an SVG logo in a shields.io logo= query value (shields embeds it
     verbatim; the data: prefix is optional there)
-  - SVG carried by a data:image/svg+xml URL, plain, percent-encoded or
-    base64 (whitespace dropped, padding optional, as forgiving-base64 does):
-    in CSS url(), and in every attribute of every HTML and SVG element under
-    any namespace prefix (src, srcset, data, poster, background, x:href,
-    ...), also inside Markdown inline HTML and HTML blocks. A Markdown image
-    or link with a data:image/svg+xml URL is not read: markdown-it's
-    validateLink rejects it, so markdown-it renders it as text, and GitHub
-    renders it as an empty <img>.
+  - SVG carried by a data: URL whose MIME type is image/svg+xml, decoded
+    by the Fetch Standard's data: URL processor (parse_data_url below): the
+    header may carry spaces ("data: image/svg+xml; base64 ,") and any case,
+    the body is percent-decoded and then, for base64, forgiving-base64
+    decoded (whitespace dropped, padding optional). A raw # ends the body,
+    because the processor excludes the URL's fragment. The SVG is decoded
+    as UTF-8 with replacement characters. Read in CSS url(), and in every
+    attribute of every HTML and SVG element under any namespace prefix (src,
+    data, poster, background, x:href, ...); an attribute whose name ends in
+    srcset (srcset, imagesrcset, data-srcset) is split into its image
+    candidates by the HTML Standard's srcset parser, which also drops a
+    candidate with invalid descriptors. Also inside Markdown inline HTML and
+    HTML blocks. A Markdown image or link with a data:image/svg+xml URL is
+    not read: markdown-it's validateLink rejects it, so markdown-it renders
+    it as text, and GitHub renders it as an empty <img>.
 
 Not covered, each measured as a bypass in review:
   - CSS colour names (`teal`) everywhere except the legacy HTML attributes
@@ -75,6 +82,8 @@ Not covered, each measured as a bypass in review:
     them; see "Where colours are read"
   - fenced blocks in any language other than those listed below
   - non-standard colour attributes such as bordercolor
+  - an SVG in a data: URL encoded in UTF-16 (decoded as UTF-8, it yields no
+    markup)
   - colours inside raster images
 
 Where colours are read:
@@ -123,14 +132,13 @@ arguments and scans every tracked file of the types above)
 from __future__ import annotations
 
 import base64
-import binascii
 import json
 import re
 import subprocess
 import sys
 from collections.abc import Iterator
 from html.parser import HTMLParser
-from urllib.parse import parse_qs, unquote, urlsplit
+from urllib.parse import parse_qs, unquote, unquote_to_bytes, urlsplit
 
 import tinycss2
 import yaml
@@ -168,7 +176,17 @@ FENCE_LANGUAGES = {
     "md": MARKDOWN,
 }
 DATA_SCHEME = "data:"
-WHITESPACE = re.compile(r"\s+")
+# Character classes of the WHATWG specs the URL parsers below follow.
+ASCII_WHITESPACE = "\t\n\f\r "
+HTTP_WHITESPACE = "\n\r\t "
+C0_CONTROL_OR_SPACE = "".join(chr(c) for c in range(0x21))
+TAB_OR_NEWLINE = re.compile(r"[\t\n\r]")
+BASE64_SUFFIX = re.compile(r";\x20*base64$", re.IGNORECASE)
+BASE64_ALPHABET = re.compile(r"[A-Za-z0-9+/]*")
+HTTP_TOKEN = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]+")
+SRCSET_SEPARATORS = ASCII_WHITESPACE + ","
+NON_NEGATIVE_INTEGER = re.compile(r"[0-9]+")
+FLOATING_POINT = re.compile(r"-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?")
 BARE_HEX = re.compile(r"[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?")
 BADGE_EXTENSION = re.compile(r"\.(svg|png|json)$")
 # Query parameters shields.io reads a colour from; colorA/colorB are the
@@ -278,21 +296,74 @@ def _channel_triple(rest: list) -> str | None:
 
 
 def data_url_colours(url: str) -> Iterator[str]:
-    """Colours in an SVG carried by a data: URL."""
-    header, _, payload = url.strip().partition(",")
-    if not header.lower().startswith("data:image/svg+xml"):
+    """Colours in an SVG carried by a data: URL. The body is decoded as
+    UTF-8 with replacement, so a Latin-1 byte does not hide the ASCII
+    markup around it; a UTF-16 SVG is not read."""
+    parsed = parse_data_url(url)
+    if parsed is None or parsed[0] != "image/svg+xml":
         return
-    if header.lower().endswith(";base64"):
-        # forgiving-base64: whitespace is dropped and padding is optional
-        payload = WHITESPACE.sub("", payload)
-        payload += "=" * (-len(payload) % 4)
-        try:
-            payload = base64.b64decode(payload).decode("utf-8")
-        except (binascii.Error, UnicodeDecodeError):
-            return
-    else:
-        payload = unquote(payload)
-    yield from markup_colours(payload)
+    yield from markup_colours(parsed[1].decode("utf-8", errors="replace"))
+
+
+def parse_data_url(url: str) -> tuple[str, bytes] | None:
+    """(MIME type essence, body) of a data: URL, or None on failure.
+
+    The URL Standard's basic URL parser runs first, as it does for every
+    URL a browser reads (https://url.spec.whatwg.org/#concept-basic-url-parser):
+    leading and trailing C0 control or space is removed, and so is every
+    ASCII tab or newline. Then the Fetch Standard's data: URL processor
+    (https://fetch.spec.whatwg.org/#data-url-processor), whose step numbers
+    the comments below give (as published at
+    fetch.spec.whatwg.org in September 2026). No maintained Python library implements it:
+    w3lib's parse_data_uri and python-datauri both follow RFC 2397 and
+    reject unpadded base64, "; base64" and an uppercase "BASE64".
+    """
+    url = TAB_OR_NEWLINE.sub("", url.strip(C0_CONTROL_OR_SPACE))
+    if url[: len(DATA_SCHEME)].lower() != DATA_SCHEME:  # 1. scheme is data
+        return None
+    url = url.split("#", 1)[0]  # 2. serialize, excluding the fragment
+    rest = url[len(DATA_SCHEME) :]  # 3. remove the leading "data:"
+    mime_type, comma, encoded_body = rest.partition(",")  # 4.-5.
+    mime_type = mime_type.strip(ASCII_WHITESPACE)  # 6.
+    if not comma:  # 7. position past the end: failure
+        return None
+    body = unquote_to_bytes(encoded_body)  # 8.-10. percent-decode the body
+    base64_suffix = BASE64_SUFFIX.search(mime_type)  # 11. ";" " "* "base64"
+    if base64_suffix:
+        decoded = forgiving_base64_decode(body.decode("latin-1"))  # 11.1-11.2
+        if decoded is None:  # 11.3
+            return None
+        body = decoded
+        mime_type = mime_type[: base64_suffix.start()]  # 11.4-11.6
+    # 12. Only the essence is used here, and a leading ";" already parses to
+    # text/plain without it; the step is kept so the code follows the spec.
+    if mime_type.startswith(";"):
+        mime_type = "text/plain" + mime_type
+    return mime_type_essence(mime_type), body  # 13.-15.
+
+
+def forgiving_base64_decode(data: str) -> bytes | None:
+    """https://infra.spec.whatwg.org/#forgiving-base64-decode"""
+    data = "".join(c for c in data if c not in ASCII_WHITESPACE)  # 1.
+    if len(data) % 4 == 0:  # 2. drop one or two trailing "="
+        data = data[:-2] if data.endswith("==") else data.removesuffix("=")
+    if len(data) % 4 == 1:  # 3.
+        return None
+    if not BASE64_ALPHABET.fullmatch(data):  # 4.
+        return None
+    return base64.b64decode(data + "=" * (-len(data) % 4))  # 5.-9.
+
+
+def mime_type_essence(text: str) -> str:
+    """The essence (type/subtype, lower case) of a MIME type, following
+    https://mimesniff.spec.whatwg.org/#parse-a-mime-type steps 1-9; a
+    failure is text/plain, as the data: URL processor's step 13 says."""
+    text = text.strip(HTTP_WHITESPACE)  # 1.
+    type_, slash, rest = text.partition("/")  # 2.-5.
+    subtype = rest.split(";", 1)[0].rstrip(HTTP_WHITESPACE)  # 6.-7.
+    if not (slash and HTTP_TOKEN.fullmatch(type_) and HTTP_TOKEN.fullmatch(subtype)):
+        return "text/plain"  # 3., 4., 8.
+    return f"{type_}/{subtype}".lower()  # 9.
 
 
 def badge_colours(url: str) -> Iterator[str]:
@@ -312,7 +383,7 @@ def badge_colours(url: str) -> Iterator[str]:
         # shields embeds a custom logo verbatim; parse_qs turned its + into
         # spaces, and the data: prefix is optional
         logo = logo.replace(" ", "+").strip()
-        if not logo.lower().startswith(DATA_SCHEME):
+        if logo[: len(DATA_SCHEME)].lower() != DATA_SCHEME:
             logo = DATA_SCHEME + logo
         yield from data_url_colours(logo)
 
@@ -370,17 +441,96 @@ def _attribute_colours(
 
 
 def _url_colours(name: str, value: str) -> Iterator[str]:
-    """data: SVG and shields.io badges in an attribute value. A srcset lists
-    `URL descriptor,` pairs; it is split on whitespace, never on commas,
-    because a data: URL contains one. A comma left at the end of a token
-    needs no removal: base64 decoding drops it, and in a plain SVG payload
-    it is text after the markup."""
-    urls = value.split() if name.endswith("srcset") else [value]
+    """data: SVG and shields.io badges in an attribute value. An attribute
+    whose name ends in srcset (srcset, imagesrcset, data-srcset) is read with
+    the srcset parser; any other value is one URL."""
+    urls = srcset_urls(value) if name.endswith("srcset") else [value]
     for url in urls:
-        if url.lower().startswith(DATA_SCHEME):
-            yield from data_url_colours(url)
+        yield from data_url_colours(url)
+        yield from badge_colours(url)
+
+
+def srcset_urls(value: str) -> list[str]:
+    """The URLs of the image candidates a srcset attribute keeps, following
+    https://html.spec.whatwg.org/multipage/images.html#parse-a-srcset-attribute
+    (its step labels are in the comments). A candidate whose descriptors
+    the descriptor parser rejects is dropped, as the browser drops it."""
+    urls: list[str] = []
+    position = 0
+    while True:
+        # "splitting loop": skip ASCII whitespace and commas
+        while position < len(value) and value[position] in SRCSET_SEPARATORS:
+            position += 1
+        if position >= len(value):
+            return urls
+        start = position  # the URL is the next run of non-whitespace
+        while position < len(value) and value[position] not in ASCII_WHITESPACE:
+            position += 1
+        url = value[start:position]
+        descriptors: list[str] = []
+        if url.endswith(","):  # trailing commas end the candidate
+            url = url.rstrip(",")
         else:
-            yield from badge_colours(url)
+            descriptors, position = _srcset_descriptors(value, position)
+        if url and _srcset_descriptors_valid(descriptors):
+            urls.append(url)
+
+
+def _srcset_descriptors(value: str, position: int) -> tuple[list[str], int]:
+    """The "descriptor tokenizer"; returns the descriptors and the position
+    after them. A comma outside parens ends the candidate; "after
+    descriptor" reconsumes it "in descriptor", which does the same."""
+    while position < len(value) and value[position] in ASCII_WHITESPACE:
+        position += 1
+    descriptors: list[str] = []
+    current = ""
+    state = "in descriptor"
+    while position < len(value):
+        char = value[position]
+        position += 1
+        if char == "," and state != "in parens":
+            break
+        state, current, finished = _descriptor_step(state, char, current)
+        if finished:
+            descriptors.append(finished)
+    if current:
+        descriptors.append(current)  # end of input, or the comma
+    return descriptors, position
+
+
+def _descriptor_step(state: str, char: str, current: str) -> tuple[str, str, str]:
+    """One tokenizer step for any character but a comma outside parens:
+    (next state, current descriptor, descriptor finished by this step)."""
+    if state == "in parens":
+        return ("in descriptor" if char == ")" else state), current + char, ""
+    if char in ASCII_WHITESPACE:
+        return "after descriptor", "", current
+    # "in descriptor", or "after descriptor" reconsuming it "in descriptor"
+    return ("in parens" if char == "(" else "in descriptor"), current + char, ""
+
+
+def _srcset_descriptors_valid(descriptors: list[str]) -> bool:
+    """The "descriptor parser": True when it ends with error still "no"."""
+    seen: set[str] = set()
+    for descriptor in descriptors:
+        kind, number = descriptor[-1:], descriptor[:-1]
+        if _descriptor_error(kind, number, seen):
+            return False
+        seen.add(kind)
+    return not ("h" in seen and "w" not in seen)
+
+
+def _descriptor_error(kind: str, number: str, seen: set[str]) -> bool:
+    """w: width and density absent; h: future-compat-h and density absent;
+    both: a valid non-negative integer other than 0. x: width, density and
+    future-compat-h absent, and a valid floating-point number not below 0.
+    Anything else is an error."""
+    if kind in ("w", "h") and NON_NEGATIVE_INTEGER.fullmatch(number):
+        blockers = {"w", "x"} if kind == "w" else {"h", "x"}
+        return bool(seen & blockers) or int(number) == 0
+    if kind == "x" and FLOATING_POINT.fullmatch(number):
+        return bool(seen) or float(number) < 0
+    return True
 
 
 def _is_theme_colour(tag: str, name: str, attrs: dict[str, str]) -> bool:

@@ -18,6 +18,7 @@ import pathlib
 import re
 import sys
 import unittest
+import urllib.parse
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "Build" / "Scripts" / "check-brand-colours.py"
@@ -34,6 +35,25 @@ SVG = '<svg xmlns="http://www.w3.org/2000/svg">{}</svg>'
 LOGO_SVG = '<svg xmlns="http://www.w3.org/2000/svg"><path fill="#2999a4"/>>></svg>'
 LOGO_B64 = base64.b64encode(LOGO_SVG.encode()).decode()
 PLAIN_B64 = base64.b64encode(b'<svg><path fill="#2999a4" /></svg>').decode()
+# Unpadded base64 of lengths 2 and 3 modulo 4, for the srcset comma cases.
+UNPADDED_2 = (
+    base64.b64encode(b'<svg><path fill="#2999a4" /></svg>').decode().rstrip("=")
+)
+UNPADDED_3 = (
+    base64.b64encode(b'<svg><path fill="#2999a4"  /></svg>').decode().rstrip("=")
+)
+assert len(UNPADDED_2) % 4 == 2
+assert len(UNPADDED_3) % 4 == 3
+PCT_B64 = urllib.parse.quote(LOGO_B64, safe="")
+assert "%2B" in PCT_B64
+assert "%3D" in PCT_B64
+LATIN1_B64 = base64.b64encode(
+    '<svg><!-- \u00e9 --><path fill="#2999a4"/></svg>'.encode("latin-1")
+).decode()
+UTF16_B64 = base64.b64encode(
+    '<svg><path fill="#2999a4"/></svg>'.encode("utf-16")
+).decode()
+DATA_SVG = "data:image/svg+xml;base64,"
 assert "+" in LOGO_B64
 assert LOGO_B64.endswith("==")
 assert PLAIN_B64.endswith("=")
@@ -87,10 +107,6 @@ NEAR_MISSES = {
             ".x{background:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E"
             "%3Cpath fill='%232999a4'/%3E%3C/svg%3E\")}"
         ),
-    ),
-    "css url(data:) svg, raw": (
-        "a2.css",
-        ".x{background:url('data:image/svg+xml;utf8,<svg><path fill=\"#2999a4\"/></svg>')}",
     ),
     "css url(data:) svg, base64": (
         "a3.css",
@@ -272,6 +288,64 @@ NEAR_MISSES = {
         "![b](https://img.shields.io/badge/a-b-blue?color=%20%232999a4)\n",
     ),
     "yaml tagged mapping": ("g6.yaml", 'x: !tag {c: "#2999a4"}\n'),
+    # Round 5: srcset parsed with the HTML algorithm, data: URLs with the
+    # Fetch Standard's processor.
+    "srcset unpadded base64 (len%4==2) then a comma": (
+        "h1.html",
+        f'<img srcset="{DATA_SVG}{UNPADDED_2}, b.png 2x" alt="">',
+    ),
+    "srcset unpadded base64 (len%4==3) then a comma": (
+        "h2.html",
+        f'<img srcset="{DATA_SVG}{UNPADDED_3}, b.png 2x" alt="">',
+    ),
+    "srcset descriptor then a comma without a space": (
+        "h3.html",
+        f'<img srcset="a.png 1x,{DATA_SVG}{PLAIN_B64} 2x" alt="">',
+    ),
+    "srcset two trailing commas": (
+        "h4.html",
+        f'<img srcset="{DATA_SVG}{UNPADDED_2},, b.png 2x" alt="">',
+    ),
+    "imagesrcset on a preload link": (
+        "h5.html",
+        f'<link rel="preload" as="image" imagesrcset="{DATA_SVG}{PLAIN_B64} 1x">',
+    ),
+    "data-srcset for a lazy loader": (
+        "h6.html",
+        f'<img data-srcset="a.png 1x, {DATA_SVG}{PLAIN_B64} 2x" alt="">',
+    ),
+    "data: header '; base64'": (
+        "h7.html",
+        f'<img src="data:image/svg+xml; base64,{PLAIN_B64}" alt="">',
+    ),
+    "data: header 'data: image/svg+xml'": (
+        "h8.html",
+        f'<img src="data: image/svg+xml;base64,{PLAIN_B64}" alt="">',
+    ),
+    "data: header ';base64 ,'": (
+        "h9.html",
+        f'<img src="data:image/svg+xml;base64 ,{PLAIN_B64}" alt="">',
+    ),
+    "uppercase DATA: and BASE64 in an attribute": (
+        "i1.html",
+        f'<img src="DATA:IMAGE/SVG+XML;BASE64,{PLAIN_B64}" alt="">',
+    ),
+    "percent-encoded base64 body in an attribute": (
+        "i2.html",
+        f'<img src="{DATA_SVG}{PCT_B64}" alt="">',
+    ),
+    "percent-encoded base64 body in css url()": (
+        "i3.css",
+        f'.x{{background:url("{DATA_SVG}{PCT_B64}")}}',
+    ),
+    "base64 SVG in Latin-1 with a non-ASCII byte": (
+        "i4.html",
+        f'<img src="{DATA_SVG}{LATIN1_B64}" alt="">',
+    ),
+    "tab and newline inside the URL are removed": (
+        "i5.html",
+        f'<img src="{DATA_SVG}{PLAIN_B64[:8]}\t{PLAIN_B64[8:16]}\n{PLAIN_B64[16:]}" alt="">',
+    ),
 }
 
 PASSES = {
@@ -326,6 +400,32 @@ PASSES = {
     "png data: URL in an attribute": (
         "y.html",
         '<img src="data:image/png;base64,iVBORw0KGgo=" alt="">',
+    ),
+    # A raw # starts the URL's fragment, which the data: URL processor
+    # excludes: the SVG ends at fill=" and never carries the colour.
+    "raw # in a plain data: SVG ends the body": (
+        "z1.css",
+        ".x{background:url('data:image/svg+xml;utf8,<svg><path fill=\"#2999a4\"/></svg>')}",
+    ),
+    "srcset candidate with an invalid descriptor is dropped": (
+        "z2.html",
+        f'<img srcset="{DATA_SVG}{PLAIN_B64} 1x 2x" alt="">',
+    ),
+    "srcset candidate with both w and x is dropped": (
+        "z3.html",
+        f'<img srcset="{DATA_SVG}{PLAIN_B64} 100w 1x" alt="">',
+    ),
+    "data:text/plain carrying SVG text": (
+        "z4.html",
+        '<img src="data:text/plain,%3Csvg%3E%3Cpath fill=%22%232999a4%22/%3E%3C/svg%3E" alt="">',
+    ),
+    "base64 body with a length of 1 modulo 4 fails": (
+        "z5.html",
+        f'<img src="{DATA_SVG}{UNPADDED_2}AAA" alt="">',
+    ),
+    "UTF-16 SVG (not covered: decoded as UTF-8)": (
+        "z6.html",
+        f'<img src="{DATA_SVG}{UTF16_B64}" alt="">',
     ),
 }
 
@@ -386,6 +486,64 @@ class Round3(unittest.TestCase):
     def test_application_yaml_tags_are_read(self) -> None:
         text = "services:\n  a:\n    arguments: [!tagged_iterator x]\n"
         self.assertEqual(guard.scan("Services.yaml", text), (0, 0, []))
+
+
+class SpecAlgorithms(unittest.TestCase):
+    """One assertion per step of the three WHATWG algorithms the guard follows."""
+
+    def test_forgiving_base64_decode(self) -> None:
+        decode = guard.forgiving_base64_decode
+        self.assertEqual(decode(" Y W J j "), b"abc")  # 1. whitespace removed
+        self.assertEqual(decode("YQ=="), b"a")  # 2. "==" removed
+        self.assertEqual(decode("YWI="), b"ab")  # 2. "=" removed
+        self.assertEqual(decode("YQ"), b"a")  # padding optional
+        self.assertIsNone(decode("YWJjZ"))  # 3. length 1 modulo 4
+        self.assertIsNone(decode("YQ=\x3d="))  # 3. three "=" leave a remainder of 1
+        self.assertIsNone(decode("YW,J"))  # 4. a code point outside the alphabet
+        self.assertIsNone(decode("Y=Q="))  # 4. "=" inside the data
+
+    def test_mime_type_essence(self) -> None:
+        essence = guard.mime_type_essence
+        self.assertEqual(essence(" Image/SVG+XML ;charset=utf-8"), "image/svg+xml")
+        self.assertEqual(essence("image/svg+xml \t;x=y"), "image/svg+xml")
+        self.assertEqual(essence("image"), "text/plain")  # no "/"
+        self.assertEqual(essence("/svg"), "text/plain")  # empty type
+        self.assertEqual(essence("image/"), "text/plain")  # empty subtype
+        self.assertEqual(essence("im age/svg"), "text/plain")  # not a token
+
+    def test_data_url_processor(self) -> None:
+        parse = guard.parse_data_url
+        self.assertEqual(parse("  data:,a  "), ("text/plain", b"a"))  # URL parser strip
+        self.assertEqual(parse("data:,a\tb\nc"), ("text/plain", b"abc"))  # tab/newline
+        self.assertIsNone(parse("date:,a"))  # 1. scheme
+        self.assertEqual(parse("data:,a#b"), ("text/plain", b"a"))  # 2. fragment
+        self.assertIsNone(parse("data:image/svg+xml"))  # 7. no comma
+        self.assertEqual(parse("data:,%41%2c"), ("text/plain", b"A,"))  # 10.
+        self.assertEqual(
+            parse("data:image/png ;  BASE64,YQ"), ("image/png", b"a")
+        )  # 11.
+        self.assertIsNone(parse("data:;base64,YWJjZ"))  # 11.3
+        self.assertEqual(parse("data:;charset=x,a")[0], "text/plain")  # 12.
+        self.assertEqual(parse("data:bogus,a")[0], "text/plain")  # 14.
+
+    def test_srcset_parser(self) -> None:
+        urls = guard.srcset_urls
+        self.assertEqual(urls(" a.png 1x , b.png 2x "), ["a.png", "b.png"])
+        self.assertEqual(urls("a.png,b.png"), ["a.png,b.png"])  # no split on ","
+        self.assertEqual(urls("a.png, b.png"), ["a.png", "b.png"])
+        self.assertEqual(urls("a.png,, b.png"), ["a.png", "b.png"])
+        self.assertEqual(urls("a.png 1x,b.png 2x"), ["a.png", "b.png"])
+        self.assertEqual(urls(",,a.png"), ["a.png"])
+        self.assertEqual(urls("a.png 100w 50h"), ["a.png"])
+        self.assertEqual(urls("a.png f(x, y) 1x"), [])  # parens keep the comma
+        self.assertEqual(urls("a.png 50h"), [])  # h without w
+        self.assertEqual(urls("a.png 0w"), [])
+        self.assertEqual(urls("a.png 1x 1x"), [])
+        self.assertEqual(urls("a.png 100w 1x"), [])
+        self.assertEqual(urls("a.png 1x 100w"), [])  # w after x
+        self.assertEqual(urls("a.png 2q"), [])  # unknown descriptor
+        self.assertEqual(urls("a.png 1.5"), [])  # no descriptor letter
+        self.assertEqual(urls("a.png 1.5x, b.png -1x"), ["a.png"])
 
 
 class RealFiles(unittest.TestCase):
