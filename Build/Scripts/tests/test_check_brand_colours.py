@@ -859,6 +859,20 @@ class RepeatedValues(unittest.TestCase):
         self.assertIn("2 occurrences", findings[0])
         self.assertNotIn("occurrences", findings[1])
 
+    def test_values_differing_in_case_are_distinct(self) -> None:
+        read, _, findings = guard.scan("a.css", ".a{color:#2999A4}.b{color:#2999a4}")
+        self.assertEqual(read, 2)
+        self.assertEqual(len(findings), 2)
+        self.assertIn("#2999A4 is a near miss", findings[0])
+        self.assertIn("#2999a4 is a near miss", findings[1])
+
+    def test_malformed_fence_fallback_reads_every_colour(self) -> None:
+        text = '```svg\n<svg><path fill="#2999a4"><g fill="#595a62"></svg>\n```\n'
+        read, _, findings = guard.scan("a.md", text)
+        self.assertEqual(read, 2)
+        self.assertEqual(len(findings), 2)
+        self.assertIn("#595a62 is a near miss", findings[1])
+
     def test_near_miss_is_memoised(self) -> None:
         guard.near_miss.cache_clear()
         guard.scan("a.css", ".a{color:#2999a4}")
