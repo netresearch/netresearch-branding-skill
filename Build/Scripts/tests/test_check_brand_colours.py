@@ -34,7 +34,8 @@ SVG = '<svg xmlns="http://www.w3.org/2000/svg">{}</svg>'
 LOGO_SVG = '<svg xmlns="http://www.w3.org/2000/svg"><path fill="#2999a4"/>>></svg>'
 LOGO_B64 = base64.b64encode(LOGO_SVG.encode()).decode()
 PLAIN_B64 = base64.b64encode(b'<svg><path fill="#2999a4" /></svg>').decode()
-assert "+" in LOGO_B64 and LOGO_B64.endswith("==")
+assert "+" in LOGO_B64
+assert LOGO_B64.endswith("==")
 assert PLAIN_B64.endswith("=")
 
 # One near miss per notation and file type. Every case was a miss of the

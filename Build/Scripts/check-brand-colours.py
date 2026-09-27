@@ -167,6 +167,7 @@ FENCE_LANGUAGES = {
     "markdown": MARKDOWN,
     "md": MARKDOWN,
 }
+DATA_SCHEME = "data:"
 WHITESPACE = re.compile(r"\s+")
 BARE_HEX = re.compile(r"[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?")
 BADGE_EXTENSION = re.compile(r"\.(svg|png|json)$")
@@ -311,8 +312,8 @@ def badge_colours(url: str) -> Iterator[str]:
         # shields embeds a custom logo verbatim; parse_qs turned its + into
         # spaces, and the data: prefix is optional
         logo = logo.replace(" ", "+").strip()
-        if not logo.lower().startswith("data:"):
-            logo = "data:" + logo
+        if not logo.lower().startswith(DATA_SCHEME):
+            logo = DATA_SCHEME + logo
         yield from data_url_colours(logo)
 
 
@@ -376,7 +377,7 @@ def _url_colours(name: str, value: str) -> Iterator[str]:
     it is text after the markup."""
     urls = value.split() if name.endswith("srcset") else [value]
     for url in urls:
-        if url.lower().startswith("data:"):
+        if url.lower().startswith(DATA_SCHEME):
             yield from data_url_colours(url)
         else:
             yield from badge_colours(url)
