@@ -1,21 +1,18 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.10"
-# dependencies = [
-#   "coloraide==8.13",
-#   "markdown-it-py==4.2.0",
-#   "pyyaml==6.0.3",
-#   "tinycss2==1.5.1",
-# ]
-# ///
 """Tests for Build/Scripts/check-brand-colours.py.
 
-Run from the repository root: `uv run Build/Scripts/tests/test_check_brand_colours.py`.
-The dependency block above must equal the script's; a test enforces that.
+Run from the repository root, with the dependencies the script itself pins:
+
+    uv run --no-project --with-requirements Build/Scripts/check-brand-colours.py \
+        python -B Build/Scripts/tests/test_check_brand_colours.py
+
+The pins live only in the script's PEP 723 block, which Renovate's pep723
+manager updates. This file has no block of its own: config:recommended
+ignores **/tests/**, so a copy here would never be bumped.
 """
 
 from __future__ import annotations
 
+import base64
 import importlib.util
 import pathlib
 import re
@@ -27,7 +24,8 @@ SCRIPT = ROOT / "Build" / "Scripts" / "check-brand-colours.py"
 
 sys.dont_write_bytecode = True  # keep Build/Scripts free of __pycache__
 _spec = importlib.util.spec_from_file_location("check_brand_colours", SCRIPT)
-assert _spec and _spec.loader
+assert _spec is not None
+assert _spec.loader is not None
 guard = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(guard)
 
@@ -69,6 +67,74 @@ NEAR_MISSES = {
     "css space syntax rgb()": ("v.css", ".x{color:rgb(41 153 164 / 50%)}"),
     # dE00 0.68 but channel distance 9: only the CIEDE2000 half catches it.
     "delta-e only #FF4D09": ("w.css", ".x{color:#FF4D09}"),
+    # Round 2 of the review: bypasses that are now covered.
+    "scss rgba(hex, alpha)": ("x.scss", ".x{color:rgba(#2999a4, .5)}"),
+    "color-mix literal argument": (
+        "y.css",
+        ".x{color:color-mix(in srgb, #2999a4 50%, white)}",
+    ),
+    "uppercase RGB()": ("z.css", ".x{color:RGB(41,153,164)}"),
+    "css url(data:) svg, percent-encoded": (
+        "a1.css",
+        (
+            ".x{background:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E"
+            "%3Cpath fill='%232999a4'/%3E%3C/svg%3E\")}"
+        ),
+    ),
+    "css url(data:) svg, raw": (
+        "a2.css",
+        ".x{background:url('data:image/svg+xml;utf8,<svg><path fill=\"#2999a4\"/></svg>')}",
+    ),
+    "css url(data:) svg, base64": (
+        "a3.css",
+        ".x{background:url(data:image/svg+xml;base64,"
+        + base64.b64encode(b'<svg><path fill="#2999a4"/></svg>').decode()
+        + ")}",
+    ),
+    "svg: prefixed style": (
+        "a4.svg",
+        (
+            '<svg:svg xmlns:svg="http://www.w3.org/2000/svg">'
+            "<svg:style>.f{fill:#2999a4}</svg:style></svg:svg>"
+        ),
+    ),
+    "svg animate values": (
+        "a5.svg",
+        SVG.format(
+            '<rect><animate attributeName="fill" values="#2999a4;#2F99A4"/></rect>'
+        ),
+    ),
+    "svg set to": (
+        "a6.svg",
+        SVG.format('<rect><set attributeName="fill" to="#2999a4"/></rect>'),
+    ),
+    "html bgcolor without #": ("a7.html", '<table><td bgcolor="2999a4">x</td></table>'),
+    "html body text": ("a8.html", '<body text="#2999a4">x</body>'),
+    "html body link": ("a9.html", '<body link="2999a4">x</body>'),
+    "html meta theme-color": ("b1.html", '<meta name="theme-color" content="#2999a4">'),
+    "html img shields badge": (
+        "b2.html",
+        '<img src="https://img.shields.io/badge/by-Netresearch-2999a4" alt="">',
+    ),
+    "md inline html": ("b3.md", 'Text <span style="color:#2999a4">x</span>\n'),
+    "md html block": ("b4.md", '<div style="color:#2999a4">\n\nx\n\n</div>\n'),
+    "md shields badge image": (
+        "b5.md",
+        "![b](https://img.shields.io/badge/by-Netresearch-2999a4)\n",
+    ),
+    "md shields badge ?color=": (
+        "b6.md",
+        "[x](https://img.shields.io/github/license/netresearch/REPO?color=2999a4)\n",
+    ),
+    "md fenced markdown with badge": (
+        "b7.md",
+        "```markdown\n[![N](https://img.shields.io/badge/by-Netresearch-2999a4)](https://x)\n```\n",
+    ),
+    "md fenced less": ("b8.md", "```less\n@p: #2999a4;\n```\n"),
+    "md fenced json": ("b9.md", '```json\n{"primary": "#2999a4"}\n```\n'),
+    "md fenced yaml": ("c1.md", '```yaml\nprimary: "#2999a4"\n```\n'),
+    "scss $x-rgb triple": ("c2.scss", "$nr-primary-rgb: 41, 153, 164;\n"),
+    "css -rgb space triple": ("c3.css", ":root{--nr-primary-rgb: 41 153 164;}"),
 }
 
 PASSES = {
@@ -86,6 +152,21 @@ PASSES = {
     "md fence of another language": ("i.md", "```js\nconst c = '#2999a4';\n```\n"),
     "md prose": ("j.md", "The old value was #2999a4.\n"),
     "white variant": ("k.svg", SVG.format('<path fill="#FFFFFF" d="M0 0h1v1z"/>')),
+    "html script with a css-like object": (
+        "l.html",
+        "<script>y = {a: #2999a4}</script>",
+    ),
+    "exact brand badge": (
+        "m.md",
+        "![b](https://img.shields.io/badge/by-Netresearch-2F99A4)\n",
+    ),
+    "badge with a named colour": (
+        "n.md",
+        "![b](https://img.shields.io/badge/PHP-8.5-blue.svg)\n",
+    ),
+    "unparseable json fence": ("o.md", '```json\n{"primary": "#2999a4", ...}\n```\n'),
+    "css string content": ("p.css", '.x::after{content:"#2999a4"}'),
+    "badge on another host": ("q.md", "![b](https://example.org/badge/by-x-2999a4)\n"),
 }
 
 
@@ -95,7 +176,11 @@ class NearMisses(unittest.TestCase):
             with self.subTest(name):
                 count, findings = guard.findings_in(path, text)
                 self.assertEqual(len(findings), 1, findings)
-                self.assertEqual(count, 1)
+                self.assertGreaterEqual(count, 1)
+
+    def test_unparsed_colour_function_is_counted_and_walked(self) -> None:
+        read, unparsed, findings = guard.scan("a.scss", ".x{color:rgba(#2999a4, .5)}")
+        self.assertEqual((read, unparsed, len(findings)), (1, 1, 1))
 
     def test_legitimate_values_pass(self) -> None:
         for name, (path, text) in PASSES.items():
@@ -125,20 +210,22 @@ class RealFiles(unittest.TestCase):
             with self.subTest(value):
                 self.assertIsNone(guard.near_miss(value))
 
+    def test_branded_docs_badge_is_read(self) -> None:
+        path = "outputStyles/branded-docs.md"
+        text = (ROOT / path).read_text(encoding="utf-8")
+        self.assertIn("#2F99A4", list(guard.colours_in(".md", text)))
+        self.assertEqual(guard.findings_in(path, text)[1], [])
+
     def test_deliberate_quotes_are_not_read(self) -> None:
-        for path in ("evals/evals.json", "site/index.html", "site/favicon.svg"):
+        for path in (
+            "evals/evals.json",
+            "site/index.html",
+            "site/favicon.svg",
+            ".github/workflows/brand-colours.yml",
+        ):
             with self.subTest(path):
                 text = (ROOT / path).read_text(encoding="utf-8")
                 self.assertEqual(guard.findings_in(path, text)[1], [])
-
-
-class Header(unittest.TestCase):
-    def test_dependency_pins_match_the_script(self) -> None:
-        def block(p: pathlib.Path) -> str:
-            text = p.read_text(encoding="utf-8")
-            return text.split("# /// script", 1)[1].split("# ///", 1)[0]
-
-        self.assertEqual(block(SCRIPT), block(pathlib.Path(__file__)))
 
 
 def _delta_e(a: str, b: str) -> float:

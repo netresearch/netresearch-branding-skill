@@ -1,12 +1,12 @@
 name: Brand Colours
 
 # Runs Build/Scripts/check-brand-colours.py against every tracked CSS, SCSS,
-# SVG, HTML, Markdown (fenced code), JSON and YAML file. The script exits
-# non-zero when a colour value is a near miss of a brand colour (#2F99A4,
-# #585961, #FF4D00) — the class of defect the canonical symbol carried as
-# #2999a4 / #595a62 while references/logo.md forbade it. Its unit tests run
-# first. Both are uv scripts whose inline metadata pins their parser
-# dependencies; uv itself is pinned here.
+# SVG, HTML, Markdown, JSON and YAML file. The script exits non-zero when a
+# colour value is a near miss of a brand colour (#2F99A4, #585961, #FF4D00) —
+# the class of defect the canonical symbol carried as #2999a4 / #595a62 while
+# references/logo.md forbade it. Its unit tests run first, with the
+# dependencies the script pins in its PEP 723 block. Renovate updates those
+# pins (pep723 manager) and the uv pin below (regex manager in renovate.json).
 
 on:
   push:
@@ -49,5 +49,5 @@ jobs:
     with:
       pre-command: pipx install uv==0.12.19
       check-cmd: |
-        uv run Build/Scripts/tests/test_check_brand_colours.py
+        uv run --no-project --with-requirements Build/Scripts/check-brand-colours.py python -B Build/Scripts/tests/test_check_brand_colours.py
         uv run Build/Scripts/check-brand-colours.py

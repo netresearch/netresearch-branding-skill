@@ -28,34 +28,68 @@ ignored: #2F99A4 at any opacity is the brand colour.
 Notations covered, all read by a parser rather than by a pattern:
   - hex #rgb, #rgba, #rrggbb, #rrggbbaa
   - rgb(), rgba(), hsl(), hsla(), hwb(), lab(), lch(), oklab(), oklch(),
-    color(), in comma and space syntax
-  - a bare channel triple in a custom property whose name ends in -rgb,
-    e.g. `--nr-primary-rgb: 41, 153, 164`
-Not covered: named colours (`teal`), colours computed at runtime
-(color-mix(), var() chains, relative colour syntax, Sass functions such as
-darken()), and colours inside raster images.
+    color(), in comma and space syntax, any letter case
+  - literal colour arguments of any other function: color-mix(in srgb,
+    #2999a4, white), Sass darken(#2999a4, 5%), relative colour syntax
+    rgb(from #2999a4 r g b), and a colour function coloraide cannot parse,
+    such as SCSS rgba(#2999a4, .5). Those unparsed functions are counted in
+    the summary line.
+  - a bare channel triple, comma or space separated, in a CSS custom property
+    or a Sass variable whose name ends in -rgb: `--nr-primary-rgb: 41, 153,
+    164`, `$nr-primary-rgb: 41 153 164`
+  - legacy HTML colour attributes, with or without the leading #
+  - the colour segment of an img.shields.io badge URL (/badge/label-message-
+    COLOUR and ?color=), e.g. the badge in outputStyles/branded-docs.md
+  - SVG embedded in a CSS url(data:image/svg+xml,...) value, plain,
+    percent-encoded or base64
+
+Not covered, each measured as a bypass in review:
+  - named colours (`teal`) and colours computed at runtime: the result of
+    color-mix(), of var() chains, of Sass functions and of relative colour
+    syntax. Their literal arguments are read (see above); the colour they
+    produce is not, and neither is a colour function whose channels come
+    from var(), e.g. rgb(var(--r, 41) 153 164).
+  - CSS string contents other than data: URLs, e.g. content: "#2999a4"
+  - Markdown outside fences except inline HTML, HTML blocks and badge URLs:
+    colours in prose, in other URLs and in link text are not read
+  - JSON and YAML strings that contain more than one colour value, such as
+    "1px solid #2999a4" or "linear-gradient(...)", and hex without # in
+    them; see "Where colours are read"
+  - fenced blocks in any language other than those listed below
+  - colours inside raster images
 
 Where colours are read:
-  - *.css, *.scss: every token of the file (tinycss2); comments are skipped.
-    An ID selector that happens to be a valid hex colour near a brand colour
-    would be reported; the repository has none.
-  - *.svg, *.html: <style> elements, `style=` attributes and the colour
-    presentation attributes (fill, stroke, stop-color, flood-color,
-    lighting-color, color, bgcolor), via html.parser. Comments and <script>
-    are not read.
-  - *.md: fenced code blocks tagged css, scss, svg, html or xml
-    (markdown-it-py), read as the matching file type above.
+  - *.css, *.scss: colour values in declarations, custom properties and
+    Sass variables (tinycss2 tokens, walked recursively into blocks and
+    function arguments); comments and strings are skipped. An ID selector
+    that happens to be a valid hex colour near a brand colour would be
+    reported; the repository has none.
+  - *.svg, *.html (html.parser; an svg: prefix on tag names is ignored):
+    <style> elements; style= attributes; the colour presentation attributes
+    fill, stroke, stop-color, flood-color, lighting-color, color; the legacy
+    attributes bgcolor, text, link, vlink, alink; <meta name="theme-color">;
+    <animate>/<set> from, to, by and values when attributeName is a colour
+    attribute; shields.io badges in src= and href=. Comments and <script> are
+    not read.
+  - *.md (markdown-it-py): fenced blocks tagged css, scss, less, svg, html,
+    xml, json, yaml, yml, markdown or md, read as the matching file type;
+    inline HTML and HTML blocks, read as HTML; image and link URLs, read for
+    shields.io badges.
   - *.json, *.yaml, *.yml: string values whose whole content is a single
     colour, e.g. `primary: "#2999a4"`. A colour mentioned inside a longer
-    string is prose, not configuration, and is not read.
+    string is prose, not configuration, and is not read. A fenced json or
+    yaml block that does not parse (an excerpt with "..." in it) is skipped.
 
-Deliberate quotes of the old values, and why none of them is reported:
+Deliberate quotes of the old values, six files, and why none is reported:
   - evals/evals.json:182 quotes #2e98a3 / #ff4e01 inside an eval prompt: a
     colour inside a longer JSON string is not read.
   - site/index.html:1079-1080 (finding F3) quotes #2999a4 / #595a62 inside a
     <script> block, which is not read.
   - site/favicon.svg:4-5 quotes them in an XML comment, which is not read.
-  - this script quotes them in a Python docstring; *.py is not scanned.
+  - .github/workflows/brand-colours.yml quotes them in a YAML comment, which
+    is not read.
+  - this script and Build/Scripts/tests/test_check_brand_colours.py quote
+    them in Python source; *.py is not scanned.
 There is therefore no exclusion list. A new deliberate quote in a place that
 IS read needs one, with its path and reason, rather than a weaker metric.
 
@@ -65,11 +99,15 @@ arguments and scans every tracked file of the types above)
 
 from __future__ import annotations
 
+import base64
+import binascii
 import json
+import re
 import subprocess
 import sys
 from collections.abc import Iterator
 from html.parser import HTMLParser
+from urllib.parse import parse_qs, unquote, urlsplit
 
 import tinycss2
 import yaml
@@ -88,15 +126,30 @@ COLOUR_FUNCTIONS = {
     "rgb", "rgba", "hsl", "hsla", "hwb", "lab", "lch", "oklab", "oklch", "color",
 }  # fmt: skip
 COLOUR_ATTRIBUTES = {
-    "fill", "stroke", "stop-color", "flood-color", "lighting-color", "color", "bgcolor",
+    "fill", "stroke", "stop-color", "flood-color", "lighting-color", "color",
 }  # fmt: skip
+LEGACY_ATTRIBUTES = {"bgcolor", "text", "link", "vlink", "alink"}
+ANIMATION_ATTRIBUTES = ("from", "to", "by", "values")
 FENCE_LANGUAGES = {
     "css": ".css",
     "scss": ".css",
+    "less": ".css",
     "svg": ".svg",
     "html": ".svg",
     "xml": ".svg",
+    "json": ".json",
+    "yaml": ".yaml",
+    "yml": ".yaml",
+    "markdown": ".md",
+    "md": ".md",
 }
+BARE_HEX = re.compile(r"[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?")
+BADGE_EXTENSION = re.compile(r"\.(svg|png|json)$")
+BLOCKS = ("() block", "[] block", "{} block")
+
+
+class Unparsed(str):
+    """A colour function coloraide could not read; its arguments are walked."""
 
 
 def to_rgb(text: str) -> tuple[int, int, int] | None:
@@ -118,26 +171,47 @@ def _walk(tokens: list) -> Iterator[str]:
     for index, token in enumerate(meaningful):
         if token.type == "hash":
             yield "#" + token.value
-        elif token.type == "function" and token.lower_name in COLOUR_FUNCTIONS:
-            yield token.serialize()
-        elif (
-            token.type == "ident"
-            and token.value.startswith("--")
-            and token.value.endswith("-rgb")
-        ):
+        elif token.type == "function":
+            yield from _function(token)
+        elif token.type == "url":
+            yield from data_url_colours(token.value)
+        elif token.type in BLOCKS:
+            yield from _walk(token.content)
+        elif _is_rgb_name(meaningful, index):
             triple = _channel_triple(meaningful[index + 1 :])
             if triple:
                 yield triple
-        if token.type in ("() block", "[] block", "{} block") or (
-            token.type == "function" and token.lower_name not in COLOUR_FUNCTIONS
-        ):
-            yield from _walk(
-                token.content if hasattr(token, "content") else token.arguments
-            )
+
+
+def _function(token) -> Iterator[str]:
+    """A colour function's value, or the colours among its arguments."""
+    if token.lower_name == "url":
+        for argument in token.arguments:
+            if argument.type == "string":
+                yield from data_url_colours(argument.value)
+        return
+    if token.lower_name in COLOUR_FUNCTIONS:
+        text = token.serialize()
+        if to_rgb(text) is not None:
+            yield text
+            return
+        yield Unparsed(text)
+    yield from _walk(token.arguments)
+
+
+def _is_rgb_name(tokens: list, index: int) -> bool:
+    """A --*-rgb custom property, or a $*-rgb Sass variable."""
+    token = tokens[index]
+    if token.type != "ident" or not token.value.endswith("-rgb"):
+        return False
+    if token.value.startswith("--"):
+        return True
+    previous = tokens[index - 1] if index else None
+    return previous is not None and previous.type == "literal" and previous.value == "$"
 
 
 def _channel_triple(rest: list) -> str | None:
-    """`: 41, 153, 164` after a --*-rgb property name, as `rgb(41,153,164)`."""
+    """`: 41, 153, 164` after a -rgb name, as `rgb(41,153,164)`."""
     if not rest or rest[0].type != "literal" or rest[0].value != ":":
         return None
     numbers = []
@@ -153,8 +227,38 @@ def _channel_triple(rest: list) -> str | None:
     return "rgb({},{},{})".format(*numbers)
 
 
+def data_url_colours(url: str) -> Iterator[str]:
+    """Colours in an SVG carried by a data: URL."""
+    header, _, payload = url.partition(",")
+    if not header.lower().startswith("data:image/svg+xml"):
+        return
+    if header.lower().endswith(";base64"):
+        try:
+            payload = base64.b64decode(payload).decode("utf-8")
+        except (binascii.Error, UnicodeDecodeError):
+            return
+    else:
+        payload = unquote(payload)
+    yield from markup_colours(payload)
+
+
+def badge_colours(url: str) -> Iterator[str]:
+    """The colour of an img.shields.io badge URL, as #hex when it is hex."""
+    parts = urlsplit(url)
+    if parts.hostname != "img.shields.io":
+        return
+    candidates = parse_qs(parts.query).get("color", [])
+    path = unquote(parts.path)
+    if path.startswith("/badge/"):
+        segment = BADGE_EXTENSION.sub("", path[len("/badge/") :])
+        candidates.append(segment.replace("--", "\0").split("-")[-1])
+    for candidate in candidates:
+        if BARE_HEX.fullmatch(candidate):
+            yield "#" + candidate
+
+
 class _MarkupColours(HTMLParser):
-    """Colours in <style>, style= and colour presentation attributes."""
+    """Colours in the places of SVG and HTML listed in the module docstring."""
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -162,19 +266,56 @@ class _MarkupColours(HTMLParser):
         self._in_style = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.rsplit(":", 1)[-1]
         if tag == "style":
             self._in_style = True
-        for name, value in attrs:
-            if value and (name == "style" or name in COLOUR_ATTRIBUTES):
-                self.found.extend(css_colours(value))
+        values = {name: value for name, value in attrs if value}
+        for name, value in values.items():
+            self.found.extend(_attribute_colours(tag, name, value, values))
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        self.handle_endtag(tag)
 
     def handle_endtag(self, tag: str) -> None:
-        if tag == "style":
+        if tag.rsplit(":", 1)[-1] == "style":
             self._in_style = False
 
     def handle_data(self, data: str) -> None:
         if self._in_style:
             self.found.extend(css_colours(data))
+
+
+def _attribute_colours(
+    tag: str, name: str, value: str, attrs: dict[str, str]
+) -> Iterator[str]:
+    if name == "style" or name in COLOUR_ATTRIBUTES:
+        yield from css_colours(value)
+    elif name in LEGACY_ATTRIBUTES:
+        yield "#" + value if BARE_HEX.fullmatch(value) else value
+    elif name in ("src", "href"):
+        yield from badge_colours(value)
+    elif _is_theme_colour(tag, name, attrs) or _is_colour_animation(tag, name, attrs):
+        for part in value.split(";"):
+            yield from css_colours(part)
+
+
+def _is_theme_colour(tag: str, name: str, attrs: dict[str, str]) -> bool:
+    """content= of <meta name="theme-color">."""
+    return (
+        tag == "meta"
+        and name == "content"
+        and attrs.get("name", "").lower() == "theme-color"
+    )
+
+
+def _is_colour_animation(tag: str, name: str, attrs: dict[str, str]) -> bool:
+    """from/to/by/values of an <animate> or <set> that targets a colour."""
+    return (
+        tag in ("animate", "set")
+        and name in ANIMATION_ATTRIBUTES
+        and attrs.get("attributename", "").lower() in COLOUR_ATTRIBUTES
+    )
 
 
 def markup_colours(text: str) -> list[str]:
@@ -186,12 +327,32 @@ def markup_colours(text: str) -> list[str]:
 
 def markdown_colours(text: str) -> Iterator[str]:
     for token in MarkdownIt().parse(text):
-        if token.type != "fence":
-            continue
-        language = (token.info.split() or [""])[0].lower()
-        kind = FENCE_LANGUAGES.get(language)
-        if kind:
-            yield from colours_in(kind, token.content)
+        if token.type == "fence":
+            language = (token.info.split() or [""])[0].lower()
+            kind = FENCE_LANGUAGES.get(language)
+            if kind:
+                yield from _fence_colours(kind, token.content)
+        elif token.type == "html_block":
+            yield from markup_colours(token.content)
+        elif token.type == "inline":
+            yield from _inline_colours(token.children or [])
+
+
+def _fence_colours(kind: str, text: str) -> Iterator[str]:
+    try:
+        yield from list(colours_in(kind, text))
+    except (json.JSONDecodeError, yaml.YAMLError):
+        return
+
+
+def _inline_colours(children: list) -> Iterator[str]:
+    for child in children:
+        if child.type == "html_inline":
+            yield from markup_colours(child.content)
+        elif child.type in ("image", "link_open"):
+            yield from badge_colours(
+                str(child.attrGet("src") or child.attrGet("href") or "")
+            )
 
 
 def _strings(node: object) -> Iterator[str]:
@@ -209,7 +370,7 @@ def _strings(node: object) -> Iterator[str]:
 def data_colours(documents: list) -> Iterator[str]:
     """Strings whose whole content is one colour value."""
     for text in _strings(documents):
-        values = list(css_colours(text))
+        values = [v for v in css_colours(text) if not isinstance(v, Unparsed)]
         tokens = [
             t
             for t in tinycss2.parse_component_value_list(text, skip_comments=True)
@@ -252,10 +413,11 @@ def near_miss(value: str) -> tuple[str, int, float] | None:
     return None
 
 
-def findings_in(path: str, text: str) -> tuple[int, list[str]]:
-    """(number of colour values read, near-miss messages) for one file."""
+def scan(path: str, text: str) -> tuple[int, int, list[str]]:
+    """(colour values read, unparsed colour functions, near-miss messages)."""
     kind = "." + path.rsplit(".", 1)[-1].lower()
-    values = list(colours_in(kind, text))
+    found = list(colours_in(kind, text))
+    values = [v for v in found if not isinstance(v, Unparsed)]
     messages = []
     for value in values:
         match = near_miss(value)
@@ -265,7 +427,13 @@ def findings_in(path: str, text: str) -> tuple[int, list[str]]:
                 f"{path}: {value} is a near miss of {brand} ({BRAND[brand]}; "
                 f"channel distance {distance}, dE00 {delta_e:.2f}); use {brand}"
             )
-    return len(values), messages
+    return len(values), len(found) - len(values), messages
+
+
+def findings_in(path: str, text: str) -> tuple[int, list[str]]:
+    """(number of colour values read, near-miss messages) for one file."""
+    count, _, messages = scan(path, text)
+    return count, messages
 
 
 def tracked_files() -> list[str]:
@@ -281,16 +449,18 @@ def main() -> int:
         print("check-brand-colours: no files found", file=sys.stderr)
         return 2
     findings: list[str] = []
-    read = 0
+    read = unparsed = 0
     for path in files:
         with open(path, encoding="utf-8") as handle:
-            count, messages = findings_in(path, handle.read())
+            count, skipped, messages = scan(path, handle.read())
         read += count
+        unparsed += skipped
         findings.extend(messages)
     for message in findings:
         print(message)
     print(
         f"check-brand-colours: {len(files)} files, {read} colour values, "
+        f"{unparsed} unparsed colour functions (arguments walked), "
         f"{len(findings)} finding(s)"
     )
     return 1 if findings else 0
