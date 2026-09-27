@@ -185,8 +185,16 @@ BASE64_SUFFIX = re.compile(r";\x20*base64$", re.IGNORECASE)
 BASE64_ALPHABET = re.compile(r"[A-Za-z0-9+/]*")
 HTTP_TOKEN = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]+")
 SRCSET_SEPARATORS = ASCII_WHITESPACE + ","
-NON_NEGATIVE_INTEGER = re.compile(r"[0-9]+")
-FLOATING_POINT = re.compile(r"-?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?")
+# HTML "valid non-negative integer" and "valid floating-point number";
+# re.ASCII keeps \d to 0-9, as the HTML Standard's ASCII digits are.
+NON_NEGATIVE_INTEGER = re.compile(r"\d+", re.ASCII)
+FLOATING_POINT = re.compile(r"-?(?=\.?\d)\d*(?:\.\d+)?(?:[eE][+-]?\d+)?", re.ASCII)
+# States of the srcset descriptor tokenizer.
+IN_DESCRIPTOR, IN_PARENS, AFTER_DESCRIPTOR = (
+    "in descriptor",
+    "in parens",
+    "after descriptor",
+)
 BARE_HEX = re.compile(r"[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?")
 BADGE_EXTENSION = re.compile(r"\.(svg|png|json)$")
 # Query parameters shields.io reads a colour from; colorA/colorB are the
@@ -484,11 +492,11 @@ def _srcset_descriptors(value: str, position: int) -> tuple[list[str], int]:
         position += 1
     descriptors: list[str] = []
     current = ""
-    state = "in descriptor"
+    state = IN_DESCRIPTOR
     while position < len(value):
         char = value[position]
         position += 1
-        if char == "," and state != "in parens":
+        if char == "," and state != IN_PARENS:
             break
         state, current, finished = _descriptor_step(state, char, current)
         if finished:
@@ -501,12 +509,12 @@ def _srcset_descriptors(value: str, position: int) -> tuple[list[str], int]:
 def _descriptor_step(state: str, char: str, current: str) -> tuple[str, str, str]:
     """One tokenizer step for any character but a comma outside parens:
     (next state, current descriptor, descriptor finished by this step)."""
-    if state == "in parens":
-        return ("in descriptor" if char == ")" else state), current + char, ""
+    if state == IN_PARENS:
+        return (IN_DESCRIPTOR if char == ")" else state), current + char, ""
     if char in ASCII_WHITESPACE:
-        return "after descriptor", "", current
+        return AFTER_DESCRIPTOR, "", current
     # "in descriptor", or "after descriptor" reconsuming it "in descriptor"
-    return ("in parens" if char == "(" else "in descriptor"), current + char, ""
+    return (IN_PARENS if char == "(" else IN_DESCRIPTOR), current + char, ""
 
 
 def _srcset_descriptors_valid(descriptors: list[str]) -> bool:
