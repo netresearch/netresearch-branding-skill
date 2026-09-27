@@ -17,6 +17,7 @@ import importlib.util
 import pathlib
 import re
 import sys
+import time
 import unittest
 import urllib.parse
 
@@ -165,6 +166,14 @@ NEAR_MISSES = {
     "scss $x-rgb triple": ("c2.scss", "$nr-primary-rgb: 41, 153, 164;\n"),
     "css -rgb space triple": ("c3.css", ":root{--nr-primary-rgb: 41 153 164;}"),
     # Round 3 of the review: shields.io forms that render #2999a4.
+    "shields ?color=%23 upper-case hex (renders #2999a4)": (
+        "d0.md",
+        "![b](https://img.shields.io/badge/a-b-blue?color=%232999A4)\n",
+    ),
+    "md fenced html that is not XML": (
+        "d9.md",
+        '```html\n<p style="color:#2999a4">x<br></p>\n```\n',
+    ),
     "shields ?color=%23hex": (
         "d1.md",
         "![b](https://img.shields.io/badge/a-b-blue?color=%232999a4)\n",
@@ -603,19 +612,178 @@ class SpecAlgorithms(unittest.TestCase):
 
     def test_shields_names_are_case_sensitive(self) -> None:
         self.assertEqual(guard._badge_colour("orange"), "#ea7233")
-        self.assertEqual(guard._badge_colour("Orange"), "Orange")  # CSS orange
+        self.assertEqual(guard._badge_colour("orangered"), "orangered")  # CSS name
+        # shields renders its default #4b0 for a capitalised name: no colour
+        for name in ("Orange", "CadetBlue", "OrangeRed", "ORANGE"):
+            with self.subTest(name):
+                self.assertIsNone(guard._badge_colour(name))
+        self.assertEqual(guard._badge_colour("2999A4"), "#2999A4")  # hex stays
 
-    def test_dtd_entities(self) -> None:
-        self.assertEqual(guard.dtd_entities(ENTITY_SVG), {"c": "#2999a4"})
-        # declarations before a well-formedness error still count
-        self.assertEqual(
-            guard.dtd_entities('<!DOCTYPE svg [<!ENTITY c "x">]><svg><p></svg>'),
-            {"c": "x"},
+
+def _chain(levels: int, fanout: int = 1, leaf: str = "#2999a4") -> str:
+    """A DOCTYPE whose entity l<levels> expands through LEVELS levels."""
+    declarations = [f'<!ENTITY l0 "{leaf}">'] + [
+        f'<!ENTITY l{i} "' + f"&l{i - 1};" * fanout + '">' for i in range(1, levels + 1)
+    ]
+    return "<!DOCTYPE svg [" + "".join(declarations) + "]>"
+
+
+NS = 'xmlns="http://www.w3.org/2000/svg" width="40" height="40"'
+RECT = '<rect width="40" height="40" fill="{}"/>'
+# The reviewer's round-7 cases, rendered in Chrome 154 and Firefox 155:
+# True where at least one browser paints #2999a4, False where neither does.
+BROWSER_SVG_CASES = {
+    "control: plain fill": (f"<svg {NS}>{RECT.format('#2999a4')}</svg>", True),
+    "control: entity fill": (
+        f'<!DOCTYPE svg [<!ENTITY c "#2999a4">]><svg {NS}>{RECT.format("&c;")}</svg>',
+        True,
+    ),
+    "nesting 7 deep": (_chain(7) + f"<svg {NS}>{RECT.format('&l7;')}</svg>", True),
+    "nesting 8 deep": (_chain(8) + f"<svg {NS}>{RECT.format('&l8;')}</svg>", True),
+    "nesting 12 deep": (_chain(12) + f"<svg {NS}>{RECT.format('&l12;')}</svg>", True),
+    "billion laughs 4x10 (10^4 copies)": (
+        _chain(4, 10, "") + f"<svg {NS}>{RECT.format('#2999a4&l4;')}</svg>",
+        True,
+    ),
+    "param entity declares general (Firefox)": (
+        (
+            f"<!DOCTYPE svg [<!ENTITY % p \"<!ENTITY c '#2999a4'>\"> %p;]>"
+            f"<svg {NS}>{RECT.format('&c;')}</svg>"
+        ),
+        True,
+    ),
+    "entity with markup in content": (
+        f"<!DOCTYPE svg [<!ENTITY e '{RECT.format('#2999a4')}'>]><svg {NS}>&e;</svg>",
+        True,
+    ),
+    "entity named nbsp": (
+        f'<!DOCTYPE svg [<!ENTITY nbsp "#2999a4">]><svg {NS}>{RECT.format("&nbsp;")}</svg>',
+        True,
+    ),
+    "entity named not": (
+        f'<!DOCTYPE svg [<!ENTITY not "#2999a4">]><svg {NS}>{RECT.format("&not;")}</svg>',
+        True,
+    ),
+    "non-ASCII entity name": (
+        f'<!DOCTYPE svg [<!ENTITY \u00e9 "#2999a4">]><svg {NS}>{RECT.format("&\u00e9;")}</svg>',
+        True,
+    ),
+    "standalone=no external PE, then decl (Chrome)": (
+        (
+            '<?xml version="1.0" standalone="no"?><!DOCTYPE svg [<!ENTITY % ext SYSTEM '
+            f'"nothere.dtd"> %ext; <!ENTITY c "#2999a4">]><svg {NS}>{RECT.format("&c;")}</svg>'
+        ),
+        True,
+    ),
+    "charref &#38;c; in an attribute is the literal &c;": (
+        f'<!DOCTYPE svg [<!ENTITY c "#2999a4">]><svg {NS}>{RECT.format("&#38;c;")}</svg>',
+        False,
+    ),
+    "entity in <style>": (
+        (
+            f'<!DOCTYPE svg [<!ENTITY c "#2999a4">]><svg {NS}><style>rect{{fill:&c;}}</style>'
+            '<rect width="40" height="40"/></svg>'
+        ),
+        True,
+    ),
+    "duplicate declaration: the first wins": (
+        f'<!DOCTYPE svg [<!ENTITY c "#ffffff"><!ENTITY c "#2999a4">]><svg {NS}>{RECT.format("&c;")}</svg>',
+        False,
+    ),
+    "CDATA <style> keeps &c; literal": (
+        (
+            f'<!DOCTYPE svg [<!ENTITY c "#2999a4">]><svg {NS}><style><![CDATA[rect{{fill:&c;}}]]>'
+            '</style><rect width="40" height="40"/></svg>'
+        ),
+        False,
+    ),
+    "internal empty PE reference, then decl": (
+        f'<!DOCTYPE svg [<!ENTITY % x ""> %x; <!ENTITY c "#2999a4">]><svg {NS}>{RECT.format("&c;")}</svg>',
+        True,
+    ),
+    "same, standalone=yes (Firefox)": (
+        (
+            '<?xml version="1.0" standalone="yes"?><!DOCTYPE svg [<!ENTITY % x ""> %x; '
+            f'<!ENTITY c "#2999a4">]><svg {NS}>{RECT.format("&c;")}</svg>'
+        ),
+        True,
+    ),
+    "entity in a comment inside <style>": (
+        (
+            f'<!DOCTYPE svg [<!ENTITY c "#2999a4">]><svg {NS}><style>/* &c; */</style>'
+            '<rect width="40" height="40" fill="#fff"/></svg>'
+        ),
+        False,
+    ),
+}
+# Not well-formed, or over libexpat's amplification limit: browsers paint
+# nothing, the guard reads nothing, and an .svg file is reported unparseable.
+BROWSER_BROKEN_SVG_CASES = {
+    "billion laughs 10x10": _chain(10, 10) + f"<svg {NS}>{RECT.format('&l10;')}</svg>",
+    "undefined entity after use": (
+        f'<!DOCTYPE svg [<!ENTITY c "#2999a4">]><svg {NS}>{RECT.format("&c;")}<g fill="&u;"/></svg>'
+    ),
+    # 1 MB of input expanding to 2 GB: a = 333,333 x &b;, b = 6,000 characters
+    "1 MB amplification": (
+        '<!DOCTYPE svg [<!ENTITY b "'
+        + "#2999a4 " * 750
+        + '"><!ENTITY a "'
+        + "&b;" * 333_333
+        + f'">]><svg {NS}>{RECT.format("&a;")}</svg>'
+    ),
+}
+
+
+class SvgEntities(unittest.TestCase):
+    """SVG read by expat, against what Chrome 154 and Firefox 155 render."""
+
+    def test_as_svg_file_and_as_data_url(self) -> None:
+        for name, (svg, rendered) in BROWSER_SVG_CASES.items():
+            data_url = f'<img src="{DATA_SVG}{base64.b64encode(svg.encode()).decode()}" alt="">'
+            for path, text in (("a.svg", svg), ("a.html", data_url)):
+                with self.subTest(name, path=path):
+                    self.assertEqual(bool(guard.findings_in(path, text)[1]), rendered)
+
+    def test_broken_svg_is_unparseable_and_reads_nothing(self) -> None:
+        for name, svg in BROWSER_BROKEN_SVG_CASES.items():
+            data_url = f'<img src="{DATA_SVG}{base64.b64encode(svg.encode()).decode()}" alt="">'
+            with self.subTest(name, path="a.svg"):
+                read, _, findings = guard.scan("a.svg", svg)
+                self.assertEqual(read, 0)
+                self.assertEqual(len(findings), 1)
+                self.assertIn("does not parse", findings[0])
+            with self.subTest(name, path="a.html"):
+                self.assertEqual(guard.scan("a.html", data_url), (0, 0, []))
+
+    def test_amplification_stops_early(self) -> None:
+        # libexpat's limit, not Python: both cases stop well under a second
+        for name in ("billion laughs 10x10", "1 MB amplification"):
+            with self.subTest(name):
+                start = time.perf_counter()
+                with self.assertRaises(guard.NotWellFormed):
+                    guard.svg_colours(BROWSER_BROKEN_SVG_CASES[name])
+                self.assertLess(time.perf_counter() - start, 5)
+
+    def test_external_entities_are_empty(self) -> None:
+        svg = (
+            '<!DOCTYPE svg SYSTEM "http://127.0.0.1:9/x.dtd" [<!ENTITY % ext SYSTEM '
+            '"/etc/hostname"> %ext; <!ENTITY c SYSTEM "file:///etc/passwd">]>'
+            f"<svg {NS}><g>&c;</g>{RECT.format('#2999a4')}</svg>"
         )
-        # a parameter entity is not a general entity
-        self.assertEqual(
-            guard.dtd_entities('<!DOCTYPE svg [<!ENTITY % p "x">]><svg/>'), {}
-        )
+        # an external entity in content is parsed as empty: nothing opened
+        self.assertEqual(guard.svg_colours(svg), ["#2999a4"])
+        # in an attribute value it is not well-formed XML
+        with self.assertRaises(guard.NotWellFormed):
+            guard.svg_colours(svg.replace("<g>&c;</g>", '<g fill="&c;"/>'))
+
+    def test_refuses_without_amplification_protection(self) -> None:
+        saved = guard.EXPAT_PROTECTED
+        guard.EXPAT_PROTECTED = False
+        try:
+            with self.assertRaises(RuntimeError):
+                guard.svg_colours(f"<svg {NS}/>")
+        finally:
+            guard.EXPAT_PROTECTED = saved
 
 
 class RealFiles(unittest.TestCase):

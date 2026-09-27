@@ -44,9 +44,11 @@ Notations covered, all read by a parser rather than by a pattern:
   - the colours of an img.shields.io badge URL: the last path segment of
     /badge/label-message-COLOUR and the color, labelColor, logoColor, colorA
     and colorB query values, URL-decoded, as bare hex, #hex, a CSS colour
-    function, a CSS colour name, or one of shields' own names (brightgreen,
-    blue, ... and their aliases, mapped to shields' values, none of which is
-    near a brand colour). The badge in outputStyles/branded-docs.md is one.
+    function, a lower-case CSS colour name, or one of shields' own names
+    (brightgreen, blue, ... and their aliases, mapped to shields' values,
+    none of which is near a brand colour). A letters-only value with an
+    upper-case letter (Orange, CadetBlue) is no colour: shields renders its
+    default for it. The badge in outputStyles/branded-docs.md is one.
   - an SVG logo in a shields.io logo= query value (shields embeds it
     verbatim; the data: prefix is optional there)
   - SVG carried by a data: URL whose MIME type is image/svg+xml, decoded
@@ -94,10 +96,20 @@ Where colours are read:
     function arguments); comments and strings are skipped. An ID selector
     that happens to be a valid hex colour near a brand colour would be
     reported; the repository has none.
-  - *.svg, *.html (html.parser; an svg: prefix on tag names is ignored; in
-    SVG, and in an SVG from a data: URL, the internal DTD's general entities,
-    read by expat, are expanded in attribute values and <style>, as a browser
-    expands them; an HTML document gets no expansion, as in a browser):
+  - *.svg, and an SVG from a data: URL: read by expat as XML (svg_colours).
+    expat expands the internal DTD's entities itself, general and parameter,
+    nested to any depth, including entities that hold markup; external
+    entities and DTDs are parsed as empty and never opened or fetched. Its
+    amplification limit (libexpat 2.4.0 or later; the script refuses to
+    read SVG with an older one) stops billion-laughs expansions. An SVG that
+    is not well-formed, or trips that limit, yields no colours; an .svg file
+    is then reported as unparseable. Chrome and Firefox differ on a few DTD
+    corner cases (a parameter entity that declares a general entity, an
+    external parameter entity in a standalone="no" document); where either
+    browser paints the colour, the guard reads it.
+  - *.html, and HTML in Markdown: read by html.parser, which expands no DTD
+    entities, as a browser expands none in HTML.
+  - In both (an svg: prefix on tag names is ignored):
     <style> elements; style= attributes; the colour presentation attributes
     fill, stroke, stop-color, flood-color, lighting-color, color; bgcolor;
     text, link, vlink, alink on <body>; <meta name="theme-color">;
@@ -168,14 +180,14 @@ COLOUR_ATTRIBUTES = {
 }  # fmt: skip
 BODY_COLOUR_ATTRIBUTES = {"text", "link", "vlink", "alink"}
 ANIMATION_ATTRIBUTES = ("from", "to", "by", "values")
-CSS, MARKUP, MARKDOWN, JSON, YAML = ".css", ".svg", ".md", ".json", ".yaml"
+CSS, SVG, HTML, MARKDOWN, JSON, YAML = ".css", ".svg", ".html", ".md", ".json", ".yaml"
 FENCE_LANGUAGES = {
     "css": CSS,
     "scss": CSS,
     "less": CSS,
-    "svg": MARKUP,
-    "html": MARKUP,
-    "xml": MARKUP,
+    "svg": SVG,
+    "html": HTML,
+    "xml": SVG,
     "json": JSON,
     "yaml": YAML,
     "yml": YAML,
@@ -183,9 +195,11 @@ FENCE_LANGUAGES = {
     "md": MARKDOWN,
 }
 DATA_SCHEME = "data:"
-ENTITY_REFERENCE = re.compile(r"&([A-Za-z_:][\w.:-]*);")
-MAX_ENTITY_DEPTH = 8
-MAX_ENTITY_TEXT = 1_000_000
+# libexpat 2.4.0 added billion-laughs protection, on by default: a document
+# whose entity expansion exceeds 100 times its input (after 8 MiB) is not
+# well-formed. SVG is only read with a libexpat that has it.
+EXPAT_VERSION = tuple(int(n) for n in xml.parsers.expat.version_info)
+EXPAT_PROTECTED = EXPAT_VERSION >= (2, 4, 0)
 # Character classes of the WHATWG specs the URL parsers below follow.
 ASCII_WHITESPACE = "\t\n\f\r "
 HTTP_WHITESPACE = "\n\r\t "
@@ -330,7 +344,10 @@ def data_url_colours(url: str) -> Iterator[str]:
     parsed = parse_data_url(url)
     if parsed is None or parsed[0] != "image/svg+xml":
         return
-    yield from markup_colours(parsed[1].decode("utf-8", errors="replace"), xml=True)
+    try:
+        yield from svg_colours(parsed[1].decode("utf-8", errors="replace"))
+    except NotWellFormed:
+        return  # a browser renders nothing for it
 
 
 def parse_data_url(url: str) -> tuple[str, bytes] | None:
@@ -406,7 +423,9 @@ def badge_colours(url: str) -> Iterator[str]:
         segment = BADGE_EXTENSION.sub("", path[len("/badge/") :])
         candidates.append(segment.replace("--", "\0").split("-")[-1])
     for candidate in candidates:
-        yield _badge_colour(candidate.strip())
+        colour = _badge_colour(candidate.strip())
+        if colour is not None:
+            yield colour
     for logo in query.get("logo", []):
         # shields embeds a custom logo verbatim; parse_qs turned its + into
         # spaces, and the data: prefix is optional
@@ -416,44 +435,34 @@ def badge_colours(url: str) -> Iterator[str]:
         yield from data_url_colours(logo)
 
 
-def _badge_colour(value: str) -> str:
-    """A shields colour as a CSS colour: its own names first, bare hex gets #."""
-    # shields matches its names case-sensitively (`color in namedColors`)
+def _badge_colour(value: str) -> str | None:
+    """A shields colour as a CSS colour: its own names first, bare hex gets #.
+    shields matches its names case-sensitively (`color in namedColors`) and
+    accepts CSS colour names only in lower case; a letters-only value with
+    an upper-case letter (Orange, CadetBlue) renders shields' default
+    colour, so it is no colour here."""
     if value in SHIELDS_NAMED_COLOURS:
         return SHIELDS_NAMED_COLOURS[value]
-    return "#" + value if BARE_HEX.fullmatch(value) else value
+    if BARE_HEX.fullmatch(value):
+        return "#" + value
+    if value.isascii() and value.isalpha() and value != ascii_lower(value):
+        return None
+    return value
 
 
 class _MarkupColours(HTMLParser):
-    """Colours in the places of SVG and HTML listed in the module docstring.
-    ENTITIES maps an SVG's internal DTD entities to their replacement text;
-    html.parser leaves an unknown &name; as it is, and it is replaced here."""
+    """Colours in the places of HTML listed in the module docstring."""
 
-    def __init__(self, entities: dict[str, str]) -> None:
+    def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.found: list[str] = []
         self._in_style = False
-        self._entities = entities
-
-    def _expand(self, text: str) -> str:
-        for _ in range(MAX_ENTITY_DEPTH):  # entities may refer to entities
-            expanded = ENTITY_REFERENCE.sub(
-                lambda m: self._entities.get(m.group(1), m.group(0)), text
-            )
-            if expanded == text or len(expanded) > MAX_ENTITY_TEXT:
-                return expanded
-            text = expanded
-        return text
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.rsplit(":", 1)[-1]
         if tag == "style":
             self._in_style = True
-        values = {
-            name: self._expand(value) if self._entities else value
-            for name, value in attrs
-            if value
-        }
+        values = {name: value for name, value in attrs if value}
         for name, value in values.items():
             self.found.extend(_attribute_colours(tag, name, value, values))
 
@@ -467,7 +476,7 @@ class _MarkupColours(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         if self._in_style:
-            self.found.extend(css_colours(self._expand(data)))
+            self.found.extend(css_colours(data))
 
 
 def _attribute_colours(
@@ -600,39 +609,88 @@ def _is_colour_animation(tag: str, name: str, attrs: dict[str, str]) -> bool:
     return (
         tag in ("animate", "set")
         and name in ANIMATION_ATTRIBUTES
-        and ascii_lower(attrs.get("attributename", "")) in COLOUR_ATTRIBUTES
+        # html.parser lower-cases attribute names; expat keeps attributeName
+        and ascii_lower(attrs.get("attributename", attrs.get("attributeName", "")))
+        in COLOUR_ATTRIBUTES
     )
 
 
-def markup_colours(text: str, xml: bool = False) -> list[str]:
-    """Colours in HTML, or, with XML=True, in SVG, whose internal DTD
-    entities (<!DOCTYPE svg [<!ENTITY c "#2999a4">]> ... fill="&c;") a
-    browser expands; an HTML document's DOCTYPE declares none."""
-    entities = dtd_entities(text) if xml and "<!ENTITY" in text else {}
-    parser = _MarkupColours(entities)
+def markup_colours(text: str) -> list[str]:
+    """Colours in HTML (html.parser). An HTML document expands no DTD
+    entities, in a browser or here."""
+    parser = _MarkupColours()
     parser.feed(text)
     parser.close()
     return parser.found
 
 
-def dtd_entities(text: str) -> dict[str, str]:
-    """General entities declared in an XML document's internal DTD subset,
-    read by expat (the parser, not a pattern). Declarations before a
-    well-formedness error still count; libexpat's own amplification limit
-    guards against entity expansion attacks."""
-    entities: dict[str, str] = {}
+class NotWellFormed(Exception):
+    """An SVG that expat rejects; a browser renders nothing for it."""
 
-    def declare(name: str, is_parameter: int, value: str | None, *_: object) -> None:
-        if value is not None and not is_parameter:
-            entities.setdefault(name, value)  # the first declaration wins
 
+def svg_colours(text: str) -> list[str]:
+    """Colours in an SVG document, read by expat as the XML it is. expat
+    expands the internal DTD's entities itself: general and parameter
+    entities, nested to any depth, entities that hold markup, the first
+    declaration of a name winning. Parameter-entity parsing is on, so a
+    parameter-entity reference does not stop the reading of later
+    declarations; an external entity or DTD is parsed as empty and never
+    opened. A document that is not well-formed raises NotWellFormed, and so
+    does one whose expansion trips libexpat's amplification limit."""
+    if not EXPAT_PROTECTED:
+        raise RuntimeError(
+            f"libexpat {'.'.join(map(str, EXPAT_VERSION))} has no billion-laughs "
+            "protection (2.4.0 or later needed); refusing to read SVG"
+        )
+    reader = _SvgColours()
     parser = xml.parsers.expat.ParserCreate()
-    parser.EntityDeclHandler = declare
+    parser.SetParamEntityParsing(xml.parsers.expat.XML_PARAM_ENTITY_PARSING_ALWAYS)
+    parser.ExternalEntityRefHandler = _empty_external_entity(parser)
+    parser.StartElementHandler = reader.start
+    parser.EndElementHandler = reader.end
+    parser.CharacterDataHandler = reader.text
     try:
         parser.Parse(text, True)
-    except xml.parsers.expat.ExpatError:
-        pass
-    return entities
+    except xml.parsers.expat.ExpatError as error:
+        raise NotWellFormed(str(error)) from error
+    return reader.found
+
+
+def _empty_external_entity(parser: object):
+    """An ExternalEntityRefHandler that parses every external entity and the
+    external DTD subset as an empty document: nothing is opened or fetched."""
+
+    def handler(context: str, _base: object, _system: object, _public: object) -> int:
+        external = parser.ExternalEntityParserCreate(context)
+        external.Parse("", True)
+        return 1
+
+    return handler
+
+
+class _SvgColours:
+    """expat handlers: attributes of every element, text of <style>."""
+
+    def __init__(self) -> None:
+        self.found: list[str] = []
+        self._style: list[str] | None = None
+
+    def start(self, tag: str, attrs: dict[str, str]) -> None:
+        tag = tag.rsplit(":", 1)[-1]
+        if tag == "style":
+            self._style = []
+        values = {name: value for name, value in attrs.items() if value}
+        for name, value in values.items():
+            self.found.extend(_attribute_colours(tag, name, value, values))
+
+    def end(self, tag: str) -> None:
+        if tag.rsplit(":", 1)[-1] == "style" and self._style is not None:
+            self.found.extend(css_colours("".join(self._style)))
+            self._style = None
+
+    def text(self, data: str) -> None:
+        if self._style is not None:
+            self._style.append(data)
 
 
 def markdown_colours(text: str) -> Iterator[str]:
@@ -651,7 +709,7 @@ def markdown_colours(text: str) -> Iterator[str]:
 def _fence_colours(kind: str, text: str) -> Iterator[str]:
     try:
         yield from list(colours_in(kind, text))
-    except (json.JSONDecodeError, yaml.YAMLError):
+    except (json.JSONDecodeError, yaml.YAMLError, NotWellFormed):
         return
 
 
@@ -693,8 +751,10 @@ def data_colours(documents: list) -> Iterator[str]:
 def colours_in(kind: str, text: str) -> Iterator[str]:
     if kind in (CSS, ".scss"):
         yield from css_colours(text)
-    elif kind in (MARKUP, ".html"):
-        yield from markup_colours(text, xml=kind == MARKUP)
+    elif kind == SVG:
+        yield from svg_colours(text)
+    elif kind == HTML:
+        yield from markup_colours(text)
     elif kind == MARKDOWN:
         yield from markdown_colours(text)
     elif kind == JSON:
@@ -744,7 +804,7 @@ def scan(path: str, text: str) -> tuple[int, int, list[str]]:
     kind = "." + ascii_lower(path.rsplit(".", 1)[-1])
     try:
         found = list(colours_in(kind, text))
-    except (json.JSONDecodeError, yaml.YAMLError) as error:
+    except (json.JSONDecodeError, yaml.YAMLError, NotWellFormed) as error:
         reason = str(error).splitlines()[0]
         return 0, 0, [f"{path}: does not parse ({reason}); its colours were not read"]
     values = [v for v in found if not isinstance(v, Unparsed)]
