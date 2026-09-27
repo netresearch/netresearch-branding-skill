@@ -34,6 +34,7 @@ No Makefile or npm scripts. Available commands:
 
 - `composer install` — install dependencies (requires [composer-agent-skill-plugin](https://github.com/netresearch/composer-agent-skill-plugin))
 - `node skills/netresearch-branding/scripts/contrast-audit.cjs <page>` — measure a rendered page against WCAG AA in headless Chromium (needs a local `playwright-core`; set `PLAYWRIGHT_CORE` to point at it). Exits non-zero on a text-contrast failure or a stylesheet/script that did not load. `.github/workflows/contrast-audit.yml` runs it against `skills/netresearch-branding/templates/landing-page.html`, `examples/components.html` and `site/index.html` on every change to those paths, so a colour regression fails CI rather than shipping.
+- `python3 Build/Scripts/check-brand-colours.py` — fails when a tracked SVG or CSS file renders a near miss of a brand colour (every RGB channel within 8 of `#2F99A4`, `#585961` or `#FF4D00`, but not equal). Comments are ignored. `.github/workflows/brand-colours.yml` runs it on every change to an SVG or CSS file.
 
 ## Rules
 

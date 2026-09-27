@@ -1,0 +1,33 @@
+name: Brand Colours
+
+# Runs Build/Scripts/check-brand-colours.py against every tracked SVG and CSS
+# file. The script exits non-zero when a rendered colour is a near miss of a
+# brand colour (#2F99A4, #585961, #FF4D00) — the class of defect the canonical
+# symbol carried as #2999a4 / #595a62 while references/logo.md forbade it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.svg'
+      - '**.css'
+      - 'Build/Scripts/check-brand-colours.py'
+      - '.github/workflows/brand-colours.yml'
+  pull_request:
+    paths:
+      - '**.svg'
+      - '**.css'
+      - 'Build/Scripts/check-brand-colours.py'
+      - '.github/workflows/brand-colours.yml'
+  merge_group:
+
+permissions: {}
+
+jobs:
+  brand-colours:
+    name: Brand colour near misses
+    uses: netresearch/.github/.github/workflows/script-check.yml@main
+    permissions:
+      contents: read
+    with:
+      check-cmd: python3 Build/Scripts/check-brand-colours.py
