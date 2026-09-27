@@ -1,9 +1,12 @@
 name: Brand Colours
 
-# Runs Build/Scripts/check-brand-colours.py against every tracked SVG and CSS
-# file. The script exits non-zero when a rendered colour is a near miss of a
-# brand colour (#2F99A4, #585961, #FF4D00) — the class of defect the canonical
-# symbol carried as #2999a4 / #595a62 while references/logo.md forbade it.
+# Runs Build/Scripts/check-brand-colours.py against every tracked CSS, SCSS,
+# SVG, HTML, Markdown (fenced code), JSON and YAML file. The script exits
+# non-zero when a colour value is a near miss of a brand colour (#2F99A4,
+# #585961, #FF4D00) — the class of defect the canonical symbol carried as
+# #2999a4 / #595a62 while references/logo.md forbade it. Its unit tests run
+# first. Both are uv scripts whose inline metadata pins their parser
+# dependencies; uv itself is pinned here.
 
 on:
   push:
@@ -11,13 +14,27 @@ on:
     paths:
       - '**.svg'
       - '**.css'
+      - '**.scss'
+      - '**.html'
+      - '**.md'
+      - '**.json'
+      - '**.yaml'
+      - '**.yml'
       - 'Build/Scripts/check-brand-colours.py'
+      - 'Build/Scripts/tests/test_check_brand_colours.py'
       - '.github/workflows/brand-colours.yml'
   pull_request:
     paths:
       - '**.svg'
       - '**.css'
+      - '**.scss'
+      - '**.html'
+      - '**.md'
+      - '**.json'
+      - '**.yaml'
+      - '**.yml'
       - 'Build/Scripts/check-brand-colours.py'
+      - 'Build/Scripts/tests/test_check_brand_colours.py'
       - '.github/workflows/brand-colours.yml'
   merge_group:
 
@@ -30,4 +47,7 @@ jobs:
     permissions:
       contents: read
     with:
-      check-cmd: python3 Build/Scripts/check-brand-colours.py
+      pre-command: pipx install uv==0.12.19
+      check-cmd: |
+        uv run Build/Scripts/tests/test_check_brand_colours.py
+        uv run Build/Scripts/check-brand-colours.py
