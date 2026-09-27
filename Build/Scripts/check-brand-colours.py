@@ -19,7 +19,8 @@ Only rendered values are read: attributes and <style> bodies of SVG files
 Documentation and eval prompts quote wrong values on purpose and are not
 scanned.
 
-Usage: check-brand-colours.py [FILE ...]   (default: every tracked *.svg, *.css)
+Usage: check-brand-colours.py   (run from the repository root; takes no
+arguments and scans every tracked *.svg and *.css file)
 """
 
 from __future__ import annotations
@@ -77,8 +78,8 @@ def tracked_assets() -> list[str]:
     return result.stdout.split()
 
 
-def main(argv: list[str]) -> int:
-    files = argv or tracked_assets()
+def main() -> int:
+    files = tracked_assets()
     if not files:
         print("check-brand-colours: no SVG or CSS files found", file=sys.stderr)
         return 2
@@ -98,4 +99,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())
