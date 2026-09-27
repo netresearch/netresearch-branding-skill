@@ -135,6 +135,59 @@ NEAR_MISSES = {
     "md fenced yaml": ("c1.md", '```yaml\nprimary: "#2999a4"\n```\n'),
     "scss $x-rgb triple": ("c2.scss", "$nr-primary-rgb: 41, 153, 164;\n"),
     "css -rgb space triple": ("c3.css", ":root{--nr-primary-rgb: 41 153 164;}"),
+    # Round 3 of the review: shields.io forms that render #2999a4.
+    "shields ?color=%23hex": (
+        "d1.md",
+        "![b](https://img.shields.io/badge/a-b-blue?color=%232999a4)\n",
+    ),
+    "shields path %23hex": (
+        "d2.md",
+        "![b](https://img.shields.io/badge/x-y-%232999a4)\n",
+    ),
+    "shields ?color=rgb()": (
+        "d3.md",
+        "![b](https://img.shields.io/badge/a-b-blue?color=rgb(41,153,164))\n",
+    ),
+    "shields ?labelColor=": (
+        "d4.md",
+        "![b](https://img.shields.io/badge/a-b-blue?labelColor=2999a4)\n",
+    ),
+    "shields ?logoColor=": (
+        "d5.md",
+        "![b](https://img.shields.io/badge/a-b-blue?logoColor=2999a4)\n",
+    ),
+    "shields legacy ?colorB=": (
+        "d6.md",
+        "![b](https://img.shields.io/badge/a-b-blue?colorB=2999a4)\n",
+    ),
+    # Round 3: data: SVG outside CSS.
+    "html img src data: base64": (
+        "e1.html",
+        '<img src="data:image/svg+xml;base64,'
+        + base64.b64encode(b'<svg><path fill="#2999a4"/></svg>').decode()
+        + '" alt="">',
+    ),
+    "html img src data: percent-encoded": (
+        "e2.html",
+        '<img src="data:image/svg+xml,%3Csvg%3E%3Cpath fill=%22%232999a4%22/%3E%3C/svg%3E" alt="">',
+    ),
+    "svg image href data: base64": (
+        "e3.svg",
+        SVG.format(
+            '<image href="data:image/svg+xml;base64,'
+            + base64.b64encode(b'<svg><path fill="#2999a4"/></svg>').decode()
+            + '"/>'
+        ),
+    ),
+    "svg image xlink:href data: base64": (
+        "e4.svg",
+        SVG.format(
+            '<image xlink:href="data:image/svg+xml;base64,'
+            + base64.b64encode(b'<svg><path fill="#2999a4"/></svg>').decode()
+            + '"/>'
+        ),
+    ),
+    "yaml application tag": ("e6.yaml", 'primary: !brand "#2999a4"\n'),
 }
 
 PASSES = {
@@ -167,6 +220,17 @@ PASSES = {
     "unparseable json fence": ("o.md", '```json\n{"primary": "#2999a4", ...}\n```\n'),
     "css string content": ("p.css", '.x::after{content:"#2999a4"}'),
     "badge on another host": ("q.md", "![b](https://example.org/badge/by-x-2999a4)\n"),
+    # Round 3: text/link/vlink/alink are colours only on <body>.
+    "md image with a data: SVG URL (renders as text)": (
+        "v.md",
+        "![x](data:image/svg+xml;base64,"
+        + base64.b64encode(b'<svg><path fill="#2999a4"/></svg>').decode()
+        + ")\n",
+    ),
+    "text= on a non-body element": ("r.html", '<p text="#2999a4">x</p>'),
+    "link= on a non-body element": ("s.html", '<a link="2999a4" href="#">x</a>'),
+    "shields named colour": ("t.md", "![b](https://img.shields.io/badge/a-b-orange)\n"),
+    "bgcolor with a CSS name": ("u.html", '<td bgcolor="teal">x</td>'),
 }
 
 
@@ -195,6 +259,37 @@ class NearMisses(unittest.TestCase):
         self.assertIsNotNone(guard.near_miss("#FF4D09"))
         # channel distance 9, dE00 above 2: neither half
         self.assertIsNone(guard.near_miss("#2F99AD"))
+
+
+class Round3(unittest.TestCase):
+    def test_shields_named_colours_are_far_from_brand_colours(self) -> None:
+        for name, value in guard.SHIELDS_NAMED_COLOURS.items():
+            with self.subTest(name):
+                self.assertIsNone(guard.near_miss(value))
+
+    def test_shields_names_map_to_shields_values(self) -> None:
+        # shields "orange" is #ea7233, CSS orange is #ffa500
+        text = "![b](https://img.shields.io/badge/a-b-orange)\n"
+        self.assertEqual(list(guard.colours_in(".md", text)), ["#ea7233"])
+
+    def test_legacy_attributes_are_read_on_body_and_bgcolor(self) -> None:
+        self.assertEqual(guard.scan("a.html", '<td bgcolor="teal">x</td>')[0], 1)
+        self.assertEqual(guard.scan("b.html", '<body vlink="2F99A4">x</body>')[0], 1)
+        self.assertEqual(guard.scan("c.html", '<p vlink="2F99A4">x</p>')[0], 0)
+
+    def test_unparseable_json_is_a_finding_not_a_crash(self) -> None:
+        read, unparsed, findings = guard.scan("a.json", '{"primary": "#2999a4",}')
+        self.assertEqual((read, unparsed, len(findings)), (0, 0, 1))
+        self.assertIn("does not parse", findings[0])
+
+    def test_unparseable_yaml_is_a_finding_not_a_crash(self) -> None:
+        read, unparsed, findings = guard.scan("a.yaml", "a: [1, 2\n")
+        self.assertEqual((read, unparsed, len(findings)), (0, 0, 1))
+        self.assertIn("does not parse", findings[0])
+
+    def test_application_yaml_tags_are_read(self) -> None:
+        text = "services:\n  a:\n    arguments: [!tagged_iterator x]\n"
+        self.assertEqual(guard.scan("Services.yaml", text), (0, 0, []))
 
 
 class RealFiles(unittest.TestCase):

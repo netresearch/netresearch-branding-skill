@@ -37,19 +37,34 @@ Notations covered, all read by a parser rather than by a pattern:
   - a bare channel triple, comma or space separated, in a CSS custom property
     or a Sass variable whose name ends in -rgb: `--nr-primary-rgb: 41, 153,
     164`, `$nr-primary-rgb: 41 153 164`
-  - legacy HTML colour attributes, with or without the leading #
-  - the colour segment of an img.shields.io badge URL (/badge/label-message-
-    COLOUR and ?color=), e.g. the badge in outputStyles/branded-docs.md
-  - SVG embedded in a CSS url(data:image/svg+xml,...) value, plain,
-    percent-encoded or base64
+  - legacy HTML colour attributes (bgcolor on any element; text, link,
+    vlink, alink on <body>), as hex with or without the leading #, or as a
+    CSS colour name
+  - the colours of an img.shields.io badge URL: the last path segment of
+    /badge/label-message-COLOUR and the color, labelColor, logoColor, colorA
+    and colorB query values, URL-decoded, as bare hex, #hex, a CSS colour
+    function, a CSS colour name, or one of shields' own names (brightgreen,
+    blue, ... and their aliases, mapped to shields' values, none of which is
+    near a brand colour). The badge in outputStyles/branded-docs.md is one.
+  - SVG carried by a data:image/svg+xml URL, plain, percent-encoded or
+    standard base64: in CSS url(), and in src=, href= and xlink:href= of
+    HTML and SVG (also inside Markdown inline HTML and HTML blocks). A
+    Markdown image or link with a data:image/svg+xml URL is not a link at
+    all: CommonMark's link validation (markdown-it) rejects it, so it renders
+    as text.
 
 Not covered, each measured as a bypass in review:
-  - named colours (`teal`) and colours computed at runtime: the result of
-    color-mix(), of var() chains, of Sass functions and of relative colour
+  - CSS colour names (`teal`) everywhere except the legacy HTML attributes
+    and shields.io badges above, and colours computed at runtime: the result
+    of color-mix(), of var() chains, of Sass functions and of relative colour
     syntax. Their literal arguments are read (see above); the colour they
     produce is not, and neither is a colour function whose channels come
     from var(), e.g. rgb(var(--r, 41) 153 164).
-  - CSS string contents other than data: URLs, e.g. content: "#2999a4"
+  - CSS string contents other than data: URLs inside url(), e.g.
+    content: "#2999a4" or a data: URL given as a plain string to image-set()
+  - a data: URL in URL-safe base64 (- and _), which is not standard base64
+  - Markdown HTML that markdown-it splits across blocks, e.g. a <style>
+    element with a blank line inside a <div>, or <style> inline in a paragraph
   - Markdown outside fences except inline HTML, HTML blocks and badge URLs:
     colours in prose, in other URLs and in link text are not read
   - JSON and YAML strings that contain more than one colour value, such as
@@ -66,19 +81,22 @@ Where colours are read:
     reported; the repository has none.
   - *.svg, *.html (html.parser; an svg: prefix on tag names is ignored):
     <style> elements; style= attributes; the colour presentation attributes
-    fill, stroke, stop-color, flood-color, lighting-color, color; the legacy
-    attributes bgcolor, text, link, vlink, alink; <meta name="theme-color">;
+    fill, stroke, stop-color, flood-color, lighting-color, color; bgcolor;
+    text, link, vlink, alink on <body>; <meta name="theme-color">;
     <animate>/<set> from, to, by and values when attributeName is a colour
-    attribute; shields.io badges in src= and href=. Comments and <script> are
-    not read.
+    attribute; shields.io badges and data: SVG in src=, href= and
+    xlink:href=. Comments and <script> are not read.
   - *.md (markdown-it-py): fenced blocks tagged css, scss, less, svg, html,
     xml, json, yaml, yml, markdown or md, read as the matching file type;
     inline HTML and HTML blocks, read as HTML; image and link URLs, read for
     shields.io badges.
   - *.json, *.yaml, *.yml: string values whose whole content is a single
     colour, e.g. `primary: "#2999a4"`. A colour mentioned inside a longer
-    string is prose, not configuration, and is not read. A fenced json or
-    yaml block that does not parse (an excerpt with "..." in it) is skipped.
+    string is prose, not configuration, and is not read. Application YAML
+    tags (!tagged_iterator and the like) are read as plain values. A JSON or
+    YAML file that does not parse is reported as a finding, because its
+    colours cannot be checked; a fenced json or yaml block in Markdown that
+    does not parse (an excerpt with "..." in it) is skipped.
 
 Deliberate quotes of the old values, six files, and why none is reported:
   - evals/evals.json:182 quotes #2e98a3 / #ff4e01 inside an eval prompt: a
@@ -128,7 +146,7 @@ COLOUR_FUNCTIONS = {
 COLOUR_ATTRIBUTES = {
     "fill", "stroke", "stop-color", "flood-color", "lighting-color", "color",
 }  # fmt: skip
-LEGACY_ATTRIBUTES = {"bgcolor", "text", "link", "vlink", "alink"}
+BODY_COLOUR_ATTRIBUTES = {"text", "link", "vlink", "alink"}
 ANIMATION_ATTRIBUTES = ("from", "to", "by", "values")
 CSS, MARKUP, MARKDOWN, JSON, YAML = ".css", ".svg", ".md", ".json", ".yaml"
 FENCE_LANGUAGES = {
@@ -146,6 +164,30 @@ FENCE_LANGUAGES = {
 }
 BARE_HEX = re.compile(r"[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?")
 BADGE_EXTENSION = re.compile(r"\.(svg|png|json)$")
+# Query parameters shields.io reads a colour from; colorA/colorB are the
+# legacy names it still honours (core/base-service/coalesce-badge.js).
+BADGE_QUERY_KEYS = ("color", "labelColor", "logoColor", "colorA", "colorB")
+# shields.io's own colour names and aliases, which differ from the CSS names
+# of the same spelling (badge-maker/lib/color.js). None is a near miss of a
+# brand colour; a test pins that.
+SHIELDS_NAMED_COLOURS = {
+    "brightgreen": "#4b0",
+    "green": "#67ac09",
+    "yellow": "#d8b800",
+    "yellowgreen": "#95991a",
+    "orange": "#ea7233",
+    "red": "#dd4343",
+    "blue": "#007ec6",
+    "grey": "#555",
+    "lightgrey": "#939393",
+    "gray": "#555",
+    "lightgray": "#939393",
+    "critical": "#dd4343",
+    "important": "#ea7233",
+    "success": "#4b0",
+    "informational": "#007ec6",
+    "inactive": "#939393",
+}
 BLOCKS = ("() block", "[] block", "{} block")
 
 
@@ -244,18 +286,25 @@ def data_url_colours(url: str) -> Iterator[str]:
 
 
 def badge_colours(url: str) -> Iterator[str]:
-    """The colour of an img.shields.io badge URL, as #hex when it is hex."""
+    """The colours of an img.shields.io badge URL: path segment and query."""
     parts = urlsplit(url)
     if parts.hostname != "img.shields.io":
         return
-    candidates = parse_qs(parts.query).get("color", [])
+    query = parse_qs(parts.query)  # decodes %23 and the like
+    candidates = [value for key in BADGE_QUERY_KEYS for value in query.get(key, [])]
     path = unquote(parts.path)
     if path.startswith("/badge/"):
         segment = BADGE_EXTENSION.sub("", path[len("/badge/") :])
         candidates.append(segment.replace("--", "\0").split("-")[-1])
     for candidate in candidates:
-        if BARE_HEX.fullmatch(candidate):
-            yield "#" + candidate
+        yield _badge_colour(candidate.strip())
+
+
+def _badge_colour(value: str) -> str:
+    """A shields colour as a CSS colour: its own names first, bare hex gets #."""
+    if value.lower() in SHIELDS_NAMED_COLOURS:
+        return SHIELDS_NAMED_COLOURS[value.lower()]
+    return "#" + value if BARE_HEX.fullmatch(value) else value
 
 
 class _MarkupColours(HTMLParser):
@@ -292,10 +341,11 @@ def _attribute_colours(
 ) -> Iterator[str]:
     if name == "style" or name in COLOUR_ATTRIBUTES:
         yield from css_colours(value)
-    elif name in LEGACY_ATTRIBUTES:
+    elif name == "bgcolor" or (tag == "body" and name in BODY_COLOUR_ATTRIBUTES):
         yield "#" + value if BARE_HEX.fullmatch(value) else value
-    elif name in ("src", "href"):
+    elif name in ("src", "href", "xlink:href"):
         yield from badge_colours(value)
+        yield from data_url_colours(value)
     elif _is_theme_colour(tag, name, attrs) or _is_colour_animation(tag, name, attrs):
         for part in value.split(";"):
             yield from css_colours(part)
@@ -391,7 +441,23 @@ def colours_in(kind: str, text: str) -> Iterator[str]:
     elif kind == JSON:
         yield from data_colours([json.loads(text)])
     elif kind in (YAML, ".yml"):
-        yield from data_colours(list(yaml.safe_load_all(text)))
+        yield from data_colours(list(yaml.load_all(text, Loader=_TaggedSafeLoader)))
+
+
+class _TaggedSafeLoader(yaml.SafeLoader):
+    """SafeLoader that reads application tags (!tagged_iterator, !php/const,
+    !reference) as plain values instead of refusing the whole file."""
+
+
+def _plain_node(loader: yaml.SafeLoader, _suffix: str, node: yaml.Node) -> object:
+    if isinstance(node, yaml.MappingNode):
+        return loader.construct_mapping(node)
+    if isinstance(node, yaml.SequenceNode):
+        return loader.construct_sequence(node)
+    return loader.construct_scalar(node)
+
+
+_TaggedSafeLoader.add_multi_constructor("!", _plain_node)
 
 
 def near_miss(value: str) -> tuple[str, int, float] | None:
@@ -417,7 +483,11 @@ def near_miss(value: str) -> tuple[str, int, float] | None:
 def scan(path: str, text: str) -> tuple[int, int, list[str]]:
     """(colour values read, unparsed colour functions, near-miss messages)."""
     kind = "." + path.rsplit(".", 1)[-1].lower()
-    found = list(colours_in(kind, text))
+    try:
+        found = list(colours_in(kind, text))
+    except (json.JSONDecodeError, yaml.YAMLError) as error:
+        reason = str(error).splitlines()[0]
+        return 0, 0, [f"{path}: does not parse ({reason}); its colours were not read"]
     values = [v for v in found if not isinstance(v, Unparsed)]
     messages = []
     for value in values:
