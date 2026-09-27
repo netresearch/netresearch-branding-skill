@@ -331,21 +331,40 @@ llm_reviews:
     desc: "Repository description must end with '- by Netresearch'"
 
   # === EXTENSION ICON VISUAL CHECK ===
+  # references/typo3-extension-branding.md separates two icons: the extension
+  # icon (Extension.svg) is the symbol-only [n] logo and identifies the
+  # package; a backend module icon shows the feature. NB-21 therefore judges
+  # the extension icon against the [n] mark (the same rule NB-02/NB-34 pin
+  # mechanically) and the feature glyph only on module icons. It must not ask
+  # the extension icon to depict the extension's purpose.
   - id: NB-21
     domain: branding
     prompt: |
-      Visually inspect the extension icon at Resources/Public/Icons/Extension.svg or Extension.png.
+      Visually inspect the extension icon at Resources/Public/Icons/Extension.svg
+      (or Extension.png) and, if the extension registers backend modules, their
+      module icons (the `iconIdentifier` / `icon` of each entry in
+      Configuration/Backend/Modules.php and the SVG it resolves to).
 
-      Check for:
-      1. Primary color is Netresearch teal (#2F99A4)
-      2. Icon is clean and professional
-      3. Icon represents the extension's purpose
-      4. Icon works at small sizes (16x16, 32x32)
+      Rule (references/typo3-extension-branding.md, "Extension Icon" and
+      "Module Icon"): the extension icon identifies the PACKAGE and is the
+      Netresearch symbol-only [n] logo; a module icon identifies the FEATURE
+      and must not reuse the [n] logo.
 
-      The icon should be immediately recognizable as a Netresearch product
-      through its use of the brand teal color.
+      Extension icon — check that:
+      1. It is the [n] symbol-only mark: turquoise frame #2F99A4 with the
+         anthracite letter "n" #585961, not a feature or purpose glyph
+      2. It is clean and not distorted, cropped or recoloured
+      3. It stays legible at small sizes (16x16, 32x32)
+
+      Module icons (only if modules exist) — check that:
+      4. Each shows the module's feature, not the [n] logo
+      5. The feature glyph uses brand turquoise #2F99A4 together with
+         currentColor so it adapts to the light/dark backend
+
+      Report FAIL if the extension icon is a purpose glyph instead of the
+      [n] mark, or if a module icon reuses the [n] mark.
     severity: warning
-    desc: "Extension icon should visually reflect Netresearch branding"
+    desc: "Extension icon is the [n] mark; module icons show the feature (references/typo3-extension-branding.md)"
 
   # === BRAND COLORS CONSISTENCY ===
   - id: NB-22
