@@ -13,10 +13,15 @@ ignores **/tests/**, so a copy here would never be bumped.
 from __future__ import annotations
 
 import base64
+import contextlib
 import importlib.util
+import io
+import os
 import pathlib
 import re
+import subprocess
 import sys
+import tempfile
 import time
 import unittest
 import urllib.parse
@@ -421,6 +426,33 @@ PASSES = {
     "unparseable json fence": ("o.md", '```json\n{"primary": "#2999a4", ...}\n```\n'),
     "css string content": ("p.css", '.x::after{content:"#2999a4"}'),
     "badge on another host": ("q.md", "![b](https://example.org/badge/by-x-2999a4)\n"),
+    # shields renders its default #4b0 for a whitespace-prefixed bare hex
+    # (measured on img.shields.io in review round 7)
+    "shields path %C2%A0 before bare hex": (
+        "q1.md",
+        "![b](https://img.shields.io/badge/a-b-%C2%A02999a4)\n",
+    ),
+    "shields path %20 before bare hex": (
+        "q2.md",
+        "![b](https://img.shields.io/badge/a-b-%202999a4)\n",
+    ),
+    "shields ?color=%C2%A0 before #hex": (
+        "q3.md",
+        "![b](https://img.shields.io/badge/a-b-blue?color=%C2%A0%232999a4)\n",
+    ),
+    # a no-break space before a logo's data: URL stays in the URL (the URL
+    # parser strips only C0 controls and spaces): derived, not measured
+    "shields ?logo= with %C2%A0 before data:": (
+        "q5.md",
+        "![b](https://img.shields.io/badge/a-b-blue?logo=%C2%A0data:image/svg%2bxml;base64,"
+        + LOGO_B64.replace("+", "%2B")
+        + ")\n",
+    ),
+    # ".svg" followed by a newline is no extension: the colour is "#2999a4.svg\n"
+    "shields path .svg then %0A": (
+        "q4.md",
+        "![b](https://img.shields.io/badge/a-b-%232999a4.svg%0A)\n",
+    ),
     # Round 3: text/link/vlink/alink are colours only on <body>.
     "md image with a data: SVG URL (renders as text)": (
         "v.md",
@@ -785,6 +817,29 @@ class SvgEntities(unittest.TestCase):
                 guard.svg_colours(f"<svg {NS}/>")
         finally:
             guard.EXPAT_PROTECTED = saved
+
+
+class TrackedFiles(unittest.TestCase):
+    def test_paths_with_spaces_and_non_ascii(self) -> None:
+        name = "a b " + chr(0xE9) + ".css"  # git quotes it without -z
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            (root / name).write_text(".x{color:#2999a4}", encoding="utf-8")
+            (root / "plain.css").write_text(".x{color:#2F99A4}", encoding="utf-8")
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+            previous = pathlib.Path.cwd()
+            os.chdir(root)
+            try:
+                self.assertEqual(
+                    sorted(guard.tracked_files()), sorted([name, "plain.css"])
+                )
+                with contextlib.redirect_stdout(io.StringIO()) as output:
+                    status = guard.main()
+            finally:
+                os.chdir(previous)
+        self.assertEqual(status, 1)
+        self.assertIn(name + ": #2999a4 is a near miss", output.getvalue())
 
 
 class RealFiles(unittest.TestCase):

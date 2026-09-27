@@ -223,7 +223,7 @@ IN_DESCRIPTOR, IN_PARENS, AFTER_DESCRIPTOR = (
     "after descriptor",
 )
 BARE_HEX = re.compile(r"[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?")
-BADGE_EXTENSION = re.compile(r"\.(svg|png|json)$")
+BADGE_EXTENSION = re.compile(r"\.(svg|png|json)\Z")
 # Query parameters shields.io reads a colour from; colorA/colorB are the
 # legacy names it still honours (core/base-service/coalesce-badge.js).
 BADGE_QUERY_KEYS = ("color", "labelColor", "logoColor", "colorA", "colorB")
@@ -423,13 +423,13 @@ def badge_colours(url: str) -> Iterator[str]:
         segment = BADGE_EXTENSION.sub("", path[len("/badge/") :])
         candidates.append(segment.replace("--", "\0").split("-")[-1])
     for candidate in candidates:
-        colour = _badge_colour(candidate.strip())
+        colour = _badge_colour(candidate)
         if colour is not None:
             yield colour
     for logo in query.get("logo", []):
         # shields embeds a custom logo verbatim; parse_qs turned its + into
         # spaces, and the data: prefix is optional
-        logo = logo.replace(" ", "+").strip()
+        logo = logo.replace(" ", "+").strip(ASCII_WHITESPACE)
         if ascii_lower(logo[: len(DATA_SCHEME)]) != DATA_SCHEME:
             logo = DATA_SCHEME + logo
         yield from data_url_colours(logo)
@@ -440,14 +440,21 @@ def _badge_colour(value: str) -> str | None:
     shields matches its names case-sensitively (`color in namedColors`) and
     accepts CSS colour names only in lower case; a letters-only value with
     an upper-case letter (Orange, CadetBlue) renders shields' default
-    colour, so it is no colour here."""
+    colour, so it is no colour here.
+
+    Its names and bare hex match the raw value: " 2999a4" or a no-break
+    space before it renders the default (measured on img.shields.io). Any
+    other value is written into the badge's fill= as it is, and the
+    browser's CSS parser drops only ASCII whitespace around it, so
+    " #2999a4" is #2999a4 and a U+00A0 before it is no colour."""
     if value in SHIELDS_NAMED_COLOURS:
         return SHIELDS_NAMED_COLOURS[value]
     if BARE_HEX.fullmatch(value):
         return "#" + value
+    value = value.strip(ASCII_WHITESPACE)
     if value.isascii() and value.isalpha() and value != ascii_lower(value):
         return None
-    return value
+    return value or None
 
 
 class _MarkupColours(HTMLParser):
@@ -827,10 +834,12 @@ def findings_in(path: str, text: str) -> tuple[int, list[str]]:
 
 
 def tracked_files() -> list[str]:
+    """Tracked files of the scanned types. -z: git then neither quotes nor
+    escapes a path with a space or a non-ASCII character."""
     result = subprocess.run(
-        ["git", "ls-files", *PATTERNS], capture_output=True, text=True, check=True
+        ["git", "ls-files", "-z", *PATTERNS], capture_output=True, text=True, check=True
     )
-    return result.stdout.split()
+    return [path for path in result.stdout.split("\0") if path]
 
 
 def main() -> int:
