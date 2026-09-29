@@ -3,7 +3,14 @@
  * contrast-audit.cjs — measure a rendered page against WCAG AA in headless Chromium.
  *
  * Usage: node contrast-audit.cjs <url-or-file> [--width 1400] [--scheme light|dark]
- *        [--header "Authorization: Bearer …"]
+ *        [--header "Authorization: Bearer …"] [--insecure]
+ *
+ * TLS certificates are verified for the page and every subresource: an invalid or
+ * self-signed certificate aborts the connection before any request, and with it any
+ * --header value, is sent. A failed page load exits 2; a failed stylesheet or script
+ * exits 1 (see below). --insecure turns verification off for a local development server
+ * with a self-signed certificate. It cannot be combined with --header: a credential is
+ * never sent over a connection whose peer was not verified.
  *
  * A dark palette is a separate set of colour pairs: a light-only run says nothing
  * about it. Run both schemes on any page that ships one.
@@ -53,8 +60,11 @@ const target = args.find((a) => !a.startsWith('--'));
 const width = Number.parseInt(opt('--width', '1400'), 10);
 const header = opt('--header', '');
 const scheme = opt('--scheme', 'light');
-if (CLI && !target) { console.error('usage: contrast-audit.cjs <url-or-file> [--width N] [--scheme light|dark] [--header "Name: value"]'); process.exit(2); }
+const insecure = args.includes('--insecure');
+if (CLI && !target) { console.error('usage: contrast-audit.cjs <url-or-file> [--width N] [--scheme light|dark] [--header "Name: value"] [--insecure]'); process.exit(2); }
 if (CLI && !['light', 'dark'].includes(scheme)) { console.error(`--scheme must be light or dark, got ${scheme}`); process.exit(2); }
+// Checked before the browser starts, so nothing has connected anywhere yet.
+if (CLI && insecure && header) { console.error('--insecure cannot be combined with --header: the header would be sent to a server whose certificate was not verified'); process.exit(2); }
 const url = target ? (/^https?:/.test(target) ? target : 'file://' + path.resolve(target)) : '';
 // Measures :hover and :focus-visible on every interactive element, one element at a
 // time. Forcing the whole set at once is a state no user can reach — every control
@@ -160,7 +170,10 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
 (async () => {
   if (!CLI) return;
   const browser = await chromium.launch({ headless: true });
-  const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: true, colorScheme: scheme,
+  // ignoreHTTPSErrors stays false unless --insecure was given, and --insecure excludes
+  // --header (checked above), so extraHTTPHeaders never reach an https server whose
+  // certificate failed verification.
+  const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: insecure, colorScheme: scheme,
     extraHTTPHeaders: header ? { [header.split(':')[0].trim()]: header.split(':').slice(1).join(':').trim() } : {} });
   const page = await ctx.newPage();
   // A page whose stylesheet 404s renders unstyled and reports zero contrast failures —

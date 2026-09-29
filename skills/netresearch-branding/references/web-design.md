@@ -203,6 +203,11 @@ It lists every text element below AA for its size, plus skip link, labelled `nav
 table captions, the smallest font and decorative SVGs without `aria-hidden`; exit 1 on any
 contrast failure.
 
+TLS certificates are verified for the page and every stylesheet, script and image it loads;
+an invalid certificate stops the run before the `--header` value is sent. For a local
+development server with a self-signed certificate, `--insecure` turns verification off. It
+refuses to run together with `--header`.
+
 `apcaWarnings` reports the same elements against APCA (Lc, and the value APCA's font table
 asks for at that size and weight). Those are **advisory**: they never change the exit code,
 and an APCA pass never waives a WCAG failure. WCAG 2.2 AA is the gate; see the `typo3-a11y`
