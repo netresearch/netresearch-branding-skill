@@ -136,6 +136,9 @@ Where colours are read:
     xml block that is not well-formed XML is read by html.parser instead: a
     Markdown renderer shows it as text either way, and its colours are
     still documentation someone may copy.
+  - Every file is read as UTF-8. A file that is not valid UTF-8 is reported
+    as a finding, because its colours cannot be checked, and the other files
+    are still read.
 
 Deliberate quotes of the old values, six files, and why none is reported:
   - evals/evals.json:182 quotes #2e98a3 / #ff4e01 inside an eval prompt: a
@@ -273,12 +276,14 @@ class Unparsed(str):
 
 
 def to_rgb(text: str) -> tuple[int, int, int] | None:
-    """sRGB 0-255 channels of a CSS colour string, or None if it is not one."""
+    """sRGB 0-255 channels of a CSS colour string, or None if it is not one.
+    A `none` channel (CSS Color 4, rgb(none 153 164)) is painted as 0;
+    coloraide keeps it as NaN unless coords() is told nans=False."""
     try:
         colour = Color(text).convert("srgb").fit()
     except ValueError:
         return None
-    return tuple(round(c * 255) for c in colour.coords())  # type: ignore[return-value]
+    return tuple(round(c * 255) for c in colour.coords(nans=False))  # type: ignore[return-value]
 
 
 def css_colours(text: str) -> Iterator[str]:
@@ -869,8 +874,17 @@ def main() -> int:
     findings: list[str] = []
     read = unparsed = 0
     for path in files:
-        with open(path, encoding="utf-8") as handle:
-            count, skipped, messages = scan(path, handle.read())
+        with open(path, "rb") as handle:
+            data = handle.read()
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError as error:
+            findings.append(
+                f"{path}: is not UTF-8 (invalid byte at offset {error.start}); "
+                "its colours were not read"
+            )
+            continue
+        count, skipped, messages = scan(path, text)
         read += count
         unparsed += skipped
         findings.extend(messages)

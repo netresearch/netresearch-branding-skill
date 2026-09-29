@@ -553,6 +553,15 @@ class NearMisses(unittest.TestCase):
             with self.subTest(name):
                 self.assertEqual(guard.findings_in(path, text)[1], [])
 
+    def test_none_channel_is_painted_as_zero(self) -> None:
+        # CSS Color 4 `none`; coloraide keeps it as NaN, and round(NaN) raised.
+        self.assertEqual(guard.to_rgb("rgb(none 153 164)"), (0, 153, 164))
+        # (0, 153, 164) is within dE00 2 of #2F99A4 (1.72), so it is reported.
+        count, findings = guard.findings_in("a.css", ".x{color:rgb(none 153 164)}")
+        self.assertEqual(count, 1)
+        self.assertEqual(len(findings), 1, findings)
+        self.assertIn("rgb(none 153 164) is a near miss of #2F99A4", findings[0])
+
     def test_either_metric_half_flags(self) -> None:
         # channel distance 8, dE00 above 2: the channel half flags it
         self.assertIsNotNone(guard.near_miss("#2F99AC"))
@@ -909,6 +918,29 @@ class TrackedFiles(unittest.TestCase):
                 os.chdir(previous)
         self.assertEqual(status, 1)
         self.assertIn(name + ": #2999a4 is a near miss", output.getvalue())
+
+    def test_non_utf8_file_is_a_finding_and_the_rest_is_read(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            (root / "a.css").write_bytes(
+                ".x{color:#2F99A4} /* caf\xe9 */".encode("latin-1")
+            )
+            (root / "b.css").write_text(".x{color:#2999a4}", encoding="utf-8")
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+            previous = pathlib.Path.cwd()
+            os.chdir(root)
+            try:
+                with contextlib.redirect_stdout(io.StringIO()) as output:
+                    status = guard.main()
+            finally:
+                os.chdir(previous)
+        self.assertEqual(status, 1)
+        self.assertIn(
+            "a.css: is not UTF-8 (invalid byte at offset 24)", output.getvalue()
+        )
+        self.assertIn("b.css: #2999a4 is a near miss", output.getvalue())
+        self.assertIn("2 finding(s)", output.getvalue())
 
 
 class RealFiles(unittest.TestCase):
