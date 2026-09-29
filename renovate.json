@@ -6,6 +6,9 @@
   "pre-commit": {
     "enabled": true
   },
+  "pep723": {
+    "managerFilePatterns": ["/^Build/Scripts/.*\\.py$/"]
+  },
   "customManagers": [
     {
       "description": "Playwright is provisioned inline in contrast-audit.yml (this repo ships no package-lock), so keep that pin updated.",
@@ -16,6 +19,16 @@
       "matchStrings": ["playwright@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "playwright",
       "datasourceTemplate": "npm"
+    },
+    {
+      "description": "uv is provisioned inline in brand-colours.yml (pipx install uv==X), so keep that pin updated.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/brand-colours\\.yml$/"
+      ],
+      "matchStrings": ["uv==(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "uv",
+      "datasourceTemplate": "pypi"
     }
   ]
 }
