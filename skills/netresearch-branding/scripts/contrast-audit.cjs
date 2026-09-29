@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: Netresearch DTT GmbH
 /**
  * contrast-audit.cjs — measure a rendered page against WCAG AA in headless Chromium.
  *

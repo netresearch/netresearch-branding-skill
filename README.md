@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Netresearch Brand Guidelines Skill
 
 A comprehensive Claude Code skill for implementing Netresearch brand guidelines in web projects. Ensures consistent brand application across all digital touchpoints.

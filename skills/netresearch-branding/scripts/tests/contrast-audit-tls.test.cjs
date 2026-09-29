@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: Netresearch DTT GmbH
 /**
  * TLS verification of contrast-audit.cjs, against a local HTTPS server whose
  * certificate is self-signed and therefore untrusted.

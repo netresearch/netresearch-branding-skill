@@ -1,4 +1,6 @@
 #!/usr/bin/env -S uv run --script
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
@@ -144,9 +146,9 @@ Deliberate quotes of near misses, six files, and why none is reported (five
 quote the old symbol values #2999a4 / #595a62, evals.json two others):
   - evals/evals.json:182 quotes #2e98a3 / #ff4e01 inside an eval prompt: a
     colour inside a longer JSON string is not read.
-  - site/index.html:1079-1080 (finding F3) quotes #2999a4 / #595a62 inside a
+  - site/index.html:1081-1082 (finding F3) quotes #2999a4 / #595a62 inside a
     <script> block, which is not read.
-  - site/favicon.svg:4-5 quotes them in an XML comment, which is not read.
+  - site/favicon.svg:6-7 quotes them in an XML comment, which is not read.
   - .github/workflows/brand-colours.yml quotes them in a YAML comment, which
     is not read.
   - this script and Build/Scripts/tests/test_check_brand_colours.py quote

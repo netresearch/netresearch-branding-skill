@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Netresearch Logo Specification (Agent-Readable)
 
 This document describes the Netresearch symbol-only logo in pure text for agents that cannot parse SVG files.

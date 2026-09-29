@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 name: Contrast Audit
 
 # Runs skills/netresearch-branding/scripts/contrast-audit.cjs against the two
