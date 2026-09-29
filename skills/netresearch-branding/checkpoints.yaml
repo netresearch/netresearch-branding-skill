@@ -358,8 +358,10 @@ llm_reviews:
 
       Module icons (only if modules exist) — check that:
       4. Each shows the module's feature, not the [n] logo
-      5. The feature glyph uses brand turquoise #2F99A4 together with
-         currentColor so it adapts to the light/dark backend
+      5. The flat (v14) variant draws the feature glyph in brand turquoise
+         #2F99A4 together with currentColor, so it adapts to the light/dark
+         backend. A coloured v12/v13 variant (e.g. a teal tile) selected via
+         Typo3Version in Configuration/Icons.php is allowed to differ.
 
       Report FAIL if the extension icon is a purpose glyph instead of the
       [n] mark, or if a module icon reuses the [n] mark.
