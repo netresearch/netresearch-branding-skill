@@ -14,6 +14,12 @@
  * with a self-signed certificate. It cannot be combined with --header: a credential is
  * never sent over a connection whose peer was not verified.
  *
+ * The --header value is sent only to the target's own origin (scheme, host and port),
+ * never to a stylesheet, font or image from another origin, and not across a redirect
+ * to another origin: every request, and every redirect hop, is checked on its own. An
+ * http:// target is refused with --header unless its host is localhost, 127.0.0.1 or
+ * [::1], because the header would otherwise cross the network unencrypted.
+ *
  * A dark palette is a separate set of colour pairs: a light-only run says nothing
  * about it. Run both schemes on any page that ships one.
  * Needs playwright-core (any local install: set PLAYWRIGHT_CORE to its directory, or let
@@ -69,6 +75,38 @@ if (CLI && !['light', 'dark'].includes(scheme)) { console.error(`--scheme must b
 // Checked before the browser starts, so nothing has connected anywhere yet.
 if (CLI && insecure && header) { console.error('--insecure cannot be combined with --header: the header would be sent to a server whose certificate was not verified'); process.exit(2); }
 const url = target ? (/^https?:/.test(target) ? target : 'file://' + path.resolve(target)) : '';
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+if (CLI && header && url.startsWith('http:') && !LOOPBACK_HOSTS.has(new URL(url).hostname)) {
+  console.error('--header needs an https:// target (or http:// on localhost, 127.0.0.1 or [::1]): over plain http the header would be sent unencrypted');
+  process.exit(2);
+}
+const originOf = (u) => { try { return new URL(u).origin; } catch { return null; } };
+// Protocol errors that only mean the request is gone (page closed, navigation cancelled).
+const isGoneRequest = (e) => /Invalid InterceptionId|Target closed|Session closed|has been closed/i.test(String(e?.message));
+
+// Adds `name: value` to each request whose origin is `origin`, and to no other.
+// Chromium's own Fetch interception is used rather than Playwright's extraHTTPHeaders
+// (sent to every origin) or route.continue({ headers }) (Playwright re-applies those to
+// every redirect hop, so a same-origin URL redirecting elsewhere would carry the header
+// there). Fetch.continueRequest header overrides do not extend to redirect hops, and
+// Chromium pauses each hop again, so every hop is judged by its own origin. TLS stays
+// with Chromium: the header is attached before the connection is made, and a failed
+// certificate check aborts it before any byte of the request is sent.
+async function sendHeaderToOriginOnly(page, origin, name, value) {
+  const cdp = await page.context().newCDPSession(page);
+  cdp.on('Fetch.requestPaused', (e) => {
+    const params = { requestId: e.requestId };
+    if (origin !== 'null' && originOf(e.request.url) === origin) {
+      params.headers = Object.entries(e.request.headers)
+        .filter(([n]) => n.toLowerCase() !== name.toLowerCase())
+        .map(([n, v]) => ({ name: n, value: v }))
+        .concat({ name, value });
+    }
+    cdp.send('Fetch.continueRequest', params)
+      .catch((err) => { if (!isGoneRequest(err)) console.error(`header routing: ${err.message} (${e.request.url})`); });
+  });
+  await cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] });
+}
 // Measures :hover and :focus-visible on every interactive element, one element at a
 // time. Forcing the whole set at once is a state no user can reach — every control
 // hovered simultaneously — and an ancestor, sibling or :has() selector then resolves
@@ -174,11 +212,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   if (!CLI) return;
   const browser = await chromium.launch({ headless: true });
   // ignoreHTTPSErrors stays false unless --insecure was given, and --insecure excludes
-  // --header (checked above), so extraHTTPHeaders never reach an https server whose
+  // --header (checked above), so the header never reaches an https server whose
   // certificate failed verification.
-  const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: insecure, colorScheme: scheme,
-    extraHTTPHeaders: header ? { [header.split(':')[0].trim()]: header.split(':').slice(1).join(':').trim() } : {} });
+  const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: insecure, colorScheme: scheme });
   const page = await ctx.newPage();
+  if (header) await sendHeaderToOriginOnly(page, originOf(url), header.split(':')[0].trim(), header.split(':').slice(1).join(':').trim());
   // A page whose stylesheet 404s renders unstyled and reports zero contrast failures —
   // it passes for the wrong reason. Collect every failed subresource and fail on it.
   // Only stylesheets and scripts gate the exit code: a missing image leaves the measured

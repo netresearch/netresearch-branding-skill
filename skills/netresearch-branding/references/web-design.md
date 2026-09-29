@@ -211,6 +211,11 @@ an invalid certificate stops the run before the `--header` value is sent. For a 
 development server with a self-signed certificate, `--insecure` turns verification off. It
 refuses to run together with `--header`.
 
+The `--header` value goes only to the target's own origin (scheme, host and port): not to
+fonts, stylesheets or images from other origins, and not across a redirect to another origin.
+With an `http://` target, `--header` is refused unless the host is `localhost`, `127.0.0.1`
+or `[::1]`.
+
 `apcaWarnings` reports the same elements against APCA (Lc, and the value APCA's font table
 asks for at that size and weight). Those are **advisory**: they never change the exit code,
 and an APCA pass never waives a WCAG failure. WCAG 2.2 AA is the gate; see the `typo3-a11y`

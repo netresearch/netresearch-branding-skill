@@ -48,6 +48,7 @@ jobs:
       check-cmd: |
         node skills/netresearch-branding/scripts/tests/contrast-audit-error-paths.test.cjs
         node skills/netresearch-branding/scripts/tests/contrast-audit-tls.test.cjs
+        node skills/netresearch-branding/scripts/tests/contrast-audit-headers.test.cjs
         for scheme in light dark; do
           for page in \
             skills/netresearch-branding/templates/landing-page.html \

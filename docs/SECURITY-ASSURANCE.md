@@ -18,7 +18,7 @@ The skill has no server component, stores no data, and handles no user accounts.
 
 ## Security requirements
 
-1. The contrast audit sends a credential given with `--header` only over a connection whose TLS certificate was verified, if the target is `https`.
+1. The contrast audit sends a credential given with `--header` only to the target's own origin, only over a connection whose TLS certificate was verified, and over plain `http` only to a loopback host.
 2. The contrast audit does not trust an invalid certificate for the page or any subresource unless the user asks for it explicitly.
 3. The brand-colour check reads repository files as data and never executes them or fetches anything they reference.
 4. Nothing committed to the repository contains a secret.
@@ -37,6 +37,8 @@ The skill has no server component, stores no data, and handles no user accounts.
 | Threat | Countermeasure | Evidence |
 | --- | --- | --- |
 | A credential passed with `--header` reaches a man-in-the-middle (CWE-295, CWE-319) | Certificate verification is on for the page and all subresources; `--insecure` turns it off and is refused together with `--header` before the browser starts | `contrast-audit.cjs` (`ignoreHTTPSErrors: insecure` and the check after argument parsing); `scripts/tests/contrast-audit-tls.test.cjs` runs the audit against a self-signed HTTPS server and asserts that no request and no `Authorization` header reaches it |
+| A credential passed with `--header` reaches a third-party origin the page loads from, directly or through a redirect (CWE-200) | The header is added per request, through Chromium's Fetch interception, only when the request's origin equals the target's origin; each redirect hop is checked again | `contrast-audit.cjs` (`sendHeaderToOriginOnly`); `scripts/tests/contrast-audit-headers.test.cjs` asserts that a second origin, loaded directly and through a redirect from the target, receives its requests without the header while the target receives it |
+| A credential passed with `--header` crosses the network unencrypted (CWE-319) | `--header` with an `http://` target is refused unless the host is `localhost`, `127.0.0.1` or `[::1]` | `contrast-audit.cjs` (the check after argument parsing); `contrast-audit-headers.test.cjs` |
 | An unstyled page passes the audit because a stylesheet failed to load | A failed stylesheet or script request, including one rejected for its certificate, fails the run with exit 1 | `contrast-audit.cjs` (`requestfailed` and `response` handlers); covered by the subresource case of `contrast-audit-tls.test.cjs` |
 | A measurement error is swallowed and the audit reports success | Protocol errors other than a detached node are collected and rethrown | `contrast-audit.cjs` (`measureOneNode`, `measureInteractiveStates`); `scripts/tests/contrast-audit-error-paths.test.cjs` |
 | Malicious page script attacks the machine running the audit | Not countered by the script: Chromium runs without its sandbox (see trust boundaries). Mitigation is operational: run untrusted pages in a container | — |
@@ -59,7 +61,6 @@ The skill has no server component, stores no data, and handles no user accounts.
 ## What a user cannot expect
 
 - The contrast audit is not a sandbox. It runs the audited page's scripts in an unsandboxed Chromium.
-- A `--header` value is sent with every request the audited page makes, including requests to third-party origins such as Google Fonts, as long as their certificates verify. Use a credential scoped to the audited site.
-- A `--header` value is sent unencrypted if the target URL is `http`.
+- A `--header` value is sent unencrypted to an `http://` target on a loopback host (`localhost`, `127.0.0.1`, `[::1]`).
 - The templates load fonts from Google Fonts (`skills/netresearch-branding/templates/landing-page.html`). A project that must not contact third parties has to self-host the fonts.
 - The contrast audit measures text contrast (WCAG SC 1.4.3). It is not a security scanner for the audited page.
