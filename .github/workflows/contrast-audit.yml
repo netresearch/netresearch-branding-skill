@@ -8,8 +8,8 @@ name: Contrast Audit
 # Both colour schemes are measured: a dark palette is a separate set of pairs and a
 # light-only run says nothing about it.
 #
-# The check needs a real browser, so Playwright is provisioned in `pre-command`
-# rather than added to package.json — this repo ships no runtime dependencies.
+# The check needs a real browser: `pre-command` installs playwright-core from
+# package.json (optionalDependencies) and then the Chromium build it pins.
 
 on:
   push:
@@ -41,8 +41,8 @@ jobs:
       contents: read
     with:
       pre-command: |
-        npm install --no-save --no-audit --no-fund playwright@1.63.0
-        npx playwright install --with-deps chromium
+        npm install --no-save --no-audit --no-fund
+        npx playwright-core install --with-deps chromium
       check-cmd: |
         node skills/netresearch-branding/scripts/tests/contrast-audit-error-paths.test.cjs
         node skills/netresearch-branding/scripts/tests/contrast-audit-tls.test.cjs
