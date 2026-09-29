@@ -392,6 +392,8 @@ Checks that run on every pull request to `main` (`.github/workflows/security.yml
 - Betterleaks: fails on a committed secret.
 - zizmor: static analysis of the GitHub Actions workflows.
 
+What you can and cannot expect from this repository in terms of security, with its threat model: [docs/SECURITY-ASSURANCE.md](docs/SECURITY-ASSURANCE.md).
+
 ## License
 
 This project uses split licensing:
