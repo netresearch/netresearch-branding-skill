@@ -140,7 +140,8 @@ Where colours are read:
     as a finding, because its colours cannot be checked, and the other files
     are still read.
 
-Deliberate quotes of the old values, six files, and why none is reported:
+Deliberate quotes of near misses, six files, and why none is reported (five
+quote the old symbol values #2999a4 / #595a62, evals.json two others):
   - evals/evals.json:182 quotes #2e98a3 / #ff4e01 inside an eval prompt: a
     colour inside a longer JSON string is not read.
   - site/index.html:1079-1080 (finding F3) quotes #2999a4 / #595a62 inside a
