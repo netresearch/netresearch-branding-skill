@@ -10,8 +10,8 @@ name: Contrast Audit
 # Both colour schemes are measured: a dark palette is a separate set of pairs and a
 # light-only run says nothing about it.
 #
-# The check needs a real browser: `pre-command` installs playwright-core from
-# package.json (optionalDependencies) and then the Chromium build it pins.
+# The check needs a real browser: `pre-command` installs playwright-core as
+# package-lock.json pins it (`npm ci`) and then the Chromium build it pins.
 
 on:
   push:
@@ -22,6 +22,8 @@ on:
       - 'skills/netresearch-branding/scripts/tests/**'
       - 'examples/**'
       - 'site/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/contrast-audit.yml'
   pull_request:
     paths:
@@ -30,6 +32,8 @@ on:
       - 'skills/netresearch-branding/scripts/tests/**'
       - 'examples/**'
       - 'site/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/contrast-audit.yml'
   merge_group:
 
@@ -43,7 +47,7 @@ jobs:
       contents: read
     with:
       pre-command: |
-        npm install --no-save --no-audit --no-fund
+        npm ci --no-audit --no-fund
         npx playwright-core install --with-deps chromium
       check-cmd: |
         node skills/netresearch-branding/scripts/tests/contrast-audit-error-paths.test.cjs

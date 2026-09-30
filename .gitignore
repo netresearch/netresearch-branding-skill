@@ -2,3 +2,4 @@
 # SPDX-FileCopyrightText: Netresearch DTT GmbH
 .serena/
 claudedocs/
+node_modules/
