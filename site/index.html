@@ -464,22 +464,22 @@
         <div class="rule" data-issue-title="[Branding] Hard rule 1 — header logo" data-issue-body="Re: SKILL.md Hard Validity Rule 1 (header logo, symbol-only [n], SVG preferred).%0A%0AContext: demo page, Validity section.%0A%0AQuestion / proposal:">
           <div class="rule-head"><h3>1 · Header logo</h3><span class="rule-id">NB-25</span></div>
           <p>The symbol-only <span class="mono">[n]</span> mark appears exactly once in the top header, ≥32×32px, aspect ratio preserved, no recolor/filter/shadow. Clickable → <code>netresearch.de</code>.</p>
-          <span class="src">SKILL.md:40–45 · references/logo.md</span>
+          <span class="src">SKILL.md:29, 38–48 · references/logo.md</span>
         </div>
         <div class="rule" data-issue-title="[Branding] Hard rule 2 — brand colors" data-issue-body="Re: SKILL.md Hard Validity Rule 2 (brand colors #2F99A4 / #FF4D00 accent-only / #585961).%0A%0AQuestion / proposal:">
           <div class="rule-head"><h3>2 · Brand colors</h3><span class="rule-id">NB-25</span></div>
           <p><span class="mono">#2F99A4</span> primary, <span class="mono">#FF4D00</span> accent-<em>only</em>, <span class="mono">#585961</span> text. Orange must never dominate a surface.</p>
-          <span class="src">SKILL.md:44 · references/colors.md</span>
+          <span class="src">SKILL.md:30 · references/colors.md</span>
         </div>
         <div class="rule" data-issue-title="[Branding] Hard rule 3 — typography intent" data-issue-body="Re: SKILL.md Hard Validity Rule 3 (Raleway headlines/UI, Open Sans body).%0A%0AQuestion / proposal:">
           <div class="rule-head"><h3>3 · Typography intent</h3><span class="rule-id">NB-25</span></div>
           <p>Raleway for headlines &amp; UI emphasis; Open Sans for body and forms. Calibri is the Office-document equivalent.</p>
-          <span class="src">SKILL.md:45 · references/typography.md</span>
+          <span class="src">SKILL.md:31 · references/typography.md</span>
         </div>
         <div class="rule" data-issue-title="[Branding] Hard rule 4 — footer branding" data-issue-body="Re: SKILL.md Hard Validity Rule 4 (footer with 'Netresearch DTT GmbH' + link to netresearch.de).%0A%0AQuestion / proposal:">
           <div class="rule-head"><h3>4 · Footer branding</h3><span class="rule-id">NB-25</span></div>
           <p>Footer must contain the exact string <strong>Netresearch DTT GmbH</strong> and a link to <code>https://www.netresearch.de/</code>. See the bottom of this page.</p>
-          <span class="src">SKILL.md:46 · checkpoints.yaml NB-19/NB-25</span>
+          <span class="src">SKILL.md:32 · checkpoints.yaml NB-19/NB-25</span>
         </div>
       </div>
     </div>
@@ -1102,7 +1102,7 @@
         body: "--nr-text-secondary was #8A8B93, 3.39:1 on white and 3.11:1 on #F5F5F5, applied to help text, placeholders and captions below 18px \u2014 while colors.md's own \"Avoid\" list forbids low-contrast text on white. The token is #6E6F78 now (4.99:1 on white, 4.58:1 on #F5F5F5). #8A8B93 kept its job, under the name that says what it is: --nr-border-strong, the visible boundary of an interactive control, where SC 1.4.11 asks 3:1 rather than 4.5:1.",
         ask: "Done. Kept as the record." },
       { id: "F9", kind: "Ambiguity", title: "'Orange must not dominate' has no measurable threshold",
-        cite: "SKILL.md:62 · references/colors.md:65",
+        cite: "SKILL.md:82 · references/colors.md:70",
         body: "The rule 'accent orange is highlight-only and must not dominate surfaces' is qualitative — no percentage, area budget, or element allow-list. Two reviewers can disagree on whether a layout complies, and LLM checkpoints NB-22/NB-25 have no objective bar to test against.",
         ask: "Add a concrete heuristic (e.g. 'orange <= ~10% of visible surface; never a section/background fill; allowed on borders, small CTAs, badges')." },
       { id: "F10", kind: "Resolved", resolved: true, title: "License guidance was inconsistent across the skill",
@@ -1110,7 +1110,7 @@
         body: "TYPO3 extension branding recommended AGPL-3.0-or-later (or GPL-2.0-or-later) while the skill repo and README-branding examples use split MIT + CC-BY-SA-4.0, with no statement of which applies to what. SKILL.md now carries the policy by artifact type: TYPO3 extensions AGPL-3.0-or-later (GPL-2.0-or-later beside GPL-2.0-only code, since TYPO3 core is GPL-2.0-or-later and an extension inherits that); skills, libraries, CLIs and internal tools split MIT for code and CC-BY-SA-4.0 for content, SPDX (MIT AND CC-BY-SA-4.0); brand assets CC-BY-SA-4.0 plus the trademark rules in logo.md, because a licence does not permit recolouring. Both reference files point at that table.",
         ask: "Done. Kept as the record of what was ambiguous." },
       { id: "F11", kind: "Minor inconsistency", title: "Footer URL trailing slash: required vs optional",
-        cite: "SKILL.md:46 & references/logo.md (with slash) · checkpoints.yaml NB-25 (slash optional)",
+        cite: "SKILL.md:32, 48 & references/logo.md (with slash) · checkpoints.yaml NB-25 (slash optional)",
         body: "The hard validity rule and logo placement spec both write the footer link as https://www.netresearch.de/ (trailing slash), but NB-25 explicitly accepts the URL with or without the slash. Low-stakes, but the 'exact' framing of the hard rule and the relaxed checkpoint don't match.",
         ask: "Align the wording — either declare the slash optional in the hard rule too, or have NB-25 require it." }
     ];

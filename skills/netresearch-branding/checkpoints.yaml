@@ -218,7 +218,7 @@ mechanical:
   # document passed a page that mentions netresearch.de in its body and has no
   # footer at all. NB-18 stays document-wide on purpose — rule 1 puts the logo
   # in the HEADER, and the skill's own `templates/landing-page.html` renders it
-  # in the navbar (line 18) with no logo in its footer, so footer-scoping NB-18
+  # in the navbar (line 16) with no logo in its footer, so footer-scoping NB-18
   # would fail every page built from that template.
   - id: NB-17
     type: script
