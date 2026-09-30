@@ -10,7 +10,8 @@ This document states what a user can expect from this repository in terms of sec
 | Part | Files | Runs where |
 | --- | --- | --- |
 | Skill content: brand rules and references for an AI agent | `skills/netresearch-branding/SKILL.md`, `skills/netresearch-branding/references/*.md`, `outputStyles/*.md` | Read by the agent as instructions; not executed |
-| Templates and assets | `skills/netresearch-branding/templates/`, `skills/netresearch-branding/assets/`, `examples/components.html`, `site/` | Copied into the user's project, or published as the GitHub Pages site by `.github/workflows/pages.yml` |
+| Templates and assets | `skills/netresearch-branding/templates/`, `skills/netresearch-branding/assets/`, `site/` | Copied into the user's project, or (`site/`) published as the GitHub Pages site by `.github/workflows/pages.yml` |
+| Component showcase | `examples/components.html` | Opened in a browser; audited by `.github/workflows/contrast-audit.yml` |
 | Contrast audit | `skills/netresearch-branding/scripts/contrast-audit.cjs` | On the user's machine or in CI, on the user's request |
 | Repository checks | `Build/Scripts/check-brand-colours.py`, `Build/Scripts/check-plugin-version.sh`, `Build/hooks/pre-push`, `scripts/verify-harness.sh` | On contributors' machines (the pre-push hook runs `check-plugin-version.sh`, the others are run by hand); `check-brand-colours.py` also in this repository's CI (`brand-colours.yml`) |
 
@@ -29,7 +30,7 @@ The skill has no server component, stores no data, and handles no user accounts.
 - **Skill user and agent.** The agent reads the Markdown files as instructions. Text in this repository is therefore trusted input to the agent; changes to it go through pull request review like code (see [Governance](https://github.com/netresearch/.github/blob/main/GOVERNANCE.md)).
 - **Audited page (untrusted).** `contrast-audit.cjs` loads a local file or URL chosen by the user in headless Chromium through `playwright-core` and runs the page's own scripts. Playwright launches Chromium without its sandbox by default (`chromiumSandbox` defaults to `false` in playwright-core 1.63.0), and the script does not enable it. Audit a page you do not trust only inside a disposable container or CI runner.
 - **Network peers of the audit.** The page and every subresource it loads are fetched over the network. The TLS boundary is enforced by Chromium's certificate verification (requirements 1 and 2).
-- **Repository files read by the checks.** `check-brand-colours.py` parses tracked CSS, SVG, HTML, Markdown, JSON and YAML files, including files from a pull request.
+- **Repository files read by the checks.** `check-brand-colours.py` parses tracked CSS, SCSS, SVG, HTML, Markdown, JSON and YAML files, including files from a pull request.
 - **CI.** Workflows run on GitHub-hosted runners with `permissions: {}` at the top level and the minimum job permissions each reusable workflow needs (`.github/workflows/*.yml`).
 
 ## Threats and countermeasures
