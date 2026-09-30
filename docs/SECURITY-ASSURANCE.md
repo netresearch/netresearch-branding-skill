@@ -12,7 +12,7 @@ This document states what a user can expect from this repository in terms of sec
 | Skill content: brand rules and references for an AI agent | `skills/netresearch-branding/SKILL.md`, `skills/netresearch-branding/references/*.md`, `outputStyles/*.md` | Read by the agent as instructions; not executed |
 | Templates and assets | `skills/netresearch-branding/templates/`, `skills/netresearch-branding/assets/`, `examples/components.html`, `site/` | Copied into the user's project, or published as the GitHub Pages site by `.github/workflows/pages.yml` |
 | Contrast audit | `skills/netresearch-branding/scripts/contrast-audit.cjs` | On the user's machine or in CI, on the user's request |
-| Repository checks | `Build/Scripts/check-brand-colours.py`, `Build/Scripts/check-plugin-version.sh`, `Build/hooks/pre-push`, `scripts/verify-harness.sh` | In this repository's CI and on contributors' machines |
+| Repository checks | `Build/Scripts/check-brand-colours.py`, `Build/Scripts/check-plugin-version.sh`, `Build/hooks/pre-push`, `scripts/verify-harness.sh` | On contributors' machines (the pre-push hook runs `check-plugin-version.sh`, the others are run by hand); `check-brand-colours.py` also in this repository's CI (`brand-colours.yml`) |
 
 The skill has no server component, stores no data, and handles no user accounts.
 
