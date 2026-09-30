@@ -46,7 +46,7 @@ The skill has no server component, stores no data, and handles no user accounts.
 | An SVG references an external entity to read a local file or URL (CWE-611) | External entities and DTDs are parsed as empty and never opened | `Build/Scripts/check-brand-colours.py` (`svg_colours`, `_empty_external_entity`) |
 | YAML in a pull request instantiates arbitrary Python objects (CWE-502) | YAML is loaded with a `SafeLoader` subclass | `Build/Scripts/check-brand-colours.py` (`_TaggedSafeLoader`) |
 | Shell injection through file names (CWE-78) | `git ls-files -z` runs from an argument list without a shell; paths are NUL-separated | `Build/Scripts/check-brand-colours.py` (`tracked_files`) |
-| A secret is committed | Betterleaks scans every push and pull request | `.github/workflows/security.yml` |
+| A secret is committed | Betterleaks scans every push to `main` and every pull request to `main` | `.github/workflows/security.yml` |
 | A vulnerable or malicious dependency is added | Dependency review fails on high or critical vulnerabilities in a pull request; Composer Audit fails on known PHP advisories; Renovate proposes updates | `.github/workflows/security.yml`, `renovate.json` |
 | Insecure code or workflow patterns | Opengrep fails a pull request on findings of severity WARNING or higher; zizmor analyses the workflows | `.github/workflows/security.yml` |
 | A dependency version drifts between runs | Python dependencies of `check-brand-colours.py` are pinned in its inline script metadata; `playwright-core` is pinned in `package.json` | `Build/Scripts/check-brand-colours.py`, `package.json` |

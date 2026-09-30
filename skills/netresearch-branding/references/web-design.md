@@ -206,10 +206,12 @@ It lists every text element below AA for its size, plus skip link, labelled `nav
 table captions, the smallest font and decorative SVGs without `aria-hidden`; exit 1 on any
 contrast failure.
 
-TLS certificates are verified for the page and every stylesheet, script and image it loads;
-an invalid certificate stops the run before the `--header` value is sent. For a local
-development server with a self-signed certificate, `--insecure` turns verification off. It
-refuses to run together with `--header`.
+TLS certificates are verified for the page and every request it makes; an invalid
+certificate aborts that connection before any request, and with it any `--header` value, is
+sent. A page that fails to load exits 2, a stylesheet or script that fails exits 1, and a
+failed image or font is listed in `failedRequests` without changing the exit code. For a
+local development server with a self-signed certificate, `--insecure` turns verification
+off. It refuses to run together with `--header`.
 
 The `--header` value goes only to the target's own origin (scheme, host and port): not to
 fonts, stylesheets or images from other origins, and not across a redirect to another origin.
