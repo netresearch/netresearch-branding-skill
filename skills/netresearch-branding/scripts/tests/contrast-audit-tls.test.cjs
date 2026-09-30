@@ -15,13 +15,14 @@
  * and `openssl` on PATH to create the throwaway certificate.
  */
 const assert = require('assert');
-const { execFileSync, spawn } = require('child_process');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const https = require('https');
+const { after, before, test } = require('node:test');
 const os = require('os');
 const path = require('path');
+const { audit } = require('./spawn-audit.cjs');
 
-const AUDIT = path.join(__dirname, '..', 'contrast-audit.cjs');
 const TOKEN = 'Bearer dummy-token-for-tls-test';
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'contrast-audit-tls-'));
@@ -39,68 +40,48 @@ const server = https.createServer({ key: fs.readFileSync(keyFile), cert: fs.read
   res.end('<!doctype html><html lang="en"><title>t</title><main><p>Text</p></main></html>');
 });
 
-function audit(...args) {
-  return new Promise((resolve) => {
-    const child = spawn(process.execPath, [AUDIT, ...args], { env: process.env });
-    let stdout = ''; let stderr = '';
-    child.stdout.on('data', (d) => { stdout += d; });
-    child.stderr.on('data', (d) => { stderr += d; });
-    child.on('close', (code) => resolve({ code, stdout, stderr }));
-  });
-}
-
 let base;
-const tests = [
-  ['an untrusted certificate aborts the page load before the --header credential is sent', async () => {
-    received.length = 0;
-    const r = await audit(`${base}/`, '--header', `Authorization: ${TOKEN}`);
-    assert.ok(!received.some((q) => q.authorization === TOKEN), 'the Authorization header reached the server');
-    assert.strictEqual(received.length, 0, `no request may reach the server, got ${received.length}`);
-    assert.notStrictEqual(r.code, 0, `the run must fail, got exit ${r.code}`);
-    assert.match(r.stderr, /ERR_CERT/, `the failure must be the certificate, got: ${r.stderr.trim()}`);
-  }],
-
-  ['an untrusted certificate on a subresource fails that request and the run', async () => {
-    received.length = 0;
-    const page = path.join(tmp, 'page.html');
-    fs.writeFileSync(page, `<!doctype html><html lang="en"><title>t</title><link rel="stylesheet" href="${base}/x.css"><main><p>Text</p></main></html>`);
-    const r = await audit(page);
-    assert.strictEqual(received.length, 0, `no request may reach the server, got ${received.length}`);
-    assert.strictEqual(r.code, 1, `a stylesheet that did not load must fail the run, got exit ${r.code}: ${r.stderr.trim()}`);
-    const failed = JSON.parse(r.stdout).failedRequests;
-    assert.ok(failed.some((f) => f.url === `${base}/x.css` && /ERR_CERT/.test(f.what) && f.gating),
-      `the stylesheet must be reported as a gating certificate failure, got ${JSON.stringify(failed)}`);
-  }],
-
-  ['--insecure together with --header is refused before any connection', async () => {
-    received.length = 0;
-    const r = await audit(`${base}/`, '--insecure', '--header', `Authorization: ${TOKEN}`);
-    assert.strictEqual(r.code, 2, `expected the usage exit code 2, got ${r.code}`);
-    assert.match(r.stderr, /--insecure cannot be combined with --header/);
-    assert.strictEqual(received.length, 0, `no request may reach the server, got ${received.length}`);
-  }],
-
-  ['control: --insecure alone reaches the same server, so the checks above can see a request', async () => {
-    received.length = 0;
-    const r = await audit(`${base}/`, '--insecure');
-    assert.strictEqual(r.code, 0, `the page must load with --insecure, got exit ${r.code}: ${r.stderr.trim()}`);
-    assert.ok(received.some((q) => q.url === '/'), `the server must have seen the page request, got ${JSON.stringify(received)}`);
-  }],
-];
-
-(async () => {
+before(async () => {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   base = `https://127.0.0.1:${server.address().port}`;
-  let failed = 0;
-  try {
-    for (const [name, fn] of tests) {
-      try { await fn(); console.log(`ok   ${name}`); }
-      catch (e) { failed++; console.error(`FAIL ${name}\n     ${e.message}`); }
-    }
-  } finally {
-    server.close();
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
-  console.log(`\n${tests.length - failed} passed, ${failed} failed`);
-  process.exit(failed ? 1 : 0);
-})();
+});
+after(() => {
+  server.close();
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('an untrusted certificate aborts the page load before the --header credential is sent', async () => {
+  received.length = 0;
+  const r = await audit(`${base}/`, '--header', `Authorization: ${TOKEN}`);
+  assert.ok(!received.some((q) => q.authorization === TOKEN), 'the Authorization header reached the server');
+  assert.strictEqual(received.length, 0, `no request may reach the server, got ${received.length}`);
+  assert.notStrictEqual(r.code, 0, `the run must fail, got exit ${r.code}`);
+  assert.match(r.stderr, /ERR_CERT/, `the failure must be the certificate, got: ${r.stderr.trim()}`);
+});
+
+test('an untrusted certificate on a subresource fails that request and the run', async () => {
+  received.length = 0;
+  const page = path.join(tmp, 'page.html');
+  fs.writeFileSync(page, `<!doctype html><html lang="en"><title>t</title><link rel="stylesheet" href="${base}/x.css"><main><p>Text</p></main></html>`);
+  const r = await audit(page);
+  assert.strictEqual(received.length, 0, `no request may reach the server, got ${received.length}`);
+  assert.strictEqual(r.code, 1, `a stylesheet that did not load must fail the run, got exit ${r.code}: ${r.stderr.trim()}`);
+  const failed = JSON.parse(r.stdout).failedRequests;
+  assert.ok(failed.some((f) => f.url === `${base}/x.css` && /ERR_CERT/.test(f.what) && f.gating),
+    `the stylesheet must be reported as a gating certificate failure, got ${JSON.stringify(failed)}`);
+});
+
+test('--insecure together with --header is refused before any connection', async () => {
+  received.length = 0;
+  const r = await audit(`${base}/`, '--insecure', '--header', `Authorization: ${TOKEN}`);
+  assert.strictEqual(r.code, 2, `expected the usage exit code 2, got ${r.code}`);
+  assert.match(r.stderr, /--insecure cannot be combined with --header/);
+  assert.strictEqual(received.length, 0, `no request may reach the server, got ${received.length}`);
+});
+
+test('control: --insecure alone reaches the same server, so the checks above can see a request', async () => {
+  received.length = 0;
+  const r = await audit(`${base}/`, '--insecure');
+  assert.strictEqual(r.code, 0, `the page must load with --insecure, got exit ${r.code}: ${r.stderr.trim()}`);
+  assert.ok(received.some((q) => q.url === '/'), `the server must have seen the page request, got ${JSON.stringify(received)}`);
+});

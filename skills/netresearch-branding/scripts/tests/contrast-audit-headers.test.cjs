@@ -13,11 +13,10 @@
  * Needs playwright-core (PLAYWRIGHT_CORE or require resolution, as the audit does).
  */
 const assert = require('assert');
-const { spawn } = require('child_process');
 const http = require('http');
-const path = require('path');
+const { after, before, test } = require('node:test');
+const { audit } = require('./spawn-audit.cjs');
 
-const AUDIT = path.join(__dirname, '..', 'contrast-audit.cjs');
 const TOKEN = 'Bearer dummy-token-for-header-scope-test';
 
 // Every request each server receives, with its Authorization header.
@@ -40,54 +39,34 @@ const target = http.createServer((req, res) => {
 <main><p>Text</p></main></html>`);
 });
 
-function audit(...args) {
-  return new Promise((resolve) => {
-    const child = spawn(process.execPath, [AUDIT, ...args], { env: process.env });
-    let stdout = ''; let stderr = '';
-    child.stdout.on('data', (d) => { stdout += d; });
-    child.stderr.on('data', (d) => { stderr += d; });
-    child.on('close', (code) => resolve({ code, stdout, stderr }));
-  });
-}
-
-const tests = [
-  ['--header reaches the target origin and no other, not even through a redirect', async () => {
-    received.target.length = 0; received.other.length = 0;
-    const r = await audit(`${targetBase}/`, '--header', `Authorization: ${TOKEN}`);
-    const leaked = received.other.filter((q) => q.authorization);
-    assert.deepStrictEqual(leaked, [], `the second origin received the header: ${JSON.stringify(leaked)}`);
-    const otherUrls = [...new Set(received.other.map((q) => q.url))].sort();
-    assert.deepStrictEqual(otherUrls, ['/direct.css', '/via-redirect.css'],
-      `control: the second origin must have been asked for both stylesheets, got ${JSON.stringify(received.other)}`);
-    for (const u of ['/', '/own.css', '/redirect.css']) {
-      const q = received.target.find((x) => x.url === u);
-      assert.ok(q, `the target must have received ${u}`);
-      assert.strictEqual(q.authorization, TOKEN, `the target must receive the header on ${u}`);
-    }
-    assert.strictEqual(r.code, 0, `the audit must pass, got exit ${r.code}: ${r.stderr.trim()}`);
-  }],
-
-  ['--header with a non-loopback http:// target is refused before any connection', async () => {
-    const r = await audit('http://example.invalid/', '--header', `Authorization: ${TOKEN}`);
-    assert.strictEqual(r.code, 2, `expected the usage exit code 2, got ${r.code}`);
-    assert.match(r.stderr, /--header needs an https:\/\/ target/);
-  }],
-];
-
-(async () => {
+before(async () => {
   await new Promise((resolve) => other.listen(0, '127.0.0.1', resolve));
   await new Promise((resolve) => target.listen(0, '127.0.0.1', resolve));
   otherBase = `http://127.0.0.1:${other.address().port}`;
   targetBase = `http://127.0.0.1:${target.address().port}`;
-  let failed = 0;
-  try {
-    for (const [name, fn] of tests) {
-      try { await fn(); console.log(`ok   ${name}`); }
-      catch (e) { failed++; console.error(`FAIL ${name}\n     ${e.message}`); }
-    }
-  } finally {
-    target.close(); other.close();
+});
+after(() => {
+  target.close(); other.close();
+});
+
+test('--header reaches the target origin and no other, not even through a redirect', async () => {
+  received.target.length = 0; received.other.length = 0;
+  const r = await audit(`${targetBase}/`, '--header', `Authorization: ${TOKEN}`);
+  const leaked = received.other.filter((q) => q.authorization);
+  assert.deepStrictEqual(leaked, [], `the second origin received the header: ${JSON.stringify(leaked)}`);
+  const otherUrls = [...new Set(received.other.map((q) => q.url))].sort();
+  assert.deepStrictEqual(otherUrls, ['/direct.css', '/via-redirect.css'],
+    `control: the second origin must have been asked for both stylesheets, got ${JSON.stringify(received.other)}`);
+  for (const u of ['/', '/own.css', '/redirect.css']) {
+    const q = received.target.find((x) => x.url === u);
+    assert.ok(q, `the target must have received ${u}`);
+    assert.strictEqual(q.authorization, TOKEN, `the target must receive the header on ${u}`);
   }
-  console.log(`\n${tests.length - failed} passed, ${failed} failed`);
-  process.exit(failed ? 1 : 0);
-})();
+  assert.strictEqual(r.code, 0, `the audit must pass, got exit ${r.code}: ${r.stderr.trim()}`);
+});
+
+test('--header with a non-loopback http:// target is refused before any connection', async () => {
+  const r = await audit('http://example.invalid/', '--header', `Authorization: ${TOKEN}`);
+  assert.strictEqual(r.code, 2, `expected the usage exit code 2, got ${r.code}`);
+  assert.match(r.stderr, /--header needs an https:\/\/ target/);
+});
