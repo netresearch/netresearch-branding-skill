@@ -23,8 +23,9 @@
  * A dark palette is a separate set of colour pairs: a light-only run says nothing
  * about it. Run both schemes on any page that ships one.
  * Needs playwright-core (any local install: set PLAYWRIGHT_CORE to its directory, or let
- * `require('playwright-core')` resolve it). In this repository, `npm install` installs the
- * version package.json pins and `npx playwright-core install chromium` its browser.
+ * `require('playwright-core')` resolve it). In this repository, `npm ci --ignore-scripts`
+ * installs the version package-lock.json pins and `npx playwright-core install chromium`
+ * its browser.
  *
  * Reports, as JSON: every text element below the AA ratio for its size (4.5:1, or 3:1
  * for ≥24 px / ≥18.66 px bold) with foreground, effective background and the measured

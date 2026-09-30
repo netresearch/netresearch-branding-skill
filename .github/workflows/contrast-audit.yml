@@ -11,7 +11,9 @@ name: Contrast Audit
 # light-only run says nothing about it.
 #
 # The check needs a real browser: `pre-command` installs playwright-core as
-# package-lock.json pins it (`npm ci`) and then the Chromium build it pins.
+# package-lock.json pins it (`npm ci --ignore-scripts`, so the peer
+# dependency's postinstall does not rewrite AGENTS.md) and then the Chromium
+# build it pins.
 
 on:
   push:
@@ -47,7 +49,7 @@ jobs:
       contents: read
     with:
       pre-command: |
-        npm ci --no-audit --no-fund
+        npm ci --ignore-scripts --no-audit --no-fund
         npx playwright-core install --with-deps chromium
       check-cmd: |
         node skills/netresearch-branding/scripts/tests/contrast-audit-error-paths.test.cjs
