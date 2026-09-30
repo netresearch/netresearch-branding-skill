@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Netresearch Brand Colors Reference
 
 Complete color palette with technical specifications and usage guidelines.

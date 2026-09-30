@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Netresearch Web Design Guidelines
 
 Layout, component, and spacing conventions for Netresearch web output. The
@@ -202,6 +205,18 @@ node scripts/contrast-audit.cjs https://pages.nrdev.de/<ns>/<project>/ --header 
 It lists every text element below AA for its size, plus skip link, labelled `nav`, `main`,
 table captions, the smallest font and decorative SVGs without `aria-hidden`; exit 1 on any
 contrast failure.
+
+TLS certificates are verified for the page and every request it makes; an invalid
+certificate aborts that connection before any request, and with it any `--header` value, is
+sent. A page that fails to load exits 2, a stylesheet or script that fails exits 1, and a
+failed image or font is listed in `failedRequests` without changing the exit code. For a
+local development server with a self-signed certificate, `--insecure` turns verification
+off. It refuses to run together with `--header`.
+
+The `--header` value goes only to the target's own origin (scheme, host and port): not to
+fonts, stylesheets or images from other origins, and not across a redirect to another origin.
+With an `http://` target, `--header` is refused unless the host is `localhost`, `127.0.0.1`
+or `[::1]`.
 
 `apcaWarnings` reports the same elements against APCA (Lc, and the value APCA's font table
 asks for at that size and weight). Those are **advisory**: they never change the exit code,

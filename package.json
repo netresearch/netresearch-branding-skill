@@ -31,6 +31,9 @@
   "peerDependencies": {
     "@netresearch/agent-skill-coordinator": "^0.1 || ^0.2.0"
   },
+  "optionalDependencies": {
+    "playwright-core": "1.63.0"
+  },
   "scripts": {
     "prepare": "command -v pre-commit >/dev/null && pre-commit install --install-hooks 2>/dev/null || true"
   }

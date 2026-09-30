@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Tests for Build/Scripts/check-brand-colours.py.
 
 Run from the repository root, with the dependencies the script itself pins:

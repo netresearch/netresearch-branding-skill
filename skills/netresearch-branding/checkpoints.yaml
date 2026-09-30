@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 # Checkpoints for netresearch-branding skill
 # Validates Netresearch brand compliance for extensions
 
@@ -52,9 +54,9 @@ mechanical:
     desc: "Extension icon must use Netresearch teal #2F99A4 (TYPO3 extensions only)"
 
   # NB-02 alone is satisfied by any teal SVG. The mark is pinned by the PAIR:
-  # the checklist in references/typo3-extension-branding.md (line 153) requires
+  # the checklist in references/typo3-extension-branding.md (line 156) requires
   # both brand colours — "Colors: Frame `#2F99A4`, Letter `#585961`" — and the
-  # SVG source it prescribes (same file, lines 13-31) carries `.nr-frame`
+  # SVG source it prescribes (same file, lines 16-34) carries `.nr-frame`
   # `#2F99A4` and `.nr-letter` `#585961`. NB-11/NB-12 stay retired (see below);
   # a retired id is never reused, hence NB-34.
   - id: NB-34
@@ -150,11 +152,11 @@ mechanical:
   # NB-11 and NB-12 are retired IDs — do not reuse. The documented home of the
   # [n] symbol-only logo in an extension is the extension icon
   # `Resources/Public/Icons/Extension.svg` (references/typo3-extension-branding.md,
-  # "Extension Icon", File Location line 9), enforced by NB-01 (file exists),
+  # "Extension Icon", File Location line 12), enforced by NB-01 (file exists),
   # NB-02 (frame `#2F99A4`) and NB-34 (letter `#585961`) at severity error.
   # `assets/logos/netresearch-symbol-only.svg` is this SKILL's own asset, used
-  # to reconstruct the mark for generated output (SKILL.md lines 27/37,
-  # references/logo.md lines 7/11) — never a path required of an audited
+  # to reconstruct the mark for generated output (SKILL.md lines 29/39,
+  # references/logo.md lines 10/14) — never a path required of an audited
   # extension.
 
   # === EXT_EMCONF BRANDING (TYPO3-only) ===

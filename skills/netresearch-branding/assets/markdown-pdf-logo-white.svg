@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
 <!--
   White-fill variant of markdown-pdf-logo.svg, for use only inside the
   markdown-to-pdf brand stylesheet's teal running header (.page-header),

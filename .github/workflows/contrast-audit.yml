@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 name: Contrast Audit
 
 # Runs skills/netresearch-branding/scripts/contrast-audit.cjs against the two
@@ -8,8 +10,10 @@ name: Contrast Audit
 # Both colour schemes are measured: a dark palette is a separate set of pairs and a
 # light-only run says nothing about it.
 #
-# The check needs a real browser, so Playwright is provisioned in `pre-command`
-# rather than added to package.json — this repo ships no runtime dependencies.
+# The check needs a real browser: `pre-command` installs playwright-core as
+# package-lock.json pins it (`npm ci --ignore-scripts`, so the peer
+# dependency's postinstall does not rewrite AGENTS.md) and then the Chromium
+# build it pins.
 
 on:
   push:
@@ -20,6 +24,8 @@ on:
       - 'skills/netresearch-branding/scripts/tests/**'
       - 'examples/**'
       - 'site/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/contrast-audit.yml'
   pull_request:
     paths:
@@ -28,6 +34,8 @@ on:
       - 'skills/netresearch-branding/scripts/tests/**'
       - 'examples/**'
       - 'site/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/contrast-audit.yml'
   merge_group:
 
@@ -41,10 +49,12 @@ jobs:
       contents: read
     with:
       pre-command: |
-        npm install --no-save --no-audit --no-fund playwright@1.63.0
-        npx playwright install --with-deps chromium
+        npm ci --ignore-scripts --no-audit --no-fund
+        npx playwright-core install --with-deps chromium
       check-cmd: |
         node skills/netresearch-branding/scripts/tests/contrast-audit-error-paths.test.cjs
+        node skills/netresearch-branding/scripts/tests/contrast-audit-tls.test.cjs
+        node skills/netresearch-branding/scripts/tests/contrast-audit-headers.test.cjs
         for scheme in light dark; do
           for page in \
             skills/netresearch-branding/templates/landing-page.html \

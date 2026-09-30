@@ -1,4 +1,6 @@
 ---
+# SPDX-License-Identifier: CC-BY-SA-4.0
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 name: netresearch-branding
 description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, extension icons, README badges, or CSS theming. Enforce strict brand compliance with mandatory logo usage, brand colors, typography, footer, and reference-driven implementation."
 license: "(MIT AND CC-BY-SA-4.0)"

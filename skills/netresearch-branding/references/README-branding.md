@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Netresearch README Branding Requirements
 
 Required headline and footer branding for every Netresearch repository

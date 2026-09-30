@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # TYPO3 Extension Branding
 
 **Purpose:** Ensure consistent Netresearch branding across all TYPO3 extensions developed by or for Netresearch.

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: Netresearch DTT GmbH
 /**
  * Error paths of contrast-audit.cjs's state pass, against a stubbed CDP session.
  *
