@@ -49,7 +49,7 @@ jobs:
     permissions:
       contents: read
     with:
-      pre-command: pipx install uv==0.12.21
+      pre-command: pipx install uv==0.12.22
       check-cmd: |
         uv run --no-project --with-requirements Build/Scripts/check-brand-colours.py python -B Build/Scripts/tests/test_check_brand_colours.py
         uv run Build/Scripts/check-brand-colours.py
