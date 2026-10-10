@@ -5,7 +5,7 @@ name: netresearch-branding
 description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, extension icons, README badges, or CSS theming. Enforce strict brand compliance with mandatory logo usage, brand colors, typography, footer, and reference-driven implementation."
 license: "(MIT AND CC-BY-SA-4.0)"
 metadata:
-  version: "2.12.1"
+  version: "2.13.0"
   repository: "https://github.com/netresearch/netresearch-branding-skill"
   author: "Netresearch DTT GmbH"
 ---
@@ -55,6 +55,7 @@ Operationalize references in every branded output:
 3. `references/web-design.md` for layout/components/spacing
 4. `references/logo.md` and `references/logo-svg.md` for logo fallback behavior
 5. `references/typo3-extension-branding.md` for TYPO3 context
+6. `references/co-branding.md` for endorsement lines, only on an explicit co-branding request
 
 ## Core Brand System
 
@@ -82,6 +83,14 @@ Operationalize references in every branded output:
 - Accent orange is highlight-only and must not dominate surfaces
 - Accessibility: WCAG AA minimum contrast and semantic structure
 - Footer branding is mandatory in user-facing branded pages
+
+## Co-branding (optional)
+
+Applies only when a request explicitly asks to combine Netresearch with a second brand (platform, Netresearch product brand, customer). A brand named as the topic is no such request: a Netresearch page about OroCommerce stays Netresearch branding only.
+- Netresearch stays the sender; the Hard Validity Rules apply unchanged.
+- The second brand appears as a content accent; an endorsement line names the role of Netresearch.
+- Output where another brand is the sender is out of scope.
+- Roles, line catalog and guardrails: `references/co-branding.md`.
 
 ## TYPO3 Extension Requirements
 
@@ -124,3 +133,4 @@ In branded reports, PR/commit text and docs, state what a change or output does,
 - `references/typo3-extension-branding.md`
 - `references/README-branding.md`
 - `references/no-editorializing.md`
+- `references/co-branding.md` (only on an explicit co-branding request)

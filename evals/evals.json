@@ -434,5 +434,139 @@
         "description": "Card uses brand primary color for accents"
       }
     ]
+  },
+  {
+    "name": "default-unchanged-topic-mention",
+    "prompt": "Create a branded Netresearch landing page that presents the key features of OroCommerce for B2B commerce teams",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Uses primary turquoise brand color"
+      },
+      {
+        "type": "content_contains",
+        "value": "Netresearch DTT GmbH",
+        "description": "Footer names Netresearch DTT GmbH"
+      },
+      {
+        "type": "content_contains",
+        "value": "netresearch.de",
+        "description": "Footer links to netresearch.de"
+      },
+      {
+        "type": "must_not",
+        "value": "(explained|tailored|powered) by Netresearch|Enablement by Netresearch|Netresearch Guide to",
+        "description": "No endorsement line: OroCommerce named as the topic is no co-branding request"
+      }
+    ],
+    "samples": {
+      "passing": "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><h1>OroCommerce features for B2B teams</h1><style>:root{--nr-primary:#2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+      "failing": [
+        "<h1>OroCommerce explained by Netresearch</h1><style>:root{--nr-primary:#2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>"
+      ]
+    }
+  },
+  {
+    "name": "default-unchanged-plain",
+    "prompt": "Create a branded HTML dashboard for a Netresearch project called 'DataSync' that shows build and deployment status",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Uses primary turquoise brand color"
+      },
+      {
+        "type": "content_contains",
+        "value": "Netresearch DTT GmbH",
+        "description": "Footer names Netresearch DTT GmbH"
+      },
+      {
+        "type": "content_contains",
+        "value": "netresearch.de",
+        "description": "Footer links to netresearch.de"
+      },
+      {
+        "type": "must_not",
+        "value": "(explained|implemented|tailored|built|made|powered|enabled|connected|managed|curated) by Netresearch|Enablement by Netresearch|Netresearch Guide to",
+        "description": "No line from the co-branding catalog in a plain Netresearch output"
+      }
+    ],
+    "samples": {
+      "passing": "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><h1>DataSync build status</h1><style>:root{--nr-primary:#2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+      "failing": [
+        "<h1>DataSync dashboard</h1><p>built by Netresearch</p><style>:root{--nr-primary:#2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>"
+      ]
+    }
+  },
+  {
+    "name": "cobranding-platform-explainer",
+    "prompt": "Create an explainer page about OroCommerce B2B price lists, co-branded as Netresearch with OroCommerce: combine both brands and add one line that states the role of Netresearch",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Netresearch frame: primary turquoise brand color"
+      },
+      {
+        "type": "content_contains",
+        "value": "Netresearch DTT GmbH",
+        "description": "Footer names Netresearch DTT GmbH"
+      },
+      {
+        "type": "content_contains",
+        "value": "netresearch.de",
+        "description": "Footer links to netresearch.de"
+      },
+      {
+        "type": "content_regex",
+        "value": "explained by|Enablement by Netresearch|Netresearch Guide to",
+        "description": "Uses an endorsement line from the Sharing knowledge group"
+      },
+      {
+        "type": "must_not",
+        "value": "powered by Netresearch",
+        "description": "Does not use the line reserved for Netresearch product brands"
+      }
+    ],
+    "samples": {
+      "passing": "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><h1>B2B price lists</h1><p class=\"endorsement\">OroCommerce explained by Netresearch</p><style>:root{--nr-primary:#2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+      "failing": [
+        "<h1>B2B price lists</h1><p>OroCommerce powered by Netresearch</p><style>:root{--nr-primary:#2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+        "<h1>OroCommerce explained by Netresearch</h1><footer>Oro Inc.</footer>"
+      ]
+    }
+  },
+  {
+    "name": "cobranding-own-product",
+    "prompt": "Create a landing page for Revyo Basecamp, a Netresearch product brand, co-branded with Netresearch",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Netresearch frame: primary turquoise brand color"
+      },
+      {
+        "type": "content_contains",
+        "value": "Netresearch DTT GmbH",
+        "description": "Footer names Netresearch DTT GmbH"
+      },
+      {
+        "type": "content_contains",
+        "value": "netresearch.de",
+        "description": "Footer links to netresearch.de"
+      },
+      {
+        "type": "content_contains",
+        "value": "powered by Netresearch",
+        "description": "Uses the endorsement line for Netresearch product brands"
+      }
+    ],
+    "samples": {
+      "passing": "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><h1>Revyo Basecamp</h1><p class=\"endorsement\">Revyo Basecamp powered by Netresearch</p><style>:root{--nr-primary:#2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+      "failing": [
+        "<h1>Revyo Basecamp</h1><p>explained by Netresearch</p><style>:root{--nr-primary:#2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>"
+      ]
+    }
   }
 ]
