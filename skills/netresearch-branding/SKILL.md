@@ -5,7 +5,7 @@ name: netresearch-branding
 description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, extension icons, README badges, or CSS theming. Enforce strict brand compliance with mandatory logo usage, brand colors, typography, footer, and reference-driven implementation."
 license: "(MIT AND CC-BY-SA-4.0)"
 metadata:
-  version: "2.12.1"
+  version: "2.13.0"
   repository: "https://github.com/netresearch/netresearch-branding-skill"
   author: "Netresearch DTT GmbH"
 ---
