@@ -56,4 +56,5 @@ No Makefile or npm scripts. Available commands:
 - [typography.md](skills/netresearch-branding/references/typography.md) — font weights, sizes, responsive scale
 - [web-design.md](skills/netresearch-branding/references/web-design.md) — component library and layout patterns
 - [typo3-extension-branding.md](skills/netresearch-branding/references/typo3-extension-branding.md) — TYPO3 extension branding requirements
+- [co-branding.md](skills/netresearch-branding/references/co-branding.md) — optional endorsement lines, only on an explicit co-branding request
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — architecture overview
