@@ -580,8 +580,8 @@
       },
       {
         "type": "content_regex",
-        "value": "border-radius:\\s*(1[0-9]|2[0-9])px",
-        "description": "Modern treatment: controls and cards use 10px or larger radii"
+        "value": "--radius-(md|lg|xl)|border-radius:\\s*(1[0-9]|2[0-9])px",
+        "description": "Modern treatment: controls and cards use 10px or larger radii (literal or --radius-* token)"
       },
       {
         "type": "content_regex",
@@ -590,7 +590,7 @@
       },
       {
         "type": "must_not",
-        "value": "translateY\\(-[0-9]+px\\)",
+        "value": ":hover\\s*\\{[^}]*translateY\\(-",
         "description": "No hover jump on buttons or cards"
       }
     ],

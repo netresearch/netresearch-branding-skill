@@ -17,13 +17,14 @@ put together follows current product design. Nobody has to ask for "modern";
 the dated look (4px boxes, centred everything, hover jumps, heavy grey drop
 shadows, teal fills under small white text) is the thing to avoid.
 
-**One bold surface per page.** The petrol gradient
+**One bold surface per page** (plus the mandatory anthracite footer). The petrol gradient
 `#257880 → #15585E → #0A5057` carries exactly one area: the hero, the brand panel of a split layout,
 or the header band of an app page. Every stop carries white text at 5.15:1 or
-more; the brand `#2F99A4` cannot start the gradient. The nested rounded squares
-of `--nr-motif` echo the frame of the [n] mark at 14% white; they are
-decoration, never a substitute for the logo, and the logo itself is never
-recoloured or placed on the gradient.
+more; the brand `#2F99A4` cannot start the gradient. `--nr-motif` adds three
+abstract nested rounded squares at 14% white in a corner of that surface. It is
+texture, not a mark: it never stands where the logo belongs, is never drawn in
+the brand colours, and the logo itself is never recoloured or placed on the
+gradient.
 
 **Depth through hairlines, not shadows.** A raised element reads through a 1px
 `--nr-border-light` border first; `--shadow-sm` / `--shadow-md` add soft,
@@ -44,8 +45,9 @@ figures (`.stat`), messages are notices with an icon and a coloured left edge
 tint has no ratio of its own because it composites over whatever is behind it.
 
 **Controls that read as controls.** Inputs and buttons are 48px high with a
-3:1 boundary (`--nr-border-strong`). Focus is a visible ring (`--nr-ring`),
-not a colour change. Checkboxes and radios are drawn (`.form-check`) so the
+3:1 boundary (`--nr-border-strong`). Focus is a solid 3px outline in
+`--nr-focus` (3.38:1 on white, white on the gradient, `CanvasText` in forced
+colours) with the soft `--nr-ring` on top; never `outline: none` alone. Checkboxes and radios are drawn (`.form-check`) so the
 box keeps its 3:1 edge in both schemes. Two to four mutually exclusive views
 (language, period, list/grid) use a segmented control (`.segmented`), not a
 row of links.
@@ -54,7 +56,8 @@ row of links.
 sequence; the eyebrow names a section's subject; badges carry a state the
 reader needs. Decoration that encodes nothing is left out.
 
-**Both schemes.** Every token has a dark value (see `references/colors.md`).
+**Both schemes.** Every colour token has a dark value (`references/colors.md`,
+"Dark backgrounds" and "Modern treatment tokens").
 Honour `prefers-color-scheme` and an explicit `data-theme` attribute; text
 roles lift on dark, non-text roles keep the brand hue.
 
