@@ -10,12 +10,17 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Navigation -->
-  <nav class="navbar">
-    <div class="navbar-container">
-      <img src="logo.svg" alt="Netresearch Logo" class="navbar-logo">
+  <a class="skip-link" href="#main">Skip to content</a>
 
-      <button class="navbar-toggle" aria-label="Toggle navigation">
+  <!-- Navigation: logo exactly once, linking to netresearch.de -->
+  <nav class="navbar" aria-label="Main">
+    <div class="navbar-container">
+      <a class="navbar-brand" href="https://www.netresearch.de/">
+        <img src="../assets/logos/netresearch-symbol-only.svg" alt="Netresearch" class="navbar-logo" width="40" height="40">
+        <span class="navbar-wordmark">Netresearch<small>Digital solutions</small></span>
+      </a>
+
+      <button class="navbar-toggle" aria-label="Toggle navigation" aria-expanded="false">
         <span></span>
         <span></span>
         <span></span>
@@ -30,187 +35,223 @@
     </div>
   </nav>
 
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="hero-content">
-      <h1 class="hero-title">Your Digital Transformation Partner</h1>
-      <p class="hero-subtitle">
-        We create innovative digital solutions that drive business growth and enhance user experiences.
-      </p>
-      <div class="hero-cta">
-        <a href="#contact" class="btn-primary btn-large">Get Started</a>
-        <a href="#services" class="btn-outline btn-large">Learn More</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Services Section -->
-  <section id="services" class="section">
-    <div class="container">
-      <h2 class="section-title">Our Services</h2>
-      <p class="section-subtitle">
-        Comprehensive digital solutions tailored to your needs
-      </p>
-
-      <div class="three-column">
-        <div class="card">
-          <div class="card-content">
-            <h3 class="card-title">Web Development</h3>
-            <p class="card-text">
-              Modern, responsive websites built with the latest technologies and best practices.
+  <main id="main">
+    <!-- Hero: the page's one bold surface -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-split">
+          <div>
+            <p class="eyebrow">TYPO3 · E-Commerce · Custom software</p>
+            <h1 class="hero-title">Your Digital Transformation Partner</h1>
+            <p class="hero-subtitle">
+              We create digital solutions that drive business growth and improve user experiences, from the first workshop to long-term operation.
             </p>
-            <a href="#" class="link-standalone">Learn more</a>
+            <div class="hero-cta">
+              <a href="#contact" class="btn-primary btn-large">Get Started</a>
+              <a href="#services" class="btn-outline btn-large">Learn More</a>
+            </div>
+            <ul class="hero-facts" aria-label="At a glance">
+              <li>Leipzig, Germany</li>
+              <li>Open source on GitHub</li>
+              <li>TYPO3 extensions</li>
+            </ul>
           </div>
-        </div>
 
-        <div class="card">
-          <div class="card-content">
-            <h3 class="card-title">E-Commerce Solutions</h3>
-            <p class="card-text">
-              Powerful online stores that drive sales and provide exceptional shopping experiences.
-            </p>
-            <a href="#" class="link-standalone">Learn more</a>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-content">
-            <h3 class="card-title">Digital Strategy</h3>
-            <p class="card-text">
-              Strategic consulting to help your business thrive in the digital landscape.
-            </p>
-            <a href="#" class="link-standalone">Learn more</a>
-          </div>
+          <aside class="hero-panel" aria-labelledby="process-title">
+            <p class="eyebrow">How we work</p>
+            <h2 id="process-title" class="card-title">Three steps to your project</h2>
+            <ol class="steps">
+              <li><span class="step-num" aria-hidden="true">1</span><span class="step-body"><strong>Discovery</strong><span>Goals, users and constraints in one workshop.</span></span></li>
+              <li><span class="step-num" aria-hidden="true">2</span><span class="step-body"><strong>Build</strong><span>Short iterations with a working version after each.</span></span></li>
+              <li><span class="step-num" aria-hidden="true">3</span><span class="step-body"><strong>Run</strong><span>Hosting, updates and support from the same team.</span></span></li>
+            </ol>
+          </aside>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- About Section -->
-  <section id="about" class="section section-alt">
-    <div class="container">
-      <div class="two-column">
-        <div>
-          <h2>About Netresearch</h2>
-          <p class="lead">
-            With over 20 years of experience, we've been helping businesses succeed online through innovative digital solutions.
-          </p>
-          <p>
-            Our team of experts combines technical excellence with creative thinking to deliver projects that exceed expectations. We specialize in TYPO3, e-commerce, and custom web applications.
-          </p>
-          <p>
-            Based in Leipzig, Germany, we serve clients across Europe and beyond, providing end-to-end digital services from strategy to implementation and support.
-          </p>
-          <a href="#contact" class="btn-primary">Work with us</a>
+    <!-- Services Section -->
+    <section id="services" class="section">
+      <div class="container">
+        <div class="section-header">
+          <p class="eyebrow">Services</p>
+          <h2 class="section-title">What we build</h2>
+          <p class="section-subtitle">Digital solutions tailored to your needs.</p>
         </div>
-        <div>
-          <img src="about-image.jpg" alt="Netresearch team" style="width: 100%; border-radius: 8px;">
+
+        <div class="three-column">
+          <div class="card card-interactive">
+            <div class="card-content">
+              <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14l-2 2 2 2M16 14l2 2-2 2"/></svg></span>
+              <h3 class="card-title">Web Development</h3>
+              <p class="card-text">Responsive websites and portals built with current technologies and practices.</p>
+              <a href="#" class="link-standalone">Learn more</a>
+            </div>
+          </div>
+
+          <div class="card card-interactive">
+            <div class="card-content">
+              <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.4 11h11.2L21 7H6.2"/><circle cx="9" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg></span>
+              <h3 class="card-title">E-Commerce Solutions</h3>
+              <p class="card-text">Online shops and B2B platforms that connect to your existing systems.</p>
+              <a href="#" class="link-standalone">Learn more</a>
+            </div>
+          </div>
+
+          <div class="card card-interactive">
+            <div class="card-content">
+              <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6"/></svg></span>
+              <h3 class="card-title">Digital Strategy</h3>
+              <p class="card-text">Roadmaps and architecture decisions grounded in your business goals.</p>
+              <a href="#" class="link-standalone">Learn more</a>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Portfolio Section -->
-  <section id="portfolio" class="section">
-    <div class="container">
-      <h2 class="section-title">Our Work</h2>
-      <p class="section-subtitle">
-        Recent projects we're proud of
-      </p>
-
-      <div class="three-column">
-        <div class="card">
-          <img src="project-1.jpg" alt="Project 1" class="card-image">
-          <div class="card-content">
-            <h3 class="card-title">E-Commerce Platform</h3>
-            <p class="card-text">
-              Complete redesign and development of a multi-vendor marketplace.
+    <!-- About Section -->
+    <section id="about" class="section section-alt">
+      <div class="container">
+        <div class="two-column">
+          <div>
+            <p class="eyebrow">About</p>
+            <h2>Engineering with a long view</h2>
+            <p class="lead">
+              We plan for the years after launch: maintainable code, documented decisions and systems your team can run.
             </p>
+            <p>
+              Our open-source extensions and tools are published on GitHub and maintained by the teams that use them in client projects.
+            </p>
+            <a href="#contact" class="btn-primary">Work with us</a>
+          </div>
+          <div class="stack">
+            <div class="notice">
+              <svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="m8 12.4 2.7 2.7L16.2 9.5"/></svg>
+              <div><strong>Accessible by default</strong>Every colour pair in this template is measured against WCAG 2.2 AA in light and dark mode.</div>
+            </div>
+            <div class="notice">
+              <svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></svg>
+              <div><strong>Built on tokens</strong>All colours come from <code>--nr-*</code> variables, so a project theme stays on brand.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="section">
+      <div class="container">
+        <div class="section-header">
+          <p class="eyebrow">Portfolio</p>
+          <h2 class="section-title">Our Work</h2>
+          <p class="section-subtitle">Selected projects across industries.</p>
+        </div>
+
+        <div class="three-column">
+          <div class="card card-interactive">
+            <div class="card-image" role="img" aria-label="Project image placeholder"></div>
+            <div class="card-content">
+              <span class="badge badge-info">E-Commerce</span>
+              <h3 class="card-title" style="margin-top: 12px;">E-Commerce Platform</h3>
+              <p class="card-text">A B2B shop with customer-specific prices and ERP integration.</p>
+            </div>
             <div class="card-footer">
-              <span class="card-meta">TYPO3 • Magento • 2024</span>
+              <span class="card-meta">TYPO3 · Magento · 2024</span>
             </div>
           </div>
-        </div>
 
-        <div class="card">
-          <img src="project-2.jpg" alt="Project 2" class="card-image">
-          <div class="card-content">
-            <h3 class="card-title">Corporate Website</h3>
-            <p class="card-text">
-              Modern website with multilingual content and advanced integrations.
-            </p>
+          <div class="card card-interactive">
+            <div class="card-image" role="img" aria-label="Project image placeholder"></div>
+            <div class="card-content">
+              <span class="badge badge-info">Website</span>
+              <h3 class="card-title" style="margin-top: 12px;">Corporate Website</h3>
+              <p class="card-text">A multilingual site with editorial workflows for several teams.</p>
+            </div>
             <div class="card-footer">
-              <span class="card-meta">TYPO3 • API • 2024</span>
+              <span class="card-meta">TYPO3 · API · 2024</span>
             </div>
           </div>
-        </div>
 
-        <div class="card">
-          <img src="project-3.jpg" alt="Project 3" class="card-image">
-          <div class="card-content">
-            <h3 class="card-title">Custom Web Application</h3>
-            <p class="card-text">
-              Bespoke solution for complex business requirements and workflows.
-            </p>
+          <div class="card card-interactive">
+            <div class="card-image" role="img" aria-label="Project image placeholder"></div>
+            <div class="card-content">
+              <span class="badge badge-info">Application</span>
+              <h3 class="card-title" style="margin-top: 12px;">Custom Web Application</h3>
+              <p class="card-text">An internal tool that replaces spreadsheets with a shared workflow.</p>
+            </div>
             <div class="card-footer">
-              <span class="card-meta">Laravel • Vue.js • 2024</span>
+              <span class="card-meta">Laravel · Vue.js · 2024</span>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Contact Section -->
-  <section id="contact" class="section section-alt">
-    <div class="container">
-      <div class="two-column">
-        <div>
-          <h2>Get in Touch</h2>
-          <p class="lead">
-            Ready to start your next project? Let's talk about how we can help.
-          </p>
-          <p>
-            <strong>Netresearch DTT GmbH</strong><br>
-            Nonnenstraße 11d<br>
-            04229 Leipzig, Germany
-          </p>
-          <p>
-            <strong>Phone:</strong> +49 341 49288-0<br>
-            <strong>GitHub:</strong> <a href="https://github.com/netresearch/netresearch-branding-skill">https://github.com/netresearch/netresearch-branding-skill</a>
-          </p>
-        </div>
+    <!-- Contact Section -->
+    <section id="contact" class="section section-alt">
+      <div class="container">
+        <div class="two-column">
+          <div>
+            <p class="eyebrow">Contact</p>
+            <h2>Get in Touch</h2>
+            <p class="lead">
+              Ready to start your next project? Let's talk about how we can help.
+            </p>
+            <p>
+              <strong>Netresearch DTT GmbH</strong><br>
+              Nonnenstraße 11d<br>
+              04229 Leipzig, Germany
+            </p>
+            <p>
+              <strong>Phone:</strong> +49 341 49288-0<br>
+              <strong>GitHub:</strong> <a href="https://github.com/netresearch/netresearch-branding-skill">netresearch/netresearch-branding-skill</a>
+            </p>
+          </div>
 
-        <div>
-          <form class="form">
-            <div class="form-group">
-              <label for="name" class="form-label">Name*</label>
-              <input type="text" id="name" class="form-input" placeholder="Your name" required>
+          <div class="card">
+            <div class="card-content">
+              <form class="form">
+                <div class="form-group">
+                  <label for="name" class="form-label">Name</label>
+                  <input type="text" id="name" class="form-input" placeholder="Your name" autocomplete="name" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="email" class="form-label">Email</label>
+                  <input type="email" id="email" class="form-input" placeholder="your@email.com" autocomplete="email" required>
+                  <span class="form-help">We reply within two working days.</span>
+                </div>
+
+                <div class="form-group">
+                  <label for="topic" class="form-label">Topic</label>
+                  <select id="topic" class="form-select">
+                    <option>Project inquiry</option>
+                    <option>Support</option>
+                    <option>Careers</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="message" class="form-label">Message</label>
+                  <textarea id="message" class="form-textarea" placeholder="Tell us about your project" required></textarea>
+                </div>
+
+                <div class="form-group form-check">
+                  <input type="checkbox" id="consent" required>
+                  <label for="consent">I agree that my details are processed to answer this request.</label>
+                </div>
+
+                <button type="submit" class="btn-primary btn-block">Send Message</button>
+              </form>
             </div>
-
-            <div class="form-group">
-              <label for="email" class="form-label">Email*</label>
-              <input type="email" id="email" class="form-input" placeholder="your@email.com" required>
-            </div>
-
-            <div class="form-group">
-              <label for="subject" class="form-label">Subject*</label>
-              <input type="text" id="subject" class="form-input" placeholder="Project inquiry" required>
-            </div>
-
-            <div class="form-group">
-              <label for="message" class="form-label">Message*</label>
-              <textarea id="message" class="form-textarea" placeholder="Tell us about your project" required></textarea>
-            </div>
-
-            <button type="submit" class="btn-primary btn-large">Send Message</button>
-          </form>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </main>
 
-  <!-- Footer -->
+  <!-- Footer: mandatory company name and link -->
   <footer class="footer">
     <div class="footer-content">
       <div class="footer-section">
@@ -254,9 +295,8 @@
     </div>
 
     <div class="footer-bottom">
-      <div class="container">
-        <p>&copy; 2025 Netresearch DTT GmbH. All rights reserved.</p>
-      </div>
+      <p>&copy; 2026 <a href="https://www.netresearch.de/">Netresearch DTT GmbH</a>. All rights reserved.</p>
+      <p>Nonnenstraße 11d · 04229 Leipzig</p>
     </div>
   </footer>
 
@@ -266,18 +306,15 @@
     const menu = document.querySelector('.navbar-menu');
 
     toggle.addEventListener('click', () => {
-      menu.classList.toggle('active');
+      const open = menu.classList.toggle('active');
+      toggle.setAttribute('aria-expanded', String(open));
     });
 
-    // Smooth scrolling
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth' });
-          menu.classList.remove('active');
-        }
+    // Close the mobile menu after an in-page jump
+    document.querySelectorAll('.navbar-menu a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', () => {
+        menu.classList.remove('active');
+        toggle.setAttribute('aria-expanded', 'false');
       });
     });
   </script>
