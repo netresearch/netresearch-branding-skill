@@ -111,6 +111,13 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   page.
 - **Notices** (`.notice`, `-success`, `-warning`, `-danger`): icon, bold
   title, coloured 4px left edge.
+- **Text on tints**: `--nr-text-secondary` `#6E6F78` is for white and
+  `#F5F5F5` only. On every light tint it falls below AA (4.34:1 on
+  `#FCEBED`, 4.36:1 on `#E6F2F3`, 4.49:1 on `#FFF0E8`), while `--nr-text`
+  keeps 6.05:1 or more. Tinted containers (`.notice-*`, `.badge`,
+  `.table tr.row-*`, or any element with `.tinted`) therefore redefine
+  `--nr-text-secondary` to `--nr-text`; put meta text inside one of them
+  rather than colouring it by hand.
 - **Tables** (`.table-wrap`, `.table`): hairline frame with 16px radius,
   small uppercase header on `#F5F5F5`, row hover tint, `.num` for right-aligned
   tabular figures. The wrapper scrolls horizontally on small screens.
