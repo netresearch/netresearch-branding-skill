@@ -1304,6 +1304,19 @@ code, kbd {
 
 .page-band h1,
 .page-band .eyebrow { color: var(--nr-on-fill); }
+
+/* On the gradient, chips and inline code are border-only, never an rgba()
+   fill: a translucent fill lightens the stop under white text (white on
+   #257880 lifted by 15% white is 3.9:1) and no audit can measure it. */
+.hero code,
+.page-band code,
+.split-panel code,
+.on-gradient code,
+.on-gradient .chip {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: var(--nr-on-fill);
+}
 .page-band h1 { font-size: var(--font-size-4xl); margin-bottom: var(--spacing-xs); }
 .page-band-inner { max-width: 1152px; margin: 0 auto; }
 

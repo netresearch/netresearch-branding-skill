@@ -118,6 +118,11 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   `.table tr.row-*`, or any element with `.tinted`) therefore redefine
   `--nr-text-secondary` to `--nr-text`; put meta text inside one of them
   rather than colouring it by hand.
+- **Chips on the gradient**: border-only (`1px solid rgba(255,255,255,.45)`)
+  with white text. A translucent white fill lightens the stop under the text
+  (white on `#257880` plus 15% white is 3.9:1), and the audit cannot measure a
+  composited fill. `.hero code`, `.page-band code` and `.on-gradient .chip`
+  are styled this way.
 - **Tables** (`.table-wrap`, `.table`): hairline frame with 16px radius,
   small uppercase header on `#F5F5F5`, row hover tint, `.num` for right-aligned
   tabular figures. The wrapper scrolls horizontally on small screens.
