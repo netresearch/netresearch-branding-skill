@@ -87,8 +87,14 @@ Complete color palette with technical specifications and usage guidelines.
   color: #FFFFFF;
 }
 
-.highlight {
-  border-left: 4px solid var(--nr-accent);
+.highlight::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--nr-accent);  /* the accent as a marker */
 }
 ```
 
@@ -105,8 +111,8 @@ Complete color palette with technical specifications and usage guidelines.
 
 **Usage:**
 - Primary text color for body copy
-- Headlines and subheadings in documents; web headings in the modern
-  treatment use `--nr-ink` `#25272D` (see "Modern treatment tokens")
+- Headlines and subheadings in documents; web headings use `--nr-ink`
+  `#25272D` (see "Component tokens")
 - Navigation text
 - Form labels
 - Default icon color
@@ -388,10 +394,10 @@ It needs resolved CSS and a compositing model, so it belongs in a browser:
 
 ---
 
-### Modern treatment tokens
+### Component tokens
 
-`templates/styles.css` adds these tokens for the default design treatment
-(`references/web-design.md`, "Design treatment"). Every text pair is measured;
+`templates/styles.css` adds these tokens for its components
+(`references/web-design.md`, "How a branded page is built"). Every text pair is measured;
 tints are opaque because a translucent tint has no ratio of its own.
 
 | Token | Light | Dark | Measured |

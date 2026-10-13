@@ -205,8 +205,8 @@ font-family: Calibri, 'Open Sans', Arial, sans-serif;
 ### Web Typography Hierarchy
 
 Sizes and weights below are the scale `templates/styles.css` uses (h1 and h2
-scale fluidly between the responsive values). In the modern web treatment
-headings are coloured `--nr-ink` `#25272D` instead of `#585961`; documents
+scale fluidly between the responsive values). On web pages headings are
+coloured `--nr-ink` `#25272D` instead of `#585961`; documents
 and slides keep anthracite.
 
 ```css
