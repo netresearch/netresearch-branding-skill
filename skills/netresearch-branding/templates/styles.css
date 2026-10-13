@@ -2,12 +2,10 @@
  * Netresearch Brand Styles
  * Complete CSS template following brand guidelines.
  *
- * Design treatment: modern by default (see references/web-design.md,
- * "Design treatment"). Brand tokens and hard rules are unchanged; what this
- * file adds is the contemporary layer on top of them: hairline borders and
- * layered soft shadows instead of heavy drop shadows, 10/16px radii, focus
- * rings instead of hover jumps, opaque status tints, and the petrol gradient
- * with the nested-square motif as the one bold surface per page.
+ * How a branded page is built: see references/web-design.md. Hairline
+ * borders with layered soft shadows, 10/16/24px radii, focus outlines instead
+ * of hover jumps, opaque status tints without edge stripes, and the petrol
+ * gradient with the nested-square motif as the one bold surface per page.
  *
  * Every class name of the previous template is still defined, so pages built
  * on it keep working.
@@ -32,7 +30,7 @@
      dark scheme, where white over it would fail with nothing able to measure it. */
   --nr-hero-from: #257880;    /* white on it: 5.15:1 */
   --nr-hero-to: #15585E;      /* white on it: 8.11:1 */
-  --nr-hero-end: #0A5057;     /* third stop of the modern gradient: 9.14:1 */
+  --nr-hero-end: #0A5057;     /* third stop of the hero gradient: 9.14:1 */
   /* A button's hover is a surface too, for the same reason. */
   --nr-primary-fill-hover: #15585E;
   --nr-accent-fill-hover: #9A2E00;
@@ -131,8 +129,8 @@
 
 /* ============================================
    DARK SCHEME
-   Values from references/colors.md ("Dark backgrounds" and "Modern
-   treatment tokens"). The brand hues do not survive a dark
+   Values from references/colors.md ("Dark backgrounds" and "Component
+   tokens"). The brand hues do not survive a dark
    surface as text (#2F99A4 is 5.28:1 on #14181B but 3.38:1 on a lifted row),
    so the text roles lift and the non-text roles keep the brand hue. Every pair
    below is measured; the audit runs `--scheme dark` over this. The block is
@@ -935,28 +933,28 @@ code, kbd {
   color: var(--nr-text-secondary);
 }
 
+/* Notices are a full tinted surface with an icon. No edge stripe: tint, icon
+   and words carry the state. */
 .notice {
   display: flex;
   gap: 14px;
   align-items: flex-start;
   padding: var(--spacing-md) 20px;
-  border: 1px solid var(--nr-border-light);
-  border-left: 4px solid var(--nr-primary);
   border-radius: 14px;
-  background: var(--nr-surface);
+  background: var(--nr-primary-wash);
   color: var(--nr-text);
   font-size: 15px;
 }
 
 .notice strong { display: block; color: var(--nr-ink); font-family: var(--font-headline); }
 .notice-icon { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; fill: none; stroke: var(--nr-primary-fill); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.notice-success { border-left-color: var(--nr-success); }
+.notice-success { background: var(--nr-success-tint); }
 .notice-success strong { color: var(--nr-success-text); }
 .notice-success .notice-icon { stroke: var(--nr-success-text); }
-.notice-warning { border-left-color: var(--nr-warning); }
+.notice-warning { background: var(--nr-warning-tint); }
 .notice-warning strong { color: var(--nr-warning-text); }
 .notice-warning .notice-icon { stroke: var(--nr-warning-text); }
-.notice-danger { border-left-color: var(--nr-danger); background: var(--nr-danger-tint); }
+.notice-danger { background: var(--nr-danger-tint); }
 .notice-danger strong { color: var(--nr-danger-text); }
 .notice-danger .notice-icon { stroke: var(--nr-danger-text); }
 
@@ -964,9 +962,7 @@ code, kbd {
    4.34-4.49:1 on the light tints, so every tinted container redefines it to
    --nr-text (6.05:1 or more). Meta lines, timestamps and captions inside a
    tinted notice, badge or table row stay readable without a special class. */
-.notice-danger,
-.notice-warning,
-.notice-success,
+.notice,
 .badge,
 .table tr.row-danger,
 .table tr.row-warning,

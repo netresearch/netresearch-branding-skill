@@ -9,13 +9,12 @@ component CSS) and `templates/landing-page.html` (full page example). This
 file states which brand decision each component encodes, not the CSS syntax
 itself.
 
-## Design treatment
+## How a branded page is built
 
-Netresearch output is built in a contemporary treatment by default: the brand
-colours, fonts, logo and footer stay exactly as specified, and the way they are
-put together follows current product design. Nobody has to ask for "modern";
-the dated look (4px boxes, centred everything, hover jumps, heavy grey drop
-shadows, teal fills under small white text) is the thing to avoid.
+Every Netresearch page combines the brand colours, fonts, logo and footer in
+the same way, following the rules below. They exclude: 4px boxes, everything
+centred, hover jumps, heavy grey drop shadows, teal fills under small white
+text, and coloured stripes along the edge of a card, notice or panel.
 
 **One bold surface per page** (plus the mandatory anthracite footer). The petrol gradient
 `#257880 → #15585E → #0A5057` carries exactly one area: the hero, the brand panel of a split layout,
@@ -40,9 +39,11 @@ Centre only short, single-purpose blocks (a status page, an empty state).
 
 **State in form as well as colour.** Status is a pill with a dot and a word
 (`.badge-info|success|warning|danger|accent`), metrics are tiles with tabular
-figures (`.stat`), messages are notices with an icon and a coloured left edge
+figures (`.stat`), messages are notices with an icon on a tinted surface
 (`.notice-*`). Every tint is opaque and its text pair is measured; an `rgba()`
 tint has no ratio of its own because it composites over whatever is behind it.
+A coloured stripe along one edge (a thick `border-left` on a rounded box) is
+not used to mark state: tint, icon and the words carry it.
 
 **Controls that read as controls.** Inputs and buttons are 48px high with a
 3:1 boundary (`--nr-border-strong`). Focus is a solid 3px outline in
@@ -57,7 +58,7 @@ sequence; the eyebrow names a section's subject; badges carry a state the
 reader needs. Decoration that encodes nothing is left out.
 
 **Both schemes.** Every colour token has a dark value (`references/colors.md`,
-"Dark backgrounds" and "Modern treatment tokens").
+"Dark backgrounds" and "Component tokens").
 Honour `prefers-color-scheme` and an explicit `data-theme` attribute; text
 roles lift on dark, non-text roles keep the brand hue.
 
@@ -113,7 +114,8 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   figures, optional meta line. Use them when the numbers are the point of the
   page.
 - **Notices** (`.notice`, `-success`, `-warning`, `-danger`): icon, bold
-  title, coloured 4px left edge.
+  title, full tinted surface (`--nr-primary-wash` for the neutral notice), no
+  border stripe.
 - **Text on tints**: `--nr-text-secondary` `#6E6F78` is for white and
   `#F5F5F5` only. On every light tint it falls below AA (4.34:1 on
   `#FCEBED`, 4.36:1 on `#E6F2F3`, 4.49:1 on `#FFF0E8`), while `--nr-text`
@@ -195,11 +197,11 @@ this reference:
 
 Before launching any web project:
 
-**Treatment:**
+**Page construction:**
 - [ ] Exactly one gradient surface; everything else white or `#F5F5F5`
 - [ ] Cards and panels: hairline border, soft shadow, 16px radius; no hover jumps
 - [ ] Headings left-aligned in `--nr-ink`; eyebrows only where they name a section
-- [ ] States shown as badges, metrics as tiles, messages as notices
+- [ ] States shown as badges, metrics as tiles, messages as tinted notices; no edge stripes
 
 **Layout:**
 - [ ] High white space maintained throughout

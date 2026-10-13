@@ -570,7 +570,7 @@
     }
   },
   {
-    "name": "modern-treatment-default",
+    "name": "branded-page-construction",
     "prompt": "Create a branded HTML sign-in page for a Netresearch customer portal where customers request a magic link by email",
     "assertions": [
       {
@@ -581,7 +581,7 @@
       {
         "type": "content_regex",
         "value": "--radius-(md|lg|xl)|border-radius:\\s*(1[0-9]|2[0-9])px",
-        "description": "Modern treatment: controls and cards use 10px or larger radii (literal or --radius-* token)"
+        "description": "Controls and cards use 10px or larger radii (literal or --radius-* token)"
       },
       {
         "type": "content_regex",
@@ -592,12 +592,18 @@
         "type": "must_not",
         "value": ":hover\\s*\\{[^}]*translateY\\(-",
         "description": "No hover jump on buttons or cards"
+      },
+      {
+        "type": "must_not",
+        "value": "border-left:\\s*[2-9]px\\s+solid",
+        "description": "No coloured edge stripe on cards, notices or panels"
       }
     ],
     "samples": {
       "passing": "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.form-input{border-radius:10px}.card{border-radius:16px}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
       "failing": [
-        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.btn{border-radius:4px}.btn:hover{transform:translateY(-2px)}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>"
+        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.btn{border-radius:4px}.btn:hover{transform:translateY(-2px)}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.notice{border-radius:14px;border-left:4px solid #2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>"
       ]
     }
   }

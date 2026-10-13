@@ -52,7 +52,7 @@ Rules:
 Operationalize references in every branded output:
 1. `references/colors.md` for palette/token mapping
 2. `references/typography.md` for font roles and scale
-3. `references/web-design.md` for the design treatment, layout, components and spacing
+3. `references/web-design.md` for page construction, layout, components and spacing
 4. `references/logo.md` and `references/logo-svg.md` for logo fallback behavior
 5. `references/typo3-extension-branding.md` for TYPO3 context
 6. `references/co-branding.md` for endorsement lines, only on an explicit co-branding request
@@ -84,12 +84,12 @@ Operationalize references in every branded output:
 - Accessibility: WCAG AA minimum contrast and semantic structure
 - Footer branding is mandatory in user-facing branded pages
 
-## Design Treatment (modern by default)
+## Building a Branded Page
 
 The rules above fix *what* Netresearch looks like; this section fixes *how* a page is built
-from them. Apply it to every branded page, dashboard or app screen without being asked; nobody
-has to add "but modern". Start from `templates/styles.css`, which implements all of it;
-`references/web-design.md` ("Design treatment") gives the reasoning and every component.
+from them. It applies to every branded page, dashboard and app screen. Start from
+`templates/styles.css`, which implements all of it; `references/web-design.md` ("How a branded
+page is built") gives the reasoning and every component.
 
 - **One bold surface per page**: the petrol gradient `#257880 → #15585E → #0A5057` with the
   nested-square motif carries the hero, a split brand panel or an app header band. Everything
@@ -100,8 +100,8 @@ has to add "but modern". Start from `templates/styles.css`, which implements all
 - **Hierarchy through type**: headings in `--nr-ink` `#25272D`, left-aligned, with an
   uppercase eyebrow whose orange dot is the accent in its intended role.
 - **State in form as well as colour**: status as a pill with dot and word (`.badge-*`),
-  metrics as tiles with tabular figures (`.stat`), messages as notices with icon and coloured
-  edge (`.notice-*`). Tints are opaque and measured.
+  metrics as tiles with tabular figures (`.stat`), messages as notices with an icon on an
+  opaque, measured tint (`.notice-*`). No coloured edge stripes on cards, notices or panels.
 - **Controls that read as controls**: 48px inputs and buttons, 3:1 borders, a solid focus
   outline (`--nr-focus`, white on the gradient), drawn checkboxes, segmented controls for two to
   four views.
