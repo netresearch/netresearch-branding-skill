@@ -93,7 +93,7 @@ has to add "but modern". Start from `templates/styles.css`, which implements all
 
 - **One bold surface per page**: the petrol gradient `#257880 → #15585E → #0A5057` with the
   nested-square motif carries the hero, a split brand panel or an app header band. Everything
-  else stays white or `#F5F5F5`.
+  else stays white or `#F5F5F5`, apart from the mandatory anthracite footer.
 - **Depth through hairlines**: 1px `--nr-border-light` border plus a layered soft shadow;
   radii 10px for controls, 16px for cards, 24px for hero panels and dialogs. No 4px boxes, no
   hover jumps, no `transition: all`.
@@ -102,12 +102,13 @@ has to add "but modern". Start from `templates/styles.css`, which implements all
 - **State in form as well as colour**: status as a pill with dot and word (`.badge-*`),
   metrics as tiles with tabular figures (`.stat`), messages as notices with icon and coloured
   edge (`.notice-*`). Tints are opaque and measured.
-- **Controls that read as controls**: 48px inputs and buttons, 3:1 borders, focus ring
-  (`--nr-ring`), drawn checkboxes, segmented controls for two to four views.
+- **Controls that read as controls**: 48px inputs and buttons, 3:1 borders, a solid focus
+  outline (`--nr-focus`, white on the gradient), drawn checkboxes, segmented controls for two to
+  four views.
 - **Steps for real sequences, split layout for onboarding**: sign-in, request and upload
   screens put the brand panel with the process steps left and the task right.
-- **Both schemes**: every token has a dark value; honour `prefers-color-scheme` and
-  `data-theme`.
+- **Both schemes**: every colour token has a dark value (`references/colors.md`); honour
+  `prefers-color-scheme` and `data-theme`.
 
 ## Co-branding (optional)
 

@@ -47,13 +47,14 @@
   --nr-primary-tint: #E6F2F3;  /* --nr-primary-text on it: 7.09:1 */
   --nr-primary-wash: #F3F9F9;  /* the lightest teal surface */
   --nr-accent-tint: #FFF0E8;   /* --nr-accent-text on it: 6.83:1 */
-  --nr-success: #28A745;       /* marker only */
+  --nr-success: #28A745;       /* marker only; colors.md semantic set */
   --nr-success-text: #1E6F31;  /* on --nr-success-tint: 5.59:1 */
   --nr-success-tint: #E9F6EC;
-  --nr-warning: #E0A100;       /* marker only */
+  --nr-warning: #FFC107;       /* marker only; colors.md semantic set */
   --nr-warning-text: #6E4C00;  /* on --nr-warning-tint: 7.21:1 */
   --nr-warning-tint: #FFF6DB;
-  --nr-danger: #DC3545;        /* marker only */
+  --nr-danger: #DC3545;        /* marker only; colors.md --nr-error */
+  --nr-error: var(--nr-danger);
   --nr-danger-text: #A32330;   /* on --nr-danger-tint: 6.42:1 */
   --nr-danger-tint: #FCEBED;
 
@@ -118,6 +119,11 @@
   --shadow-lg: 0 2px 4px rgba(16, 24, 40, 0.06), 0 24px 64px rgba(16, 24, 40, 0.16);
 
   /* Interaction */
+  /* Focus: a solid outline, offset from the control, is the indicator; it
+     sits on the page background (3.38:1 on white, 3.10:1 on #F5F5F5). On
+     the gradient it turns white (see .hero :focus-visible). The soft ring
+     is decoration on top of it. */
+  --nr-focus: #2F99A4;
   --nr-ring: 0 0 0 4px rgba(47, 153, 164, 0.28);
   --nr-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --nr-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600' fill='none' stroke='%23FFFFFF' stroke-opacity='.14' stroke-width='3'%3E%3Crect x='70' y='70' width='460' height='460' rx='64'/%3E%3Crect x='150' y='150' width='300' height='300' rx='44'/%3E%3Crect x='230' y='230' width='140' height='140' rx='26'/%3E%3C/svg%3E");
@@ -125,7 +131,8 @@
 
 /* ============================================
    DARK SCHEME
-   Values from references/colors.md. The brand hues do not survive a dark
+   Values from references/colors.md ("Dark backgrounds" and "Modern
+   treatment tokens"). The brand hues do not survive a dark
    surface as text (#2F99A4 is 5.28:1 on #14181B but 3.38:1 on a lifted row),
    so the text roles lift and the non-text roles keep the brand hue. Every pair
    below is measured; the audit runs `--scheme dark` over this. The block is
@@ -156,6 +163,11 @@
     --nr-warning-tint: #33280A;     /* 9.5:1 */
     --nr-danger-text: #FFA7AE;
     --nr-danger-tint: #3A1418;      /* 8.8:1 */
+    --nr-success: #3FBF62;          /* marker, 6.60:1 on the surface */
+    --nr-warning: #F2B92A;          /* marker, 8.77:1 */
+    --nr-danger: #F0606C;           /* marker, 4.92:1 */
+    --nr-focus: #5FC6D2;            /* 7.83:1 on the surface */
+    --nr-ring: 0 0 0 4px rgba(95, 198, 210, 0.35);
 
     --nr-hero-from: #1B6C74;        /* white on it: 6.10:1 */
     --nr-hero-to: #0F4A50;          /* white on it: 9.93:1 */
@@ -199,6 +211,11 @@
   --nr-warning-tint: #33280A;
   --nr-danger-text: #FFA7AE;
   --nr-danger-tint: #3A1418;
+  --nr-success: #3FBF62;      /* marker, 6.60:1 on the surface */
+  --nr-warning: #F2B92A;      /* marker, 8.77:1 */
+  --nr-danger: #F0606C;       /* marker, 4.92:1 */
+  --nr-focus: #5FC6D2;      /* 7.83:1 on the surface */
+  --nr-ring: 0 0 0 4px rgba(95, 198, 210, 0.35);
   --nr-hero-from: #1B6C74;
   --nr-hero-to: #0F4A50;
   --nr-hero-end: #0B3539;
@@ -246,8 +263,13 @@ body {
 img, svg { max-width: 100%; }
 
 :focus-visible {
-  outline: 3px solid var(--nr-primary);
+  outline: 3px solid var(--nr-focus);
   outline-offset: 2px;
+}
+
+/* Forced-colors mode drops box-shadow; keep a system-coloured outline. */
+@media (forced-colors: active) {
+  :focus-visible { outline: 3px solid CanvasText; }
 }
 
 .skip-link {
@@ -291,13 +313,15 @@ h2 {
 }
 
 h3 {
-  font-size: var(--font-size-xl);
-  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-3xl);
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
 }
 
 h4 {
-  font-size: var(--font-size-lg);
-  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
 }
 
 p {
@@ -661,7 +685,8 @@ code, kbd {
 .btn-outline:focus-visible,
 .btn-tonal:focus-visible,
 .btn-ghost:focus-visible {
-  outline: none;
+  outline: 3px solid var(--nr-focus);
+  outline-offset: 2px;
   box-shadow: var(--nr-ring);
 }
 
@@ -1064,7 +1089,8 @@ code, kbd {
 .form-input:focus,
 .form-textarea:focus,
 .form-select:focus {
-  outline: none;
+  outline: 2px solid var(--nr-focus);
+  outline-offset: 1px;
   border-color: var(--nr-primary-fill);
   box-shadow: var(--nr-ring);
 }
@@ -1147,7 +1173,7 @@ code, kbd {
 
 .form-check input:checked::after { transform: rotate(-45deg) scale(1); }
 .form-check input[type="radio"]:checked::after { transform: scale(1); }
-.form-check input:focus-visible { outline: none; box-shadow: var(--nr-ring); }
+.form-check input:focus-visible { outline: 3px solid var(--nr-focus); outline-offset: 2px; box-shadow: var(--nr-ring); }
 
 /* Segmented control: a small set of mutually exclusive views (DE/EN, Day/Week). */
 .segmented {
@@ -1469,14 +1495,14 @@ code, kbd {
     padding: var(--spacing-md);
     border-bottom: 1px solid var(--nr-border-light);
     box-shadow: var(--shadow-md);
-    transform: translateY(-8px);
+    transform: translate3d(0, -8px, 0);
     opacity: 0;
     visibility: hidden;
     transition: transform 0.2s var(--nr-ease), opacity 0.2s var(--nr-ease), visibility 0.2s;
   }
 
   .navbar-menu.active {
-    transform: translateY(0);
+    transform: none;
     opacity: 1;
     visibility: visible;
   }
@@ -1507,6 +1533,15 @@ code, kbd {
   .hero-panel { padding: var(--spacing-lg); }
   .footer-bottom { justify-content: center; text-align: center; }
 }
+
+/* On the gradient the teal outline is 1.52:1 against #257880; use white.
+   Placed after the component rules so it wins over .btn-*:focus-visible. */
+.hero :focus-visible,
+.page-band :focus-visible,
+.split-panel :focus-visible { outline-color: var(--nr-on-fill); }
+
+/* ...but a white panel inside the hero is a light surface again. */
+.hero .hero-panel :focus-visible { outline-color: var(--nr-focus); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

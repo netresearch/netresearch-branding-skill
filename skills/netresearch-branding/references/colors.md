@@ -105,7 +105,8 @@ Complete color palette with technical specifications and usage guidelines.
 
 **Usage:**
 - Primary text color for body copy
-- Headlines and subheadings
+- Headlines and subheadings in documents; web headings in the modern
+  treatment use `--nr-ink` `#25272D` (see "Modern treatment tokens")
 - Navigation text
 - Form labels
 - Default icon color
@@ -386,6 +387,30 @@ It needs resolved CSS and a compositing model, so it belongs in a browser:
 - **Emphasis:** Orange for key points
 
 ---
+
+### Modern treatment tokens
+
+`templates/styles.css` adds these tokens for the default design treatment
+(`references/web-design.md`, "Design treatment"). Every text pair is measured;
+tints are opaque because a translucent tint has no ratio of its own.
+
+| Token | Light | Dark | Measured |
+|---|---|---|---|
+| `--nr-ink` (headings) | `#25272D` | `#F1F4F5` | 14.93:1 on white / 14.18:1 on `#1E2429` |
+| `--nr-primary-tint` | `#E6F2F3` | `#0E2E33` | `--nr-primary-text` on it: 7.09:1 / 7.20:1 |
+| `--nr-primary-wash` | `#F3F9F9` | `#16262A` | `--nr-primary-text` on it: 7.62:1 / 7.80:1 |
+| `--nr-accent-tint` | `#FFF0E8` | `#4A2D26` | `--nr-accent-text` on it: 6.83:1 / 5.60:1 |
+| `--nr-success-text` on `--nr-success-tint` | `#1E6F31` on `#E9F6EC` | `#8FE0A6` on `#12301C` | 5.59:1 / 9.13:1 |
+| `--nr-warning-text` on `--nr-warning-tint` | `#6E4C00` on `#FFF6DB` | `#F2CE5C` on `#33280A` | 7.21:1 / 9.50:1 |
+| `--nr-danger-text` on `--nr-danger-tint` | `#A32330` on `#FCEBED` | `#FFA7AE` on `#3A1418` | 6.42:1 / 8.81:1 |
+| `--nr-success` / `--nr-warning` / `--nr-danger` (markers) | `#28A745` / `#FFC107` / `#DC3545` | `#3FBF62` / `#F2B92A` / `#F0606C` | non-text; dark: 6.60 / 8.77 / 4.92:1 on `#1E2429` |
+| `--nr-focus` (focus outline) | `#2F99A4` | `#5FC6D2` | 3.38:1 on white / 7.83:1 on `#1E2429`; white on the gradient |
+| `--nr-hero-end` (third gradient stop) | `#0A5057` | `#0B3539` | white on it: 9.14:1 / 13.27:1 |
+
+The light markers are the semantic set below (`--nr-error` is an alias of
+`--nr-danger`). Form error text uses `--nr-danger-text`, not the marker red.
+`--nr-text-secondary` stays on white and `#F5F5F5`: on the light tints it is
+4.34 to 4.49:1, so tinted containers switch it to `--nr-text` (6.05:1 or more).
 
 ## CSS Custom Properties (Complete Set)
 
