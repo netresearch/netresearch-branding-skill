@@ -55,6 +55,7 @@
   --nr-error: var(--nr-danger);
   --nr-danger-text: #A32330;   /* on --nr-danger-tint: 6.42:1 */
   --nr-danger-tint: #FCEBED;
+  --nr-danger-border: #F2C4C9;  /* edge of the danger notice, decoration */
 
   /* Neutral Colors */
   --nr-ink: #25272D;           /* headings and emphasis: 14.93:1 on white */
@@ -161,6 +162,7 @@
     --nr-warning-tint: #33280A;     /* 9.5:1 */
     --nr-danger-text: #FFA7AE;
     --nr-danger-tint: #3A1418;      /* 8.8:1 */
+    --nr-danger-border: #6A2A31;
     --nr-success: #3FBF62;          /* marker, 6.60:1 on the surface */
     --nr-warning: #F2B92A;          /* marker, 8.77:1 */
     --nr-danger: #F0606C;           /* marker, 4.92:1 */
@@ -209,6 +211,7 @@
   --nr-warning-tint: #33280A;
   --nr-danger-text: #FFA7AE;
   --nr-danger-tint: #3A1418;
+  --nr-danger-border: #6A2A31;
   --nr-success: #3FBF62;      /* marker, 6.60:1 on the surface */
   --nr-warning: #F2B92A;      /* marker, 8.77:1 */
   --nr-danger: #F0606C;       /* marker, 4.92:1 */
@@ -933,36 +936,52 @@ code, kbd {
   color: var(--nr-text-secondary);
 }
 
-/* Notices are a full tinted surface with an icon. No edge stripe: tint, icon
-   and words carry the state. */
+/* Notices are white cards: a hairline, a soft shadow and a 40px icon tile in
+   the state's tint. The tile carries the state, the danger notice adds a red
+   title and edge. White separates from white and #F5F5F5 sections alike; a
+   pale tint would vanish on #F5F5F5, and an edge stripe is not used. */
 .notice {
-  display: flex;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
   gap: 14px;
-  align-items: flex-start;
-  padding: var(--spacing-md) 20px;
+  align-items: start;
+  padding: 16px 20px 16px 16px;
+  border: 1px solid var(--nr-border-light);
   border-radius: 14px;
-  background: var(--nr-primary-wash);
+  background: var(--nr-surface);
+  box-shadow: var(--shadow-sm);
   color: var(--nr-text);
   font-size: 15px;
+  line-height: 1.55;
 }
 
-.notice strong { display: block; color: var(--nr-ink); font-family: var(--font-headline); }
-.notice-icon { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; fill: none; stroke: var(--nr-primary-fill); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.notice-success { background: var(--nr-success-tint); }
-.notice-success strong { color: var(--nr-success-text); }
-.notice-success .notice-icon { stroke: var(--nr-success-text); }
-.notice-warning { background: var(--nr-warning-tint); }
-.notice-warning strong { color: var(--nr-warning-text); }
-.notice-warning .notice-icon { stroke: var(--nr-warning-text); }
-.notice-danger { background: var(--nr-danger-tint); }
+.notice > :not(.notice-icon) { min-width: 0; padding-top: 8px; }
+.notice strong { display: block; margin-bottom: 2px; color: var(--nr-ink); font-family: var(--font-headline); }
+
+.notice-icon {
+  box-sizing: content-box;
+  width: 20px;
+  height: 20px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--nr-primary-tint);
+  fill: none;
+  stroke: var(--nr-primary-text);  /* lifts to #5FC6D2 on dark */
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.notice-success .notice-icon { background: var(--nr-success-tint); stroke: var(--nr-success-text); }
+.notice-warning .notice-icon { background: var(--nr-warning-tint); stroke: var(--nr-warning-text); }
+.notice-danger { border-color: var(--nr-danger-border); }
+.notice-danger .notice-icon { background: var(--nr-danger-tint); stroke: var(--nr-danger-text); }
 .notice-danger strong { color: var(--nr-danger-text); }
-.notice-danger .notice-icon { stroke: var(--nr-danger-text); }
 
 /* Text on tints. --nr-text-secondary (#6E6F78) is 4.99:1 on white but only
    4.34-4.49:1 on the light tints, so every tinted container redefines it to
    --nr-text (6.05:1 or more). Meta lines, timestamps and captions inside a
    tinted notice, badge or table row stay readable without a special class. */
-.notice,
 .badge,
 .table tr.row-danger,
 .table tr.row-warning,

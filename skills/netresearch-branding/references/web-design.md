@@ -39,11 +39,13 @@ Centre only short, single-purpose blocks (a status page, an empty state).
 
 **State in form as well as colour.** Status is a pill with a dot and a word
 (`.badge-info|success|warning|danger|accent`), metrics are tiles with tabular
-figures (`.stat`), messages are notices with an icon on a tinted surface
-(`.notice-*`). Every tint is opaque and its text pair is measured; an `rgba()`
+figures (`.stat`), messages are white notice cards whose icon tile carries the
+state's tint (`.notice-*`). Every tint is opaque and its text pair is measured; an `rgba()`
 tint has no ratio of its own because it composites over whatever is behind it.
 A coloured stripe along one edge (a thick `border-left` on a rounded box) is
-not used to mark state: tint, icon and the words carry it.
+not used to mark state: tint, icon and the words carry it. A whole notice in a
+pale tint is not used either; `#F3F9F9` on a `#F5F5F5` section is the same
+lightness and the box disappears.
 
 **Controls that read as controls.** Inputs and buttons are 48px high with a
 3:1 boundary (`--nr-border-strong`). Focus is a solid 3px outline in
@@ -113,14 +115,15 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
 - **Metrics** (`.stat-grid`, `.stat`): label, value in Raleway with tabular
   figures, optional meta line. Use them when the numbers are the point of the
   page.
-- **Notices** (`.notice`, `-success`, `-warning`, `-danger`): icon, bold
-  title, full tinted surface (`--nr-primary-wash` for the neutral notice), no
-  border stripe.
+- **Notices** (`.notice`, `-success`, `-warning`, `-danger`): white card
+  with hairline and soft shadow, 40px icon tile in the state's tint, bold
+  title; the danger notice adds a red title and a `--nr-danger-border` edge
+  all round. No border stripe.
 - **Text on tints**: `--nr-text-secondary` `#6E6F78` is for white and
   `#F5F5F5` only. On every light tint it falls below AA (4.34:1 on
   `#FCEBED`, 4.36:1 on `#E6F2F3`, 4.49:1 on `#FFF0E8`), while `--nr-text`
-  keeps 6.05:1 or more. Tinted containers (`.notice-*`, `.badge`,
-  `.table tr.row-*`, or any element with `.tinted`) therefore redefine
+  keeps 6.05:1 or more. Tinted containers (`.badge`, `.table tr.row-*`,
+  or any element with `.tinted`) therefore redefine
   `--nr-text-secondary` to `--nr-text`; put meta text inside one of them
   rather than colouring it by hand.
 - **Chips on the gradient**: border-only (`1px solid rgba(255,255,255,.45)`)
@@ -201,7 +204,7 @@ Before launching any web project:
 - [ ] Exactly one gradient surface; everything else white or `#F5F5F5`
 - [ ] Cards and panels: hairline border, soft shadow, 16px radius; no hover jumps
 - [ ] Headings left-aligned in `--nr-ink`; eyebrows only where they name a section
-- [ ] States shown as badges, metrics as tiles, messages as tinted notices; no edge stripes
+- [ ] States shown as badges, metrics as tiles, messages as notice cards; no edge stripes
 
 **Layout:**
 - [ ] High white space maintained throughout

@@ -100,8 +100,8 @@ page is built") gives the reasoning and every component.
 - **Hierarchy through type**: headings in `--nr-ink` `#25272D`, left-aligned, with an
   uppercase eyebrow whose orange dot is the accent in its intended role.
 - **State in form as well as colour**: status as a pill with dot and word (`.badge-*`),
-  metrics as tiles with tabular figures (`.stat`), messages as notices with an icon on an
-  opaque, measured tint (`.notice-*`). No coloured edge stripes on cards, notices or panels.
+  metrics as tiles with tabular figures (`.stat`), messages as white notice cards with an icon
+  tile in the state's tint (`.notice-*`). No coloured edge stripes on cards, notices or panels.
 - **Controls that read as controls**: 48px inputs and buttons, 3:1 borders, a solid focus
   outline (`--nr-focus`, white on the gradient), drawn checkboxes, segmented controls for two to
   four views.
