@@ -4,7 +4,7 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#   "coloraide==8.13",
+#   "coloraide==8.13.1",
 #   "markdown-it-py==4.2.0",
 #   "pyyaml==6.0.3",
 #   "tinycss2==1.5.1",
