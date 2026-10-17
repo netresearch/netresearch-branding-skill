@@ -52,7 +52,7 @@ Rules:
 Operationalize references in every branded output:
 1. `references/colors.md` for palette/token mapping
 2. `references/typography.md` for font roles and scale
-3. `references/web-design.md` for layout/components/spacing
+3. `references/web-design.md` for page construction, layout, components and spacing
 4. `references/logo.md` and `references/logo-svg.md` for logo fallback behavior
 5. `references/typo3-extension-branding.md` for TYPO3 context
 6. `references/co-branding.md` for endorsement lines, only on an explicit co-branding request
@@ -83,6 +83,32 @@ Operationalize references in every branded output:
 - Accent orange is highlight-only and must not dominate surfaces
 - Accessibility: WCAG AA minimum contrast and semantic structure
 - Footer branding is mandatory in user-facing branded pages
+
+## Building a Branded Page
+
+The rules above fix *what* Netresearch looks like; this section fixes *how* a page is built
+from them. It applies to every branded page, dashboard and app screen. Start from
+`templates/styles.css`, which implements all of it; `references/web-design.md` ("How a branded
+page is built") gives the reasoning and every component.
+
+- **One bold surface per page**: the petrol gradient `#257880 → #15585E → #0A5057` with the
+  nested-square motif carries the hero, a split brand panel or an app header band. Everything
+  else stays white or `#F5F5F5`, apart from the mandatory anthracite footer.
+- **Depth through hairlines**: 1px `--nr-border-light` border plus a layered soft shadow;
+  radii 10px for controls, 16px for cards, 24px for hero panels and dialogs. No 4px boxes, no
+  hover jumps, no `transition: all`.
+- **Hierarchy through type**: headings in `--nr-ink` `#25272D`, left-aligned, with an
+  uppercase eyebrow whose orange dot is the accent in its intended role.
+- **State in form as well as colour**: status as a pill with dot and word (`.badge-*`),
+  metrics as tiles with tabular figures (`.stat`), messages as white notice cards with an icon
+  tile in the state's tint (`.notice-*`). No coloured edge stripes on cards, notices or panels.
+- **Controls that read as controls**: 48px inputs and buttons, 3:1 borders, a solid focus
+  outline (`--nr-focus`, white on the gradient), drawn checkboxes, segmented controls for two to
+  four views.
+- **Steps for real sequences, split layout for onboarding**: sign-in, request and upload
+  screens put the brand panel with the process steps left and the task right.
+- **Both schemes**: every colour token has a dark value (`references/colors.md`); honour
+  `prefers-color-scheme` and `data-theme`.
 
 ## Co-branding (optional)
 

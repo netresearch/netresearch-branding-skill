@@ -5,9 +5,64 @@
 
 Layout, component, and spacing conventions for Netresearch web output. The
 canonical, copy-pasteable implementation is `templates/styles.css` (full
-component CSS) and `templates/landing-page.html` (full page example) — this
+component CSS) and `templates/landing-page.html` (full page example). This
 file states which brand decision each component encodes, not the CSS syntax
 itself.
+
+## How a branded page is built
+
+Every Netresearch page combines the brand colours, fonts, logo and footer in
+the same way, following the rules below. They exclude: 4px boxes, everything
+centred, hover jumps, heavy grey drop shadows, teal fills under small white
+text, and coloured stripes along the edge of a card, notice or panel.
+
+**One bold surface per page** (plus the mandatory anthracite footer). The petrol gradient
+`#257880 → #15585E → #0A5057` carries exactly one area: the hero, the brand panel of a split layout,
+or the header band of an app page. Every stop carries white text at 5.15:1 or
+more; the brand `#2F99A4` cannot start the gradient. `--nr-motif` adds three
+abstract nested rounded squares at 14% white in a corner of that surface. It is
+texture, not a mark: it never stands where the logo belongs, is never drawn in
+the brand colours, and the logo itself is never recoloured or placed on the
+gradient.
+
+**Depth through hairlines, not shadows.** A raised element reads through a 1px
+`--nr-border-light` border first; `--shadow-sm` / `--shadow-md` add soft,
+layered depth. Radii: 10px (`--radius-md`) for buttons and inputs, 16px
+(`--radius-lg`) for cards and panels, 24px (`--radius-xl`) for hero panels and
+dialogs, pills for badges and segmented controls. Hover changes border, shadow
+or tint, never position.
+
+**Hierarchy through type and alignment.** Headings use `--nr-ink` (`#25272D`,
+14.9:1) and sit left-aligned under an uppercase eyebrow (`.eyebrow`). The
+eyebrow's orange dot is the accent in its intended role: a small marker.
+Centre only short, single-purpose blocks (a status page, an empty state).
+
+**State in form as well as colour.** Status is a pill with a dot and a word
+(`.badge-info|success|warning|danger|accent`), metrics are tiles with tabular
+figures (`.stat`), messages are white notice cards whose icon tile carries the
+state's tint (`.notice-*`). Every tint is opaque and its text pair is measured; an `rgba()`
+tint has no ratio of its own because it composites over whatever is behind it.
+A coloured stripe along one edge (a thick `border-left` on a rounded box) is
+not used to mark state: tint, icon and the words carry it. A whole notice in a
+pale tint is not used either; `#F3F9F9` on a `#F5F5F5` section is the same
+lightness and the box disappears.
+
+**Controls that read as controls.** Inputs and buttons are 48px high with a
+3:1 boundary (`--nr-border-strong`). Focus is a solid 3px outline in
+`--nr-focus` (3.38:1 on white, white on the gradient, `CanvasText` in forced
+colours) with the soft `--nr-ring` on top; never `outline: none` alone. Checkboxes and radios are drawn (`.form-check`) so the
+box keeps its 3:1 edge in both schemes. Two to four mutually exclusive views
+(language, period, list/grid) use a segmented control (`.segmented`), not a
+row of links.
+
+**Real structure only.** Numbered steps (`.steps`) appear only for a real
+sequence; the eyebrow names a section's subject; badges carry a state the
+reader needs. Decoration that encodes nothing is left out.
+
+**Both schemes.** Every colour token has a dark value (`references/colors.md`,
+"Dark backgrounds" and "Component tokens").
+Honour `prefers-color-scheme` and an explicit `data-theme` attribute; text
+roles lift on dark, non-text roles keep the brand hue.
 
 ## Core Design Principles
 
@@ -20,52 +75,85 @@ spacing scale (`--spacing-xs` 8px … `--spacing-4xl` 96px) is defined once in
 **Guidelines:**
 - Minimum 48px padding around major sections
 - Minimum 24px margin between content blocks
-- Generous line-height (1.6) for readability
-- Never crowd elements - let designs breathe
+- Generous line-height (1.6) for readability; running text at most ~70 characters wide
+- Never crowd elements; let designs breathe
 
 ---
 
 ## Component Library
 
 Class definitions live in `templates/styles.css`; a full assembled page is in
-`templates/landing-page.html`. The brand decision behind each component:
+`templates/landing-page.html`, every component on its own in
+`examples/components.html`. The brand decision behind each component:
 
-- **Buttons** (`.btn-primary` / `.btn-secondary` / `.btn-outline`): primary
-  is a teal fill `#257880`, secondary an orange fill `#CC3D00` (accent — use
-  sparingly, never as the dominant action), outline is a white border on
-  transparent for dark surfaces. Hover darkens the fill further
-  (`--nr-primary-fill-hover` `#15585E` / `--nr-accent-fill-hover` `#9A2E00` —
-  a fill, not a text token: a text token is free to lift on a dark scheme, and
-  white over the lifted value fails with nothing able to measure it). The
-  brand hues `#2F99A4` and `#FF4D00` are **not** used as fills under white
-  label text: they give 3.38:1 and 3.33:1, and a 16px/600 label is normal
-  text needing 4.5:1.
-- **Cards** (`.card`): white background, Raleway title, Open Sans body text.
-- **Navigation** (`.navbar`): sticky top, teal active-link state, hamburger
-  toggle below 768px.
-- **Forms** (`.form-input` etc.): teal focus ring on `:focus`.
-- **Hero sections** (`.hero`): teal gradient (`#257880` → `#15585E`)
-  background, white text, centered. Both stops carry white text, so both clear
-  4.5:1; the brand `#2F99A4` is 3.38:1 and cannot start this gradient.
-- **Footer** (`.footer`): anthracite (`#585961`) background per the
-  mandatory footer rule in `SKILL.md`.
-- **Links** (`a`, `.link-standalone`): `#15585E` default (8.11:1), `#0A5057` on hover (9.14:1). The brand `#2F99A4` is 3.38:1 and is not a link colour at body size.
-
-Two rules aren't in the shared template — apply them directly:
-
-**Form errors** use the semantic red `#DC3545`, not brand orange, so
-validation errors read unambiguously as errors rather than as an accent:
-
-```css
-.form-error {
-  color: #DC3545;
-  font-size: 14px;
-}
-
-.form-input.error {
-  border-color: #DC3545;
-}
-```
+- **Buttons** (`.btn-primary` / `.btn-secondary` / `.btn-tonal` /
+  `.btn-ghost` / `.btn-outline`): primary is a teal fill `#257880`; secondary
+  an orange fill `#CC3D00` (accent, use sparingly, never as the dominant
+  action); tonal is the quiet second action on light surfaces (white with a
+  `#2F99A4` edge and `#15585E` label); ghost has no box until hover; outline is
+  a white border on transparent for the gradient only. Hover darkens the fill
+  (`--nr-primary-fill-hover` `#15585E` / `--nr-accent-fill-hover` `#9A2E00`, a
+  fill, not a text token: a text token is free to lift on a dark scheme, and
+  white over the lifted value fails with nothing able to measure it). The brand
+  hues `#2F99A4` and `#FF4D00` are **not** used as fills under white label
+  text: they give 3.38:1 and 3.33:1, and a 16px/600 label is normal text
+  needing 4.5:1.
+- **Cards** (`.card`, `.card-interactive`): white surface, hairline border,
+  16px radius, Raleway title. `.feature-icon` puts a stroke icon on a teal tint
+  plate above the title.
+- **Navigation** (`.navbar`, `.navbar-brand`, `.navbar-wordmark`): sticky,
+  white with a hairline bottom border; logo plus product name as one link;
+  links are pills with a tint for the active page; hamburger below 768px.
+- **Hero** (`.hero`, `.hero-split`, `.hero-panel`, `.hero-facts`): the
+  gradient surface with the motif, left-aligned, sized to its content (no
+  `min-height`). The split variant puts a white panel (facts, a form, a
+  preview) beside the message; fact chips are border-only so the gradient stays
+  the measured background behind their text.
+- **Badges** (`.badge-*`): opaque tints, measured: `#15585E` on `#E6F2F3`
+  7.09:1, `#9A2E00` on `#FFF0E8` 6.83:1, `#1E6F31` on `#E9F6EC` 5.59:1,
+  `#6E4C00` on `#FFF6DB` 7.21:1, `#A32330` on `#FCEBED` 6.42:1.
+- **Metrics** (`.stat-grid`, `.stat`): label, value in Raleway with tabular
+  figures, optional meta line. Use them when the numbers are the point of the
+  page.
+- **Notices** (`.notice`, `-success`, `-warning`, `-danger`): white card
+  with hairline and soft shadow, 40px icon tile in the state's tint, bold
+  title; the danger notice adds a red title and a `--nr-danger-border` edge
+  all round. No border stripe.
+- **Text on tints**: `--nr-text-secondary` `#6E6F78` is for white and
+  `#F5F5F5` only. On every light tint it falls below AA (4.34:1 on
+  `#FCEBED`, 4.36:1 on `#E6F2F3`, 4.49:1 on `#FFF0E8`), while `--nr-text`
+  keeps 6.05:1 or more. Tinted containers (`.badge`, `.table tr.row-*`,
+  or any element with `.tinted`) therefore redefine
+  `--nr-text-secondary` to `--nr-text`; put meta text inside one of them
+  rather than colouring it by hand.
+- **Chips on the gradient**: border-only (`1px solid rgba(255,255,255,.45)`)
+  with white text. A translucent white fill lightens the stop under the text
+  (white on `#257880` plus 15% white is 3.9:1), and the audit cannot measure a
+  composited fill. `.hero code`, `.page-band code` and `.on-gradient .chip`
+  are styled this way.
+- **Tables** (`.table-wrap`, `.table`): hairline frame with 16px radius,
+  small uppercase header on `#F5F5F5`, row hover tint, `.num` for right-aligned
+  tabular figures. The wrapper scrolls horizontally on small screens.
+- **Forms** (`.form-input`, `.form-select`, `.form-textarea`, `.form-check`,
+  `.form-help`, `.form-error`): 48px, 3:1 border, focus ring, drawn
+  checkbox/radio. Errors use `--nr-danger-text` `#A32330` (6.42:1 on its tint),
+  never brand orange, so they read as errors.
+- **Segmented control** (`.segmented`): pill track, selected item as a white
+  pill with `#15585E` label; mark it with `aria-current`, `aria-pressed` or
+  `aria-selected`.
+- **Split layout** (`.split-layout`, `.split-panel`, `.split-main`, `.steps`):
+  sign-in, request and upload screens. Brand panel with the real steps of the
+  process on the left, the task on plain white on the right; stacks below
+  1024px.
+- **App page** (`.page-band`, `.page-body`): a short gradient header band with
+  eyebrow and title; the first content block overlaps it by 72px.
+- **Dialog** (`.dialog`): 24px radius, blurred dark backdrop.
+- **Footer** (`.footer`): anthracite (`#585961`) background per the mandatory
+  footer rule in `SKILL.md`; company name and link to netresearch.de in
+  `.footer-bottom`.
+- **Links** (`a`, `.link-standalone`): `#15585E` default (8.11:1), `#0A5057` on
+  hover (9.14:1), underlined in running text. The brand `#2F99A4` is 3.38:1 and
+  is not a link colour at body size.
 
 **External and download links** get a marker so users know what a click
 does before they click it:
@@ -81,73 +169,27 @@ a[download]::before {
 }
 ```
 
-### Tables
-
-Not covered by `templates/styles.css` either — the third component defined
-only here.
-
-```css
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: var(--spacing-lg);
-  background: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.table thead {
-  /* #257880, not the brand #2F99A4: white on #2F99A4 is 3.38:1 and a 16px/600
-     header cell is normal text, which needs 4.5:1. */
-  background-color: #257880;
-  color: #FFFFFF;
-}
-
-.table th {
-  font-family: 'Raleway', sans-serif;
-  font-weight: 600;
-  text-align: left;
-  padding: 16px;
-}
-
-.table td {
-  font-family: 'Open Sans', sans-serif;
-  padding: 12px 16px;
-  border-bottom: 1px solid #E5E5E5;
-}
-
-.table tbody tr:hover {
-  background-color: #F5F5F5;
-}
-
-/* Responsive: scroll instead of squeezing columns */
-@media (max-width: 768px) {
-  .table {
-    display: block;
-    overflow-x: auto;
-  }
-}
-```
-
 ---
 
 ## Layout Patterns
 
-`.two-column` and `.three-column` are defined in `templates/styles.css`. One
-pattern is unique to this reference:
+`.two-column`, `.three-column`, `.hero-split`, `.split-layout`, `.stack` and
+`.cluster` are defined in `templates/styles.css`. One pattern is unique to
+this reference:
 
-**Content + Sidebar** — 3fr/1fr grid, stacks to a single column at
+**Content + Sidebar**: 3fr/1fr grid, stacks to a single column at
 `max-width: 1024px`:
 
 ```css
 .content-sidebar {
   display: grid;
-  grid-template-columns: 3fr 1fr;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
   gap: var(--spacing-xxl);
 }
 
 @media (max-width: 1024px) {
   .content-sidebar {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 ```
@@ -158,6 +200,12 @@ pattern is unique to this reference:
 
 Before launching any web project:
 
+**Page construction:**
+- [ ] Exactly one gradient surface; everything else white or `#F5F5F5`
+- [ ] Cards and panels: hairline border, soft shadow, 16px radius; no hover jumps
+- [ ] Headings left-aligned in `--nr-ink`; eyebrows only where they name a section
+- [ ] States shown as badges, metrics as tiles, messages as notice cards; no edge stripes
+
 **Layout:**
 - [ ] High white space maintained throughout
 - [ ] Responsive grid implemented correctly
@@ -165,10 +213,9 @@ Before launching any web project:
 - [ ] Content max-width appropriate (≤1200px)
 
 **Components:**
-- [ ] Buttons follow brand styles (Raleway font, correct colors)
-- [ ] Cards have appropriate shadows and hover states
-- [ ] Navigation sticky/fixed and accessible
-- [ ] Forms styled consistently with validation
+- [ ] Buttons follow brand styles (Raleway, teal fill, 48px)
+- [ ] Navigation sticky and accessible
+- [ ] Forms with 3:1 borders, focus ring, drawn checkboxes and inline errors
 
 **Typography and colors:** see the checklists in `references/typography.md`
 and `references/colors.md`.
@@ -177,17 +224,17 @@ and `references/colors.md`.
 - [ ] Images optimized and responsive
 - [ ] Fonts loaded efficiently (preload critical)
 - [ ] CSS minified for production
-- [ ] Animations use transform/opacity (GPU-accelerated)
+- [ ] Animations use transform/opacity and respect `prefers-reduced-motion`
 
 **Accessibility:**
 - [ ] All interactive elements keyboard accessible
-- [ ] ARIA labels where needed
+- [ ] Skip link, labelled `nav`, one `main`
 - [ ] Focus states visible
-- [ ] Screen reader tested
+- [ ] Both colour schemes audited
 
 ---
 
-*Last updated: 2026-07-12*
+*Last updated: 2026-10-13*
 *Maintained by: Netresearch DTT GmbH*
 
 ## Verify: measure the rendered page, not the palette
