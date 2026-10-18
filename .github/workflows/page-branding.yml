@@ -20,7 +20,7 @@ permissions: {}
 
 jobs:
   page-branding:
-    uses: netresearch/.github/.github/workflows/script-check.yml@main
+    uses: netresearch/.github/.github/workflows/script-check.yml@d9e0aa0325124dbee7a2ad206f76dcf37347d0ba # main
     permissions:
       contents: read
     with:
