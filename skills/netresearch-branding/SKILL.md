@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: CC-BY-SA-4.0
 # SPDX-FileCopyrightText: Netresearch DTT GmbH
 name: netresearch-branding
-description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, extension icons, README badges, or CSS theming. Enforce strict brand compliance with mandatory logo usage, brand colors, typography, footer, and reference-driven implementation."
+description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, TYPO3 manuals on docs.typo3.org, extension icons, README badges, or CSS theming. Select the hosted-manual or standalone-page profile before applying logo, typography, color and footer requirements."
 license: "(MIT AND CC-BY-SA-4.0)"
 metadata:
   version: "2.13.0"
@@ -23,7 +23,20 @@ Apply automatically when any of the following is true:
 - Prompt contains branding terms (e.g. logo, style guide, brand colors)
 - Another skill generates user-facing visual content
 
-## Hard Validity Rules
+## Select the Output Profile First
+
+- **Hosted TYPO3 manuals** (`Documentation/`, `guides.xml`, docs.typo3.org):
+  follow `references/typo3-docs-branding.md` with the `typo3-docs` skill. Keep
+  TYPO3's official theme, header, fonts and button colors. Add native navigation
+  cards, decorative teal underlines and a Netresearch closing card in the manual
+  content. Render every maintained language and inspect desktop/mobile output.
+- **Standalone branded pages**, dashboards and reports: apply the hard validity
+  rules below and the web design references. The header-logo and Raleway/Open
+  Sans requirements belong to this profile, not the hosted-manual profile.
+- **Extension icons, metadata and README files**: use their artifact-specific
+  requirements; they are not standalone HTML pages.
+
+## Hard Validity Rules for Standalone Branded Pages
 
 Output is invalid if any item is missing:
 1. Header logo (`assets/logos/netresearch-symbol-only.svg`, or fallback from `references/logo-svg.md`)
@@ -31,7 +44,7 @@ Output is invalid if any item is missing:
 3. Typography intent: Raleway for headlines/UI emphasis, Open Sans for body/forms
 4. Footer includes link to `https://www.netresearch.de/` and text `Netresearch DTT GmbH`
 
-If user instructions conflict, keep these rules and explain constraints.
+Apply the selected profile within the user's instructions.
 
 ## Mandatory Logo Rendering Behavior
 
@@ -40,7 +53,7 @@ Logo source priority:
 2. `references/logo-svg.md` (inline SVG fallback)
 3. `references/logo.md` (text fallback for SVG-limited agents)
 
-Rules:
+Rules for standalone branded pages (hosted manuals use their own profile):
 - Include logo exactly once in top header/nav for branded pages
 - Minimum size `32x32px`; recommended `40–56px` in headers
 - Preserve aspect ratio
@@ -49,13 +62,16 @@ Rules:
 
 ## Active Reference Workflow
 
-Operationalize references in every branded output:
+Select the output profile before loading its references. For standalone pages:
 1. `references/colors.md` for palette/token mapping
 2. `references/typography.md` for font roles and scale
 3. `references/web-design.md` for layout/components/spacing
 4. `references/logo.md` and `references/logo-svg.md` for logo fallback behavior
 5. `references/typo3-extension-branding.md` for TYPO3 context
 6. `references/co-branding.md` for endorsement lines, only on an explicit co-branding request
+
+For hosted TYPO3 manuals, start with `references/typo3-docs-branding.md` and
+inspect the reference manual's current source and rendered output before editing.
 
 ## Core Brand System
 
@@ -131,6 +147,7 @@ In branded reports, PR/commit text and docs, state what a change or output does,
 - `references/logo.md`
 - `references/logo-svg.md`
 - `references/typo3-extension-branding.md`
+- `references/typo3-docs-branding.md`
 - `references/README-branding.md`
 - `references/no-editorializing.md`
 - `references/co-branding.md` (only on an explicit co-branding request)
