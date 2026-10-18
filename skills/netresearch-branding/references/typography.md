@@ -5,6 +5,11 @@
 
 Complete typography system with font specifications, hierarchy, and implementation guidelines.
 
+This web typography applies to standalone Netresearch pages. Hosted TYPO3
+manuals retain their official theme fonts; use
+[the hosted-manual profile](typo3-docs-branding.md) instead of injecting these
+font declarations into docs.typo3.org output.
+
 ## Font Family Overview
 
 | Context | Typeface | Purpose |

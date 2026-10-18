@@ -38,12 +38,13 @@ No Makefile or npm scripts. Available commands:
 - `composer install` — install dependencies (requires [composer-agent-skill-plugin](https://github.com/netresearch/composer-agent-skill-plugin))
 - `node skills/netresearch-branding/scripts/contrast-audit.cjs <page>` — measure a rendered page against WCAG AA in headless Chromium (needs `playwright-core`: `npm ci --ignore-scripts` installs the version `package-lock.json` pins (declared in `package.json` under `optionalDependencies`; `--ignore-scripts` keeps the peer dependency's postinstall from rewriting this file), `npx playwright-core install chromium` its browser; or set `PLAYWRIGHT_CORE` to another install). Exits non-zero on a text-contrast failure or a stylesheet/script that did not load. `.github/workflows/contrast-audit.yml` runs it against `skills/netresearch-branding/templates/landing-page.html`, `examples/components.html` and `site/index.html` on every change to those paths, so a colour regression fails CI rather than shipping.
 - `uv run Build/Scripts/check-brand-colours.py` — fails when a tracked CSS, SCSS, SVG, HTML, Markdown, JSON or YAML file uses a near miss of a brand colour: not equal to `#2F99A4`, `#585961` or `#FF4D00`, but every RGB channel within 8 of one, or CIEDE2000 below 2. The script header lists what it reads, what it does not, and the deliberate quotes. Tests: `uv run --no-project --with-requirements Build/Scripts/check-brand-colours.py python -B Build/Scripts/tests/test_check_brand_colours.py`. `.github/workflows/brand-colours.yml` runs both.
+- `uv run Build/Scripts/tests/test_hosted_manual_checkpoints.py` — exercises NB-17/18/19 against hosted TYPO3 and standalone HTML fixtures; the same command runs in the pre-commit hook and Page Branding Profiles workflow.
 
 ## Rules
 
 1. **Colors**: Primary `#2F99A4` (turquoise), accent `#FF4D00` (orange — accent only), text `#585961`
-2. **Typography**: Raleway for headlines, Open Sans for body, Calibri for documents
-3. **Logo**: Use `skills/netresearch-branding/assets/logos/netresearch-symbol-only.svg`, min 32x32px icon / 120px digital
+2. **Typography**: Standalone pages use Raleway for headlines and Open Sans for body; hosted TYPO3 manuals retain the official TYPO3 theme fonts. Calibri applies to office documents.
+3. **Logo**: Standalone pages use `skills/netresearch-branding/assets/logos/netresearch-symbol-only.svg`, min 32x32px icon / 120px digital. Hosted TYPO3 manuals retain TYPO3's header and use the content branding profile below.
 4. **Footer**: Must link to https://www.netresearch.de/ with "Netresearch DTT GmbH"
 5. **Accessibility**: WCAG AA compliance mandatory
 6. **White space**: High white space design principle throughout
@@ -56,5 +57,6 @@ No Makefile or npm scripts. Available commands:
 - [typography.md](skills/netresearch-branding/references/typography.md) — font weights, sizes, responsive scale
 - [web-design.md](skills/netresearch-branding/references/web-design.md) — component library and layout patterns
 - [typo3-extension-branding.md](skills/netresearch-branding/references/typo3-extension-branding.md) — TYPO3 extension branding requirements
+- [typo3-docs-branding.md](skills/netresearch-branding/references/typo3-docs-branding.md) — hosted TYPO3 manual cards, teal accents and rendered verification
 - [co-branding.md](skills/netresearch-branding/references/co-branding.md) — optional endorsement lines, only on an explicit co-branding request
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — architecture overview

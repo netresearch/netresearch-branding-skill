@@ -9,6 +9,10 @@ component CSS) and `templates/landing-page.html` (full page example) — this
 file states which brand decision each component encodes, not the CSS syntax
 itself.
 
+These templates style standalone Netresearch pages. For manuals hosted on
+docs.typo3.org, use [the hosted-manual profile](typo3-docs-branding.md): native
+TYPO3 cards and content accents, with the platform's theme and fonts preserved.
+
 ## Core Design Principles
 
 ### High White Space
