@@ -82,7 +82,7 @@
   --font-body: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Font Sizes */
-  --font-size-xs: 12px;
+  --font-size-xs: 12px;   /* kept for compatibility; no text uses it (14px minimum) */
   --font-size-sm: 14px;
   --font-size-base: 16px;
   --font-size-lg: 18px;
@@ -325,6 +325,10 @@ h4 {
   margin-bottom: var(--spacing-sm);
 }
 
+/* The browser defaults would be 13.3px and 10.7px. */
+h5 { font-size: var(--font-size-xl); font-weight: 600; margin-bottom: var(--spacing-sm); }
+h6 { font-size: var(--font-size-lg); font-weight: 600; margin-bottom: var(--spacing-sm); }
+
 p {
   margin-bottom: var(--spacing-md);
   max-width: 70ch;
@@ -507,9 +511,14 @@ small { font-size: var(--font-size-sm); }
 }
 
 .navbar-link.active,
-.navbar-link[aria-current="page"] {
+.navbar-link[aria-current="page"],
+.navbar-link[aria-current="true"] {
   color: var(--nr-primary-text);
   background: var(--nr-primary-tint);
+  /* Colour alone is 1.16:1 against the other links (SC 1.4.1): underline it. */
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
 }
 
 .navbar-toggle {
@@ -748,7 +757,7 @@ small { font-size: var(--font-size-sm); }
 .btn-small {
   min-height: 40px;
   padding: 0 var(--spacing-md);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
 }
 
 .btn-block { width: 100%; }
@@ -884,10 +893,30 @@ small { font-size: var(--font-size-sm); }
    The label turns to body text (Lc 92 / 89); tint and dot keep the hue. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .badge-info,
-  :root:not([data-theme="light"]) .badge-accent { color: var(--nr-text); }
+  :root:not([data-theme="light"]) .badge-accent,
+  :root:not([data-theme="light"]) .eyebrow,
+  :root:not([data-theme="light"]) .navbar-link.active,
+  :root:not([data-theme="light"]) .navbar-link[aria-current],
+  :root:not([data-theme="light"]) .segmented [aria-pressed="true"],
+  :root:not([data-theme="light"]) .segmented [aria-selected="true"],
+  :root:not([data-theme="light"]) .segmented [aria-current="page"] { color: var(--nr-text); }
 }
 :root[data-theme="dark"] .badge-info,
-:root[data-theme="dark"] .badge-accent { color: var(--nr-text); }
+:root[data-theme="dark"] .badge-accent,
+:root[data-theme="dark"] .eyebrow,
+:root[data-theme="dark"] .navbar-link.active,
+:root[data-theme="dark"] .navbar-link[aria-current],
+:root[data-theme="dark"] .segmented [aria-pressed="true"],
+:root[data-theme="dark"] .segmented [aria-selected="true"],
+:root[data-theme="dark"] .segmented [aria-current="page"] { color: var(--nr-text); }
+
+/* The logo's grey inner mark is 2.25:1 on the dark navbar; logo.md allows a dark
+   background only with sufficient contrast and forbids recolouring, so the
+   logo gets a white plate instead. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .navbar-logo { background: #FFFFFF; border-radius: var(--radius-sm); padding: 4px; }
+}
+:root[data-theme="dark"] .navbar-logo { background: #FFFFFF; border-radius: var(--radius-sm); padding: 4px; }
 
 .stat-grid {
   display: grid;
@@ -943,7 +972,7 @@ small { font-size: var(--font-size-sm); }
   background: var(--nr-surface);
   box-shadow: var(--shadow-sm);
   color: var(--nr-text);
-  font-size: 15px;
+  font-size: var(--font-size-base);
   line-height: 1.55;
 }
 
@@ -995,7 +1024,7 @@ small { font-size: var(--font-size-sm); }
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15px;
+  font-size: var(--font-size-base);
 }
 
 .table th {
@@ -1047,6 +1076,10 @@ small { font-size: var(--font-size-sm); }
   transform: translateX(4px);
 }
 
+/* Say what a click does before it happens (web-design.md, "External and download links"). */
+a[target="_blank"]::after { content: ' \2197'; font-size: 0.9em; }
+a[download]::before { content: '\2B07  '; }
+
 /* ============================================
    FORMS
    ============================================ */
@@ -1096,8 +1129,8 @@ small { font-size: var(--font-size-sm); }
 .form-input:focus,
 .form-textarea:focus,
 .form-select:focus {
-  outline: 2px solid var(--nr-focus);
-  outline-offset: 1px;
+  outline: 3px solid var(--nr-focus);
+  outline-offset: 2px;
   border-color: var(--nr-primary-fill);
   box-shadow: var(--nr-ring);
 }
@@ -1105,6 +1138,7 @@ small { font-size: var(--font-size-sm); }
 .form-input:user-invalid,
 .form-textarea:user-invalid {
   border-color: var(--nr-danger);
+  box-shadow: inset 0 0 0 1px var(--nr-danger); /* 2px edge: a change in form, not only in hue */
 }
 
 .form-input::placeholder,
@@ -1180,6 +1214,10 @@ small { font-size: var(--font-size-sm); }
 
 .form-check input:checked::after { transform: rotate(-45deg) scale(1); }
 .form-check input[type="radio"]:checked::after { transform: scale(1); }
+
+@media (forced-colors: active) {
+  .form-check input[type="radio"]::after { forced-color-adjust: none; background: CanvasText; }
+}
 .form-check input:focus-visible { outline: 3px solid var(--nr-focus); outline-offset: 2px; box-shadow: var(--nr-ring); }
 
 /* Segmented control: a small set of mutually exclusive views (DE/EN, Day/Week). */
@@ -1199,7 +1237,7 @@ small { font-size: var(--font-size-sm); }
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
-  font: 600 var(--font-size-sm)/1.5 var(--font-body);
+  font: 600 var(--font-size-base)/1.5 var(--font-body);
   color: var(--nr-text);
   text-align: center;
   text-decoration: none;
@@ -1554,7 +1592,8 @@ small { font-size: var(--font-size-sm); }
    Placed after the component rules so it wins over .btn-*:focus-visible. */
 .hero :focus-visible,
 .page-band :focus-visible,
-.split-panel :focus-visible { outline-color: var(--nr-on-fill); }
+.split-panel :focus-visible,
+.on-gradient :focus-visible { outline-color: var(--nr-on-fill); }
 
 /* ...but a white panel inside the hero is a light surface again. */
 .hero .hero-panel :focus-visible { outline-color: var(--nr-focus); }

@@ -121,7 +121,7 @@ reasoning and every component.
 - **State in form as well as colour**: status as a pill with dot and word (`.badge-*`),
   metrics as tiles with tabular figures (`.stat`), messages as white notice cards with an icon
   tile in the state's tint (`.notice-*`). No coloured edge stripes on cards, notices or panels.
-- **Controls that read as controls**: 48px inputs and buttons, 3:1 borders, a solid focus
+- **Controls that read as controls**: 48px inputs and buttons, 3:1 input borders, a solid focus
   outline (`--nr-focus`; white on the gradient and on the footer), drawn checkboxes,
   segmented controls for two to four views, required fields marked in the label.
 - **Steps for real sequences, split layout for onboarding**: sign-in, request and upload
