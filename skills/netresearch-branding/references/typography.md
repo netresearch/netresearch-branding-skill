@@ -209,8 +209,8 @@ font-family: Calibri, 'Open Sans', Arial, sans-serif;
 
 ### Web Typography Hierarchy
 
-Sizes and weights below are the scale `templates/styles.css` uses (h1 and h2
-scale fluidly between the responsive values). Headings keep anthracite
+The sizes below are the reference scale. `templates/styles.css` sizes h1
+fluidly from 36px to 56px and h2 from 28px to 36px. Headings keep anthracite
 `#585961`, and no text goes below 14px ("Minimum Font Sizes").
 
 ```css
