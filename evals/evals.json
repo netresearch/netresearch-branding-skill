@@ -675,7 +675,7 @@
       {
         "type": "must_not",
         "value": "border-left:\\s*[2-9]px\\s+solid",
-        "description": "No coloured edge stripe on cards, notices or panels"
+        "description": "No coloured edge stripe on cards, notices or panels (the standalone construction in web-design.md, which replaced the former 4px .highlight example)"
       }
     ],
     "samples": {
