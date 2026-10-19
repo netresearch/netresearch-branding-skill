@@ -15,8 +15,8 @@ TYPO3 cards and content accents, with the platform's theme and fonts preserved.
 
 ## How a branded page is built
 
-Every Netresearch page combines the brand colours, fonts, logo and footer in
-the same way, following the rules below. They exclude: 4px boxes, everything
+A standalone Netresearch page combines the brand colours, fonts, logo and
+footer in the way `templates/styles.css` implements, following the rules below. They exclude: 4px boxes, everything
 centred, hover jumps, heavy grey drop shadows, teal fills under small white
 text, and coloured stripes along the edge of a card, notice or panel.
 
@@ -36,10 +36,12 @@ layered depth. Radii: 10px (`--radius-md`) for buttons and inputs, 16px
 dialogs, pills for badges and segmented controls. Hover changes border, shadow
 or tint, never position.
 
-**Hierarchy through type and alignment.** Headings use `--nr-ink` (`#25272D`,
-14.9:1) and sit left-aligned under an uppercase eyebrow (`.eyebrow`). The
-eyebrow's orange dot is the accent in its intended role: a small marker.
-Centre only short, single-purpose blocks (a status page, an empty state).
+**Hierarchy through type and alignment.** Headings use the brand text colour
+`--nr-text` (`#585961`, 6.96:1) and sit left-aligned under an uppercase eyebrow
+(`.eyebrow`). The eyebrow's orange dot is the accent in its intended role: a
+small marker. No text is smaller than 14px, eyebrows, badges and table headers
+included (`references/typography.md`, "Minimum Font Sizes"). Centre only short,
+single-purpose blocks (a status page, an empty state).
 
 **State in form as well as colour.** Status is a pill with a dot and a word
 (`.badge-info|success|warning|danger|accent`), metrics are tiles with tabular
@@ -105,17 +107,19 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
 - **Cards** (`.card`, `.card-interactive`): white surface, hairline border,
   16px radius, Raleway title. `.feature-icon` puts a stroke icon on a teal tint
   plate above the title.
-- **Navigation** (`.navbar`, `.navbar-brand`, `.navbar-wordmark`): sticky,
-  white with a hairline bottom border; logo plus product name as one link;
-  links are pills with a tint for the active page; hamburger below 768px.
+- **Navigation** (`.navbar`, `.navbar-brand`): sticky, white with a hairline
+  bottom border; the symbol-only logo as the home link, without a typed
+  wordmark (`references/logo.md`); links are pills with a tint for the active
+  page; hamburger below 768px. `html { scroll-padding-top }` keeps a focused
+  element and an in-page jump target below the sticky bar (SC 2.4.11).
 - **Hero** (`.hero`, `.hero-split`, `.hero-panel`, `.hero-facts`): the
   gradient surface with the motif, left-aligned, sized to its content (no
   `min-height`). The split variant puts a white panel (facts, a form, a
   preview) beside the message; fact chips are border-only so the gradient stays
   the measured background behind their text.
-- **Badges** (`.badge-*`): opaque tints, measured: `#15585E` on `#E6F2F3`
-  7.09:1, `#9A2E00` on `#FFF0E8` 6.83:1, `#1E6F31` on `#E9F6EC` 5.59:1,
-  `#6E4C00` on `#FFF6DB` 7.21:1, `#A32330` on `#FCEBED` 6.42:1.
+- **Badges** (`.badge-*`): 14px, opaque tints, measured: `#15585E` on
+  `#E6F2F3` 7.09:1, `#9A2E00` on `#FFF0E8` 6.83:1, `#19632B` on `#E9F6EC`
+  6.59:1, `#6E4C00` on `#FFF6DB` 7.21:1, `#911E2A` on `#FCEBED` 7.53:1.
 - **Metrics** (`.stat-grid`, `.stat`): label, value in Raleway with tabular
   figures, optional meta line. Use them when the numbers are the point of the
   page.
@@ -136,14 +140,16 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   composited fill. `.hero code`, `.page-band code` and `.on-gradient .chip`
   are styled this way.
 - **Tables** (`.table-wrap`, `.table`): hairline frame with 16px radius,
-  small uppercase header on `#F5F5F5`, row hover tint, `.num` for right-aligned
+  14px uppercase header in `--nr-text` on `#F5F5F5`, row hover tint, `.num` for right-aligned
   tabular figures. The wrapper scrolls horizontally on small screens.
 - **Forms** (`.form-input`, `.form-select`, `.form-textarea`, `.form-check`,
   `.form-help`, `.form-error`): 48px, 3:1 border, focus ring, drawn
-  checkbox/radio. Errors use `--nr-danger-text` `#A32330` (6.42:1 on its tint),
-  never brand orange, so they read as errors.
+  checkbox/radio. Required fields carry `*` in the label and a note above the
+  form says so (SC 3.3.2). Errors use `--nr-danger-text` `#911E2A` (7.53:1 on
+  its tint), never brand orange, so they read as errors.
 - **Segmented control** (`.segmented`): pill track, selected item as a white
-  pill with `#15585E` label; mark it with `aria-current`, `aria-pressed` or
+  pill with a bold `#15585E` label and a 1.5px `#2F99A4` ring (3.10:1 against
+  the track; the white pill alone is 1.09:1); mark it with `aria-current`, `aria-pressed` or
   `aria-selected`.
 - **Split layout** (`.split-layout`, `.split-panel`, `.split-main`, `.steps`):
   sign-in, request and upload screens. Brand panel with the real steps of the
@@ -154,7 +160,8 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
 - **Dialog** (`.dialog`): 24px radius, blurred dark backdrop.
 - **Footer** (`.footer`): anthracite (`#585961`) background per the mandatory
   footer rule in `SKILL.md`; company name and link to netresearch.de in
-  `.footer-bottom`.
+  `.footer-bottom`. Its focus outline is the footer foreground, because the
+  teal outline is 2.06:1 on `#585961`.
 - **Links** (`a`, `.link-standalone`): `#15585E` default (8.11:1), `#0A5057` on
   hover (9.14:1), underlined in running text. The brand `#2F99A4` is 3.38:1 and
   is not a link colour at body size.
@@ -207,7 +214,8 @@ Before launching any web project:
 **Page construction:**
 - [ ] Exactly one gradient surface; everything else white or `#F5F5F5`
 - [ ] Cards and panels: hairline border, soft shadow, 16px radius; no hover jumps
-- [ ] Headings left-aligned in `--nr-ink`; eyebrows only where they name a section
+- [ ] Headings left-aligned in `#585961`; eyebrows only where they name a section
+- [ ] No text below 14px
 - [ ] States shown as badges, metrics as tiles, messages as notice cards; no edge stripes
 
 **Layout:**
@@ -233,7 +241,8 @@ and `references/colors.md`.
 **Accessibility:**
 - [ ] All interactive elements keyboard accessible
 - [ ] Skip link, labelled `nav`, one `main`
-- [ ] Focus states visible
+- [ ] Focus states visible, 3:1 against every surface they sit on (footer and gradient included), never hidden under the sticky navbar
+- [ ] Required fields marked in the label
 - [ ] Both colour schemes audited
 
 ---

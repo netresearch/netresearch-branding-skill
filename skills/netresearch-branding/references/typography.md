@@ -210,9 +210,8 @@ font-family: Calibri, 'Open Sans', Arial, sans-serif;
 ### Web Typography Hierarchy
 
 Sizes and weights below are the scale `templates/styles.css` uses (h1 and h2
-scale fluidly between the responsive values). On web pages headings are
-coloured `--nr-ink` `#25272D` instead of `#585961`; documents
-and slides keep anthracite.
+scale fluidly between the responsive values). Headings keep anthracite
+`#585961`, and no text goes below 14px ("Minimum Font Sizes").
 
 ```css
 /* h1 - Page Title */
