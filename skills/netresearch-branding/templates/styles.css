@@ -778,7 +778,6 @@ small { font-size: var(--font-size-sm); }
 }
 
 /* Hover feedback only where the whole card is a link target; no jump. */
-.card:hover,
 .card-interactive:hover {
   border-color: var(--nr-border);
   box-shadow: var(--shadow-md);
