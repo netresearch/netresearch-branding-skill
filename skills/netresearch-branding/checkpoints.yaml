@@ -196,12 +196,19 @@ mechanical:
   #
   # That scope is the standalone HTML pages a repository publishes: the repo
   # root (top level only — a nested `Classes/`, `Tests/` or `Resources/` path is
-  # not a published page) plus EVERYTHING below `docs/`, `site/` and
+  # not a published page) plus standalone HTML below `docs/`, `site/` and
   # `Documentation/`. Not the TYPO3 Fluid tree: `Resources/Private/Templates/`
   # holds backend module templates, which render inside the TYPO3 backend
   # chrome and inherit its styling; a marketing footer and an [n] logo do not
   # belong there, and NB-24 below says the same ("Not all extensions need the
   # [n] logo. This is more relevant for user-facing features.").
+  #
+  # Generated hosted TYPO3 manuals use the separate content-card profile.
+  # Recognize them narrowly by both the Guides generator marker and the
+  # official TYPO3 theme stylesheet in <head>; a manual-looking body alone
+  # must not exempt an unbranded standalone page. Their content branding is
+  # reviewed by NB-25 and references/typo3-docs-branding.md, not these checks.
+  # Regression fixtures: Build/Scripts/tests/test_hosted_manual_checkpoints.py.
   #
   # `type: script` with `find`, not a glob target: the runner brace-expands a
   # target through `eval` with globstar off, so a `**` inside `{...}` collapses
@@ -221,11 +228,17 @@ mechanical:
   # in the navbar (line 16) with no logo in its footer, so footer-scoping NB-18
   # would fail every page built from that template.
   - id: NB-17
+    learning_id: retro-20261018-typo3-docs-profile
     type: script
     command: |
       missing=0
       while IFS= read -r f; do
         test -n "$f" || continue
+        head_markup=$(awk '/<head[ >]/,/<\/head>/' "$f")
+        if grep -qE '<meta[^>]*(content=.phpdocumentor/guides.[^>]*name=.generator.|name=.generator.[^>]*content=.phpdocumentor/guides.)' <<< "$head_markup" \
+          && grep -qE '<link[^>]*href=.https://cdn[.]typo3[.]com/typo3documentation/theme/typo3-docs-theme/[^ ]+/css/theme[.]css' <<< "$head_markup"; then
+          continue
+        fi
         awk '/<footer/,/<\/footer>/' "$f" \
           | grep -qiE 'href=.https?://(www\.)?netresearch\.de' || missing=1
       done < <(find . -maxdepth 1 -type f -name '*.html' 2>/dev/null
@@ -234,14 +247,20 @@ mechanical:
                  -not -path '*Documentation-GENERATED-temp*' 2>/dev/null)
       exit $missing
     severity: info
-    desc: "Every published HTML page (repo root top level, plus docs/, site/, Documentation/ recursively) must link to netresearch.de from inside its <footer> element"
+    desc: "Every standalone HTML page (root top level, docs/, site/, Documentation/; hosted TYPO3 output excluded) must link to netresearch.de from inside its <footer> element"
 
   - id: NB-18
+    learning_id: retro-20261018-typo3-docs-profile
     type: script
     command: |
       missing=0
       while IFS= read -r f; do
         test -n "$f" || continue
+        head_markup=$(awk '/<head[ >]/,/<\/head>/' "$f")
+        if grep -qE '<meta[^>]*(content=.phpdocumentor/guides.[^>]*name=.generator.|name=.generator.[^>]*content=.phpdocumentor/guides.)' <<< "$head_markup" \
+          && grep -qE '<link[^>]*href=.https://cdn[.]typo3[.]com/typo3documentation/theme/typo3-docs-theme/[^ ]+/css/theme[.]css' <<< "$head_markup"; then
+          continue
+        fi
         grep -qE 'netresearch-(symbol-only|logo)\.svg|aria-label="Netresearch symbol logo"|<title>Netresearch DTT GmbH</title>' "$f" || missing=1
       done < <(find . -maxdepth 1 -type f -name '*.html' 2>/dev/null
                find docs site Documentation -type f -name '*.html' \
@@ -249,14 +268,20 @@ mechanical:
                  -not -path '*Documentation-GENERATED-temp*' 2>/dev/null)
       exit $missing
     severity: warning
-    desc: "Every published HTML page (repo root top level, plus docs/, site/, Documentation/ recursively) must include the Netresearch logo — brand SVG asset path, or an inline SVG carrying the brand aria-label/title"
+    desc: "Every standalone HTML page (root top level, docs/, site/, Documentation/; hosted TYPO3 output excluded) must include the Netresearch logo — brand SVG asset path, or an inline SVG carrying the brand aria-label/title"
 
   - id: NB-19
+    learning_id: retro-20261018-typo3-docs-profile
     type: script
     command: |
       missing=0
       while IFS= read -r f; do
         test -n "$f" || continue
+        head_markup=$(awk '/<head[ >]/,/<\/head>/' "$f")
+        if grep -qE '<meta[^>]*(content=.phpdocumentor/guides.[^>]*name=.generator.|name=.generator.[^>]*content=.phpdocumentor/guides.)' <<< "$head_markup" \
+          && grep -qE '<link[^>]*href=.https://cdn[.]typo3[.]com/typo3documentation/theme/typo3-docs-theme/[^ ]+/css/theme[.]css' <<< "$head_markup"; then
+          continue
+        fi
         awk '/<footer/,/<\/footer>/' "$f" \
           | grep -qF 'Netresearch DTT GmbH' || missing=1
       done < <(find . -maxdepth 1 -type f -name '*.html' 2>/dev/null
@@ -265,7 +290,7 @@ mechanical:
                  -not -path '*Documentation-GENERATED-temp*' 2>/dev/null)
       exit $missing
     severity: warning
-    desc: "Every published HTML page (repo root top level, plus docs/, site/, Documentation/ recursively) must carry the exact company name 'Netresearch DTT GmbH' inside its <footer> element"
+    desc: "Every standalone HTML page (root top level, docs/, site/, Documentation/; hosted TYPO3 output excluded) must carry the exact company name 'Netresearch DTT GmbH' inside its <footer> element"
 
   # ============================================================
   # README HEADLINE & FOOTER BRANDING (universal, non-TYPO3 too)
@@ -413,13 +438,15 @@ llm_reviews:
 
   # === [n] LOGO PLACEMENT ===
   - id: NB-24
+    learning_id: retro-20261018-typo3-docs-profile
     domain: branding
     prompt: |
       Check if the Netresearch [n] logo is appropriately used where applicable.
 
       Appropriate placements:
       1. Backend module headers (if extension has backend modules)
-      2. Documentation pages
+      2. Standalone documentation pages; hosted TYPO3 manuals use the
+         content-level closing card in references/typo3-docs-branding.md
       3. README footer
       4. Configuration screens (if applicable)
 
@@ -437,11 +464,20 @@ llm_reviews:
 
   # === HARD VALIDITY ENFORCEMENT ===
   - id: NB-25
+    learning_id: retro-20261018-typo3-docs-profile
     domain: branding
     prompt: |
       Validate generated user-facing visual outputs against strict Netresearch requirements.
 
-      Mark FAIL if ANY of the following are missing:
+      Select the artifact profile first. For hosted TYPO3 manuals, use
+      references/typo3-docs-branding.md: retain the official TYPO3 header,
+      theme fonts and button colors; require decorative teal underlines,
+      native responsive navigation cards and a Netresearch closing card
+      with the company name and website. Do not require a replacement
+      header logo or Raleway/Open Sans in this profile. Verify every
+      maintained language with the full renderer and desktop/mobile browser.
+
+      For standalone branded pages, mark FAIL if ANY are missing:
       1. Header logo (symbol-only [n], SVG preferred)
       2. Brand colors #2F99A4, #FF4D00 (accent only), #585961
       3. Typography intent: Raleway for headlines/UI emphasis, Open Sans for body
@@ -451,15 +487,21 @@ llm_reviews:
 
       This is a hard validity gate: partial compliance is FAIL.
     severity: error
-    desc: "Outputs are invalid unless core brand constraints are all satisfied"
+    desc: "Visual output must satisfy its hosted-TYPO3-manual or standalone-page branding profile"
 
   # === REFERENCE WORKFLOW ENFORCEMENT ===
   - id: NB-26
+    learning_id: retro-20261018-typo3-docs-profile
     domain: branding
     prompt: |
       Check whether the implementation actively followed brand references instead of treating them as passive docs.
 
-      Required references for branded web output:
+      For hosted TYPO3 manuals, require references/typo3-docs-branding.md,
+      current nr-llm source plus rendered manual inspection, and the
+      typo3-docs skill's renderer/source validation workflow. Do not apply
+      standalone CSS/font/header rules to the platform theme.
+
+      Required references for standalone branded web output:
       - references/colors.md
       - references/typography.md
       - references/web-design.md

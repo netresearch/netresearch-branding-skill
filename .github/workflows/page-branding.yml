@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+name: Page Branding Profiles
+
+on:
+  pull_request:
+    paths:
+      - 'skills/netresearch-branding/checkpoints.yaml'
+      - 'Build/Scripts/tests/test_hosted_manual_checkpoints.py'
+      - '.github/workflows/page-branding.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'skills/netresearch-branding/checkpoints.yaml'
+      - 'Build/Scripts/tests/test_hosted_manual_checkpoints.py'
+      - '.github/workflows/page-branding.yml'
+  merge_group:
+
+permissions: {}
+
+jobs:
+  page-branding:
+    uses: netresearch/.github/.github/workflows/script-check.yml@main
+    permissions:
+      contents: read
+    with:
+      pre-command: pipx install uv==0.13.1
+      check-cmd: uv run Build/Scripts/tests/test_hosted_manual_checkpoints.py
