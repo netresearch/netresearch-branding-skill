@@ -347,6 +347,12 @@ All brand implementations must meet **WCAG AA** standards:
 
 Before deploying any branded material:
 
+Select the artifact profile first. Manuals hosted on docs.typo3.org retain the
+official TYPO3 theme and use native cards, teal accents and a Netresearch closing
+card. Follow [Hosted TYPO3 Manual Branding](skills/netresearch-branding/references/typo3-docs-branding.md)
+for localized assets and full renderer/browser verification. The standalone-page
+font and header-logo rules below do not apply to those manuals.
+
 **Visual Design:**
 - [ ] Colors match exact hex values
 - [ ] Turquoise is primary, orange is accent only

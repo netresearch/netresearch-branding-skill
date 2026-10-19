@@ -337,24 +337,103 @@
   },
   {
     "name": "typo3-docs-branding",
-    "prompt": "Add Netresearch branding to a TYPO3 extension's RST documentation index page",
+    "prompt": "Add Netresearch branding to a TYPO3 extension's Documentation/Index.rst for docs.typo3.org. It should match nr-llm's layout. The existing introduction explains plug-and-play security defaults, and English plus German manuals are maintained. Describe and show the implementation and verification.",
     "assertions": [
       {
         "type": "content_contains",
-        "value": "netresearch-underline.svg",
-        "description": "Includes teal underline SVG"
+        "value": "official TYPO3 theme",
+        "description": "Retains the platform theme instead of applying the standalone-page profile"
       },
       {
         "type": "content_contains",
-        "value": "Netresearch",
-        "description": "Footer card mentions Netresearch"
+        "value": "nr-llm",
+        "description": "Inspects the reference manual rather than inventing a theme"
+      },
+      {
+        "type": "content_contains",
+        "value": "rendered",
+        "description": "Uses actual rendered evidence alongside source inspection"
+      },
+      {
+        "type": "content_contains",
+        "value": "plug-and-play",
+        "description": "Preserves the extension introduction and default-protection explanation"
+      },
+      {
+        "type": "content_contains",
+        "value": "card-grid",
+        "description": "Uses the native card grid directive"
+      },
+      {
+        "type": "content_contains",
+        "value": ":columns: 1",
+        "description": "Starts with one column on narrow screens"
+      },
+      {
+        "type": "content_contains",
+        "value": ":columns-md: 2",
+        "description": "Provides a responsive medium-screen layout"
       },
       {
         "type": "content_contains",
         "value": "card-footer",
-        "description": "Uses card-footer RST directive"
+        "description": "Uses native footer links"
+      },
+      {
+        "type": "content_contains",
+        "value": "netresearch-underline.svg",
+        "description": "Includes the decorative teal underline SVG"
+      },
+      {
+        "type": "content_contains",
+        "value": "#2F99A4",
+        "description": "Uses the canonical teal for the decorative accent"
+      },
+      {
+        "type": "content_contains",
+        "value": "Netresearch DTT GmbH",
+        "description": "Includes the exact company name in the closing card"
+      },
+      {
+        "type": "content_contains",
+        "value": "https://www.netresearch.de/",
+        "description": "Links to the company website"
+      },
+      {
+        "type": "content_contains",
+        "value": "--fail-on-log",
+        "description": "Requires the full official render to fail on warnings"
+      },
+      {
+        "type": "content_contains",
+        "value": "desktop",
+        "description": "Checks an actual desktop browser viewport"
+      },
+      {
+        "type": "content_contains",
+        "value": "mobile",
+        "description": "Checks an actual mobile browser viewport"
+      },
+      {
+        "type": "must_not",
+        "value": "font-family:.*(Raleway|Open.Sans)|fonts\\.googleapis\\.com/.*(Raleway|Open.Sans)",
+        "description": "Does not inject standalone-page web fonts"
       }
-    ]
+    ],
+    "samples": {
+      "passing": "Inspect nr-llm source and its rendered manual, recording the revision. Keep the official TYPO3 theme and its header/fonts. Preserve the plug-and-play security prose, anchors and TOC. Add /Images/netresearch-underline.svg as decorative #2F99A4, not a logo. Use .. card-grid:: with :columns: 1 and :columns-md: 2, .. card:: descriptions and .. card-footer:: links with exactly one stretched-link per card. Add a closing card naming Netresearch DTT GmbH and https://www.netresearch.de/. Check English and German roots independently. Render full manuals with the official image and --fail-on-log, then check the rendered DOM and screenshots in actual desktop and mobile browser viewports, including assets, links and overflow. Never replace the header logo; preserve the platform header.",
+      "failing": [
+        "Add netresearch-underline.svg and a Netresearch card-footer. The SVG exists, so branding is complete.",
+        "Apply the official TYPO3 theme then set font-family: Raleway and Open Sans.",
+        "Inspect nr-llm source and then replace the header with the brand logo.",
+        "Inspect nr-llm source and its rendered manual, recording the revision. Keep the official TYPO3 theme and its header/fonts. Preserve the plug-and-play security prose, anchors and TOC. Add /Images/netresearch-underline.svg as decorative #2F99A4, not a logo. Use .. card-grid:: with :columns: 1 and :columns-md: 2, .. card:: descriptions and .. card-footer:: links with exactly one stretched-link per card. Add a closing card naming Netresearch DTT GmbH and https://www.netresearch.de/. Check English and German roots independently. Render full manuals with the official image and --fail-on-log, then check the rendered DOM and screenshots in actual desktop and mobile browser viewports, including assets, links and overflow.\nfont-family: Raleway, Open Sans;"
+      ]
+    },
+    "expectations": [
+      "Preserves the official TYPO3 header and theme fonts; does not propose adding a branded header or standalone font imports. An explanation that explicitly rejects those changes is compliant.",
+      "Keeps each maintained language consistent and distinguishes decorative teal accents from the authentic company logo."
+    ],
+    "expected_output": "Applies the hosted-manual profile, retains official TYPO3 chrome and fonts, preserves security prose, and verifies native content branding in every maintained language through full rendering and actual browser inspection."
   },
   {
     "name": "readme-badge-ordering",
@@ -604,6 +683,81 @@
       "failing": [
         "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.btn{border-radius:4px}.btn:hover{transform:translateY(-2px)}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
         "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.notice{border-radius:14px;border-left:4px solid #2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>"
+      ]
+    }
+  },
+  {
+    "name": "typo3-docs-localized-assets",
+    "prompt": "Our English and German TYPO3 manuals render from Documentation/ and Documentation/Localization.de_DE/. Both use /Images/netresearch-underline.svg, but only the English file exists. Is the layout verified? What needs to be done?",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "Documentation/Localization.de_DE/Images/",
+        "description": "Resolves the localized root explicitly"
+      },
+      {
+        "type": "content_contains",
+        "value": "both",
+        "description": "Checks both maintained languages"
+      },
+      {
+        "type": "content_contains",
+        "value": "browser",
+        "description": "Requires rendered browser evidence rather than file existence"
+      },
+      {
+        "type": "content_contains",
+        "value": "not verified",
+        "description": "Keeps the current missing visual evidence explicit"
+      }
+    ],
+    "samples": {
+      "passing": "It is not verified. Resolve /Images/ within each configuration root; add an identical regular SVG copy under Documentation/Localization.de_DE/Images/ where required. Render both manuals, then inspect the loaded images, cards and links in an actual browser at desktop and mobile widths. File presence alone does not prove a working rendered asset. Do not assume that it automatically shares the English asset.",
+      "failing": [
+        "It automatically shares the English image, so no German render is needed.",
+        "The asset exists somewhere in Documentation, so the branding is verified."
+      ]
+    },
+    "expectations": [
+      "Does not assume that separate renderer roots automatically share English assets; checks actual resolved paths and rendered images.",
+      "A compliant explanation may say not to assume automatic asset sharing; it must not be rejected merely for containing those words."
+    ],
+    "expected_output": "Reports missing verification, resolves the image within each configuration root, supplies required identical assets and checks both rendered languages in a browser."
+  },
+  {
+    "name": "typo3-docs-verification-boundaries",
+    "prompt": "The TYPO3 manual contains native card directives and the teal SVG. The minimal test finished successfully, but no full render or browser check ran. Can we claim visual parity with nr-llm and say the hosted manual is deployed?",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "--fail-on-log",
+        "description": "Requires the full renderer rather than the minimal test"
+      },
+      {
+        "type": "content_contains",
+        "value": "desktop",
+        "description": "Requires a desktop browser check"
+      },
+      {
+        "type": "content_contains",
+        "value": "mobile",
+        "description": "Requires a mobile browser check"
+      },
+      {
+        "type": "content_contains",
+        "value": "unverified",
+        "description": "Records missing evidence honestly"
+      },
+      {
+        "type": "content_contains",
+        "value": "publication",
+        "description": "Separates local layout verification from hosted publication"
+      }
+    ],
+    "samples": {
+      "passing": "Visual parity and hosted publication remain unverified. Run the full official renderer with --fail-on-log for every language, inspect desktop and mobile browser screenshots plus DOM, assets and links, then verify the actual hosted publication separately. A minimal test and source-file presence do not establish those outcomes.",
+      "failing": [
+        "The minimal test passed and the SVG exists, so visual parity and hosted deployment are complete."
       ]
     }
   }
