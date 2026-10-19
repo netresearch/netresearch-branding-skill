@@ -46,19 +46,18 @@
   --nr-primary-wash: #F3F9F9;  /* the lightest teal surface */
   --nr-accent-tint: #FFF0E8;   /* --nr-accent-text on it: 6.83:1 */
   --nr-success: #28A745;       /* marker only; colors.md semantic set */
-  --nr-success-text: #1E6F31;  /* on --nr-success-tint: 5.59:1 */
+  --nr-success-text: #19632B;  /* on --nr-success-tint: 6.59:1 */
   --nr-success-tint: #E9F6EC;
   --nr-warning: #FFC107;       /* marker only; colors.md semantic set */
   --nr-warning-text: #6E4C00;  /* on --nr-warning-tint: 7.21:1 */
   --nr-warning-tint: #FFF6DB;
   --nr-danger: #DC3545;        /* marker only; colors.md --nr-error */
   --nr-error: var(--nr-danger);
-  --nr-danger-text: #A32330;   /* on --nr-danger-tint: 6.42:1 */
+  --nr-danger-text: #911E2A;   /* on --nr-danger-tint: 7.53:1 */
   --nr-danger-tint: #FCEBED;
   --nr-danger-border: #F2C4C9;  /* edge of the danger notice, decoration */
 
   /* Neutral Colors */
-  --nr-ink: #25272D;           /* headings and emphasis: 14.93:1 on white */
   --nr-text: #585961;
   --nr-text-secondary: #6E6F78; /* 4.99:1 on white, 4.58:1 on #F5F5F5 */
   --nr-bg: #FFFFFF;
@@ -143,10 +142,9 @@
     --nr-bg-alt: #1A2024;
     --nr-surface: #1E2429;
 
-    --nr-ink: #F1F4F5;
     --nr-text-primary: #E8EDEF;
     --nr-text: #E8EDEF;             /* 13.28:1 on the surface */
-    --nr-text-secondary: #A9B2B8;   /* 7.28:1 */
+    --nr-text-secondary: #CDD3D7;   /* 10.37:1 */
 
     --nr-primary-fill: #1B6C74;     /* white text on it: 6.10:1 */
     --nr-primary-text: #5FC6D2;     /* 7.83:1 on the surface */
@@ -156,12 +154,12 @@
     --nr-primary-tint: #0E2E33;     /* #5FC6D2 on it: 7.20:1 */
     --nr-primary-wash: #16262A;
     --nr-accent-tint: #4A2D26;      /* #FF9166 on it: 5.60:1 */
-    --nr-success-text: #8FE0A6;
-    --nr-success-tint: #12301C;     /* 9.1:1 */
+    --nr-success-text: #A3E8B6;
+    --nr-success-tint: #12301C;     /* 10.08:1 */
     --nr-warning-text: #F2CE5C;
     --nr-warning-tint: #33280A;     /* 9.5:1 */
-    --nr-danger-text: #FFA7AE;
-    --nr-danger-tint: #3A1418;      /* 8.8:1 */
+    --nr-danger-text: #FFC4C9;
+    --nr-danger-tint: #3A1418;      /* 10.82:1 */
     --nr-danger-border: #6A2A31;
     --nr-success: #3FBF62;          /* marker, 6.60:1 on the surface */
     --nr-warning: #F2B92A;          /* marker, 8.77:1 */
@@ -181,7 +179,7 @@
 
     --nr-footer-bg: #10161A;
     --nr-footer-fg: #E8EDEF;
-    --nr-footer-muted: #A9B2B8;
+    --nr-footer-muted: #CDD3D7;
     --nr-footer-link-hover: #7FD6E0;
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -194,10 +192,9 @@
   --nr-bg: #14181B;
   --nr-bg-alt: #1A2024;
   --nr-surface: #1E2429;
-  --nr-ink: #F1F4F5;
   --nr-text-primary: #E8EDEF;
   --nr-text: #E8EDEF;
-  --nr-text-secondary: #A9B2B8;
+  --nr-text-secondary: #CDD3D7;
   --nr-primary-fill: #1B6C74;
   --nr-primary-text: #5FC6D2;
   --nr-primary-deep: #7FD6E0;
@@ -205,11 +202,11 @@
   --nr-primary-tint: #0E2E33;
   --nr-primary-wash: #16262A;
   --nr-accent-tint: #4A2D26;
-  --nr-success-text: #8FE0A6;
+  --nr-success-text: #A3E8B6;
   --nr-success-tint: #12301C;
   --nr-warning-text: #F2CE5C;
   --nr-warning-tint: #33280A;
-  --nr-danger-text: #FFA7AE;
+  --nr-danger-text: #FFC4C9;
   --nr-danger-tint: #3A1418;
   --nr-danger-border: #6A2A31;
   --nr-success: #3FBF62;      /* marker, 6.60:1 on the surface */
@@ -227,7 +224,7 @@
   --nr-border-light: #2A3238;
   --nr-footer-bg: #10161A;
   --nr-footer-fg: #E8EDEF;
-  --nr-footer-muted: #A9B2B8;
+  --nr-footer-muted: #CDD3D7;
   --nr-footer-link-hover: #7FD6E0;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.45);
@@ -248,6 +245,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* The sticky navbar is 72px high: keyboard focus and in-page jumps stop
+     below it instead of under it (SC 2.4.11 Focus Not Obscured). */
+  scroll-padding-top: 88px;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -296,7 +296,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.01em;
-  color: var(--nr-ink);
+  color: var(--nr-text);
   text-wrap: balance;
 }
 
@@ -345,9 +345,9 @@ p {
   gap: 10px;
   margin-bottom: var(--spacing-md);
   font-family: var(--font-headline);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--nr-primary-text);
 }
@@ -375,12 +375,15 @@ a:hover {
 
 code, kbd {
   font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-  font-size: 0.9em;
+  font-size: max(var(--font-size-sm), 0.9em);
   padding: 0.1em 0.4em;
   border-radius: 6px;
   background: var(--nr-bg-alt);
   border: 1px solid var(--nr-border-light);
 }
+
+/* The browser's `smaller` would give 13.3px; no text goes below 14px. */
+small { font-size: var(--font-size-sm); }
 
 .tabular { font-variant-numeric: tabular-nums; }
 
@@ -463,13 +466,13 @@ code, kbd {
   padding: 0 var(--spacing-lg);
 }
 
-/* Logo plus product name as one link. The logo itself is never recoloured. */
+/* The symbol-only logo as the home link. It is never recoloured. */
 .navbar-brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: var(--nr-ink);
+  color: var(--nr-text);
   border-radius: var(--radius-sm);
 }
 
@@ -477,26 +480,6 @@ code, kbd {
   height: 40px;
   width: auto;
   display: block;
-}
-
-.navbar-wordmark {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-  font-family: var(--font-headline);
-  font-weight: 700;
-  font-size: var(--font-size-lg);
-  color: var(--nr-ink);
-}
-
-.navbar-wordmark small {
-  margin-top: 3px;
-  font-family: var(--font-body);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--nr-text-secondary);
 }
 
 .navbar-menu {
@@ -509,7 +492,7 @@ code, kbd {
 .navbar-link {
   display: inline-block;
   font-family: var(--font-headline);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--nr-text);
   text-decoration: none;
@@ -545,7 +528,7 @@ code, kbd {
   width: 20px;
   height: 2px;
   border-radius: 2px;
-  background: var(--nr-ink);
+  background: var(--nr-text);
   transition: transform 0.2s var(--nr-ease);
 }
 
@@ -595,7 +578,7 @@ code, kbd {
 
 .hero .eyebrow { color: var(--nr-on-fill); }
 .hero .hero-panel .eyebrow { color: var(--nr-primary-text); }
-.hero-panel h2 { color: var(--nr-ink); }
+.hero-panel h2 { color: var(--nr-text); }
 
 .hero-title {
   color: var(--nr-on-fill);
@@ -870,7 +853,7 @@ code, kbd {
   gap: 7px;
   padding: 3px 11px 3px 9px;
   border-radius: var(--radius-pill);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   line-height: 1.5;
   white-space: nowrap;
@@ -896,6 +879,16 @@ code, kbd {
 .badge-danger::before { background: var(--nr-danger); }
 .badge-accent { background: var(--nr-accent-tint); color: var(--nr-accent-text); }
 .badge-accent::before { background: var(--nr-accent); }
+
+/* On dark, the lifted link and accent hues stay as verified against
+   netresearch.de, but at 14px on their tint they reach only APCA Lc 60 / 53.
+   The label turns to body text (Lc 92 / 89); tint and dot keep the hue. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .badge-info,
+  :root:not([data-theme="light"]) .badge-accent { color: var(--nr-text); }
+}
+:root[data-theme="dark"] .badge-info,
+:root[data-theme="dark"] .badge-accent { color: var(--nr-text); }
 
 .stat-grid {
   display: grid;
@@ -925,14 +918,14 @@ code, kbd {
   font-size: var(--font-size-3xl);
   font-weight: 700;
   line-height: 1.2;
-  color: var(--nr-ink);
+  color: var(--nr-text);
   font-variant-numeric: tabular-nums;
 }
 
 .stat-meta {
   display: block;
   margin-top: 6px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--nr-text-secondary);
 }
 
@@ -956,7 +949,7 @@ code, kbd {
 }
 
 .notice > :not(.notice-icon) { min-width: 0; padding-top: 8px; }
-.notice strong { display: block; margin-bottom: 2px; color: var(--nr-ink); font-family: var(--font-headline); }
+.notice strong { display: block; margin-bottom: 2px; color: var(--nr-text); font-family: var(--font-headline); }
 
 .notice-icon {
   box-sizing: content-box;
@@ -1009,11 +1002,11 @@ code, kbd {
 .table th {
   text-align: left;
   padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--nr-text-secondary);
+  color: var(--nr-text);
   background: var(--nr-bg-alt);
   border-bottom: 1px solid var(--nr-border-light);
 }
@@ -1066,14 +1059,14 @@ code, kbd {
   display: block;
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--nr-ink);
+  color: var(--nr-text);
   margin-bottom: var(--spacing-xs);
 }
 
 .form-help {
   display: block;
   margin-top: 6px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: 1.5;
   color: var(--nr-text-secondary);
 }
@@ -1085,7 +1078,7 @@ code, kbd {
   min-height: 48px;
   font-family: var(--font-body);
   font-size: var(--font-size-base);
-  color: var(--nr-ink);
+  color: var(--nr-text);
   padding: 11px 14px;
   /* The visible boundary of a form control is a UI component under SC 1.4.11 and needs
      3:1; --nr-border is 1.59:1 and is for dividers. */
@@ -1183,7 +1176,7 @@ code, kbd {
 
 .form-check input:checked {
   background: var(--nr-primary-fill);
-  border-color: var(--nr-primary-fill);
+  border-color: var(--nr-primary-text); /* 8.11:1 light, 7.83:1 dark */
 }
 
 .form-check input:checked::after { transform: rotate(-45deg) scale(1); }
@@ -1207,7 +1200,7 @@ code, kbd {
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
-  font: 600 13px/1.5 var(--font-body);
+  font: 600 var(--font-size-sm)/1.5 var(--font-body);
   color: var(--nr-text);
   text-align: center;
   text-decoration: none;
@@ -1219,7 +1212,16 @@ code, kbd {
 .segmented [aria-selected="true"] {
   background: var(--nr-surface);
   color: var(--nr-primary-text);
-  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+  /* The white segment on the #F5F5F5 track is 1.09:1; the 1.5px #2F99A4 ring
+     is 3.10:1 against the track and 3.38:1 against the segment. */
+  box-shadow: inset 0 0 0 1.5px var(--nr-primary), var(--shadow-sm);
+}
+
+@media (forced-colors: active) {
+  .segmented [aria-current="page"],
+  .segmented [aria-pressed="true"],
+  .segmented [aria-selected="true"] { outline: 2px solid Highlight; outline-offset: -2px; }
 }
 
 /* ============================================
@@ -1445,7 +1447,7 @@ code, kbd {
 }
 
 .footer-bottom p {
-  color: var(--nr-footer-muted); /* opaque: 4.79:1 light, 8.5:1 dark */
+  color: var(--nr-footer-muted); /* opaque: 4.79:1 light, 12.06:1 dark */
   font-size: var(--font-size-sm);
   margin: 0;
 }
@@ -1557,6 +1559,10 @@ code, kbd {
 
 /* ...but a white panel inside the hero is a light surface again. */
 .hero .hero-panel :focus-visible { outline-color: var(--nr-focus); }
+
+/* The teal outline is 2.06:1 on the #585961 footer; use the footer's own
+   foreground (6.96:1 light, 15.45:1 dark). */
+.footer :focus-visible { outline-color: var(--nr-footer-fg); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
