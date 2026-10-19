@@ -19,14 +19,14 @@
         <img src="../assets/logos/netresearch-symbol-only.svg" alt="Netresearch" class="navbar-logo" width="40" height="40">
       </a>
 
-      <button class="navbar-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <button class="navbar-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="main-menu">
         <span></span>
         <span></span>
         <span></span>
       </button>
 
-      <ul class="navbar-menu">
-        <li><a href="#services" class="navbar-link active">Services</a></li>
+      <ul class="navbar-menu" id="main-menu">
+        <li><a href="#services" class="navbar-link" aria-current="true">Services</a></li>
         <li><a href="#about" class="navbar-link">About</a></li>
         <li><a href="#portfolio" class="navbar-link">Portfolio</a></li>
         <li><a href="#contact" class="navbar-link">Contact</a></li>
@@ -306,17 +306,31 @@
     const toggle = document.querySelector('.navbar-toggle');
     const menu = document.querySelector('.navbar-menu');
 
+    const closeMenu = () => {
+      menu.classList.remove('active');
+      toggle.setAttribute('aria-expanded', 'false');
+    };
+
     toggle.addEventListener('click', () => {
       const open = menu.classList.toggle('active');
       toggle.setAttribute('aria-expanded', String(open));
     });
 
+    // The open menu covers the page: Escape closes it, and so does focus
+    // leaving it, so it never hides the focused element (SC 2.4.11).
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && menu.classList.contains('active')) {
+        closeMenu();
+        toggle.focus();
+      }
+    });
+    document.addEventListener('focusin', (event) => {
+      if (!menu.contains(event.target) && event.target !== toggle) closeMenu();
+    });
+
     // Close the mobile menu after an in-page jump
     document.querySelectorAll('.navbar-menu a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', () => {
-        menu.classList.remove('active');
-        toggle.setAttribute('aria-expanded', 'false');
-      });
+      anchor.addEventListener('click', closeMenu);
     });
   </script>
 </body>

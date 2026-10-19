@@ -536,7 +536,7 @@ ul.branded li::before {
 
 All text must meet WCAG AA:
 - **Normal text:** 4.5:1 contrast ratio
-- **Large text (≥18px):** 3:1 contrast ratio
+- **Large text (≥24px, or ≥18.66px bold):** 3:1 contrast ratio
 
 ### Readability
 
@@ -569,7 +569,7 @@ p + p {
   --font-document: Calibri, 'Open Sans', sans-serif;
 
   /* Font Sizes */
-  --font-size-xs: 12px;
+  --font-size-xs: 12px;   /* compatibility only; no text below 14px */
   --font-size-sm: 14px;
   --font-size-base: 16px;
   --font-size-lg: 18px;

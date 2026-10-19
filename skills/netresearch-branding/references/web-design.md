@@ -53,10 +53,13 @@ not used to mark state: tint, icon and the words carry it. A whole notice in a
 pale tint is not used either; `#F3F9F9` on a `#F5F5F5` section is the same
 lightness and the box disappears.
 
-**Controls that read as controls.** Inputs and buttons are 48px high with a
-3:1 boundary (`--nr-border-strong`). Focus is a solid 3px outline in
-`--nr-focus` (3.38:1 on white, white on the gradient, `CanvasText` in forced
-colours) with the soft `--nr-ring` on top; never `outline: none` alone. Checkboxes and radios are drawn (`.form-check`) so the
+**Controls that read as controls.** Inputs are 48px high with a 3:1 boundary
+(`--nr-border-strong`). Buttons are 48px high (`.btn-small` 40px, `.btn-large`
+56px) and identified by their fill and label; a filled button has no border.
+Focus is a solid 3px outline in `--nr-focus` (3.38:1 on white; white on the
+gradient, on `.on-gradient` and on the footer; `CanvasText` in forced colours)
+with the soft `--nr-ring` on top; never `outline: none` alone. An invalid input
+gets a 2px red edge, a change in form as well as hue. Checkboxes and radios are drawn (`.form-check`) so the
 box keeps its 3:1 edge in both schemes. Two to four mutually exclusive views
 (language, period, list/grid) use a segmented control (`.segmented`), not a
 row of links.
@@ -109,9 +112,13 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   plate above the title.
 - **Navigation** (`.navbar`, `.navbar-brand`): sticky, white with a hairline
   bottom border; the symbol-only logo as the home link, without a typed
-  wordmark (`references/logo.md`); links are pills with a tint for the active
-  page; hamburger below 768px. `html { scroll-padding-top }` keeps a focused
-  element and an in-page jump target below the sticky bar (SC 2.4.11).
+  wordmark (`references/logo.md`); on dark the logo sits on a white plate,
+  because its grey inner mark is 2.25:1 on the dark navbar. Links are pills;
+  the current one carries `aria-current`, a tint and an underline, since its
+  colour alone is 1.16:1 against the others. Hamburger below 768px; the open
+  menu closes on Escape and when focus leaves it. `html { scroll-padding-top }`
+  keeps a focused element and an in-page jump target below the sticky bar
+  (SC 2.4.11).
 - **Hero** (`.hero`, `.hero-split`, `.hero-panel`, `.hero-facts`): the
   gradient surface with the motif, left-aligned, sized to its content (no
   `min-height`). The split variant puts a white panel (facts, a form, a
