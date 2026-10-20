@@ -396,12 +396,26 @@ test('a hover-out that runs after a delay is waited for', async () => {
   assert.strictEqual(code, 0);
 });
 
-test('the settle wait does not depend on the page\'s own setTimeout', { timeout: 60000 }, async () => {
-  // A page that replaces setTimeout with a stub that never fires must not hang the run.
+test('the settle wait does not depend on the page\'s own setTimeout', async () => {
+  // A page that replaces setTimeout with a stub that never fires must not hang the run (the
+  // helper kills a hung audit, so a hang fails this test).
   const { code, json } = await run(fixture('stubtimer',
     'p.weak{color:#aaa}',
     '<p class="weak">Weak</p><script>window.setTimeout=()=>0;</script>'));
   assert.deepStrictEqual(json.contrastFailures.map((f) => f.element), ['p.weak']);
+  assert.strictEqual(code, 1);
+});
+
+test('string timer handlers run; chained timers and intervals of a hover-out are waited for', async () => {
+  const { code, json } = await run(fixture('round21',
+    'body{margin:0}a.logo{position:absolute;top:0;left:0;color:#000}a.logo.c1,a.logo.c2{color:#ccc}'
+    + 'p.weak{display:none;color:#aaa}p.weak.on{display:block}main{padding-top:40px}',
+    '<a class="logo" href="#l">Logo</a><p class="weak">Revealed</p>'
+    + '<script>setTimeout("document.querySelector(\'p.weak\').classList.add(\'on\')",50);' // a legacy string handler
+    + 'const l=document.querySelector(".logo");l.addEventListener("mouseover",()=>{l.classList.add("c1");l.classList.add("c2")});'
+    + 'l.addEventListener("mouseout",()=>setTimeout(()=>setTimeout(()=>l.classList.remove("c1"),300),100));' // a chain
+    + 'l.addEventListener("mouseout",()=>{let n=0;const i=setInterval(()=>{if(++n===6){clearInterval(i);setTimeout(()=>l.classList.remove("c2"),400)}},50)});</script>')); // a poll whose last tick sets a timer, outlasting the chain
+  assert.deepStrictEqual(json.contrastFailures.map((f) => f.element), ['p.weak.on']);
   assert.strictEqual(code, 1);
 });
 

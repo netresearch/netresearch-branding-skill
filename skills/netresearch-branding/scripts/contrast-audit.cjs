@@ -77,7 +77,7 @@
  * related target with <body>; a hover state on <html> or <body> itself that ends only when
  * the pointer leaves the page (the same check an exit-intent popup makes); a hover
  * delegated from the document for an element at (0, 0), where the pointer starts; a
- * hover-out that waits longer than 1 s; and the order of leave listeners when an
+ * hover-out that waits longer than 1 s in total; and the order of leave listeners when an
  * element's own mouseleave replaces it. The page is scrolled through
  * once, instantly (content revealed on scroll, also content that hides again when
  * scrolled away), infinite animations are cancelled and finite ones finished,
@@ -429,8 +429,21 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // Timers the page sets while the audit's leave runs: native copies, taken before any page script.
     const st = window.setTimeout; const ct = window.clearTimeout; const pending = new Set();
     Object.defineProperty(window, '__auditTimers', { value: { pending } });
-    window.setTimeout = function (fn, ms, ...args) { const id = st.call(this, function (...x) { pending.delete(id); return typeof fn === 'function' ? fn.apply(this, x) : undefined; }, ms, ...args); if ((window.__auditLeaving || window.__auditReplaying) && !(Number(ms) > 1000)) pending.add(id); return id; };
+    const si = window.setInterval; const ci = window.clearInterval; let inherit = 0;
+    // A timeout leaves `pending` when it fires; an interval stays until clearInterval.
+    const track = (native, fn, ms, args, self, repeat) => {
+      const tracked = (window.__auditLeaving || window.__auditReplaying || inherit > 0) && !(Number(ms) > 1000);
+      if (typeof fn !== 'function') { const id = native.call(self, fn, ms, ...args); if (tracked) { pending.add(id); if (!repeat) st(() => pending.delete(id), ms); } return id; }
+      const id = native.call(self, function (...x) {
+        const mine = repeat ? pending.has(id) : pending.delete(id); if (mine) inherit++;
+        try { return fn.apply(this, x); } finally { if (mine) queueMicrotask(() => { inherit--; }); }
+      }, ms, ...args);
+      if (tracked) pending.add(id); return id;
+    };
+    window.setTimeout = function (fn, ms, ...args) { return track(st, fn, ms, args, this, false); };
+    window.setInterval = function (fn, ms, ...args) { return track(si, fn, ms, args, this, true); };
     window.clearTimeout = function (id) { pending.delete(id); return ct.call(this, id); };
+    window.clearInterval = function (id) { pending.delete(id); return ci.call(this, id); };
     const guarded = (target, type, fn) => (target === document.documentElement || target === document.body)
       && (type === 'mouseout' || type === 'pointerout') && (typeof fn === 'function' || (typeof fn === 'object' && fn !== null)) && !fn.__audit;
     EventTarget.prototype.addEventListener = function (type, fn, opts) {
@@ -495,9 +508,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     for (const t of ['mouseleave', 'pointerleave', 'mouseout', 'pointerout']) window.removeEventListener(t, window.__stopLeave, true);
     for (const t of ['mouseout', 'pointerout']) document.documentElement.removeEventListener(t, window.__stopOut);
   });
-  // A hover-out may run after a delay (hover intent, usually 100 to 500 ms). Timers of at
-  // most 1 s that the page set while the audit's leave ran are waited for, at most 1 s;
-  // the page's other timers run on as they would anyway (a toast is measured as before).
+  // A hover-out may run after a delay (hover intent, usually 100 to 500 ms). Timers and
+  // intervals of at most 1 s that the page set while the audit's leave ran, and those they
+  // set in turn, are waited for (an interval until it is cleared), at most 1 s in total; the page's other timers run on as
+  // they would anyway (a toast is measured as before). The page sees wrapped setTimeout,
+  // setInterval, clearTimeout and clearInterval; a string handler runs as it would.
   await page.evaluate(() => { window.__auditReplaying = false; });
   await page.waitForFunction(() => window.__auditTimers.pending.size === 0, null, { timeout: 1000, polling: 50 }).catch(() => {});
   // Kill transitions before measuring anything: see the note on stateFailures above.
