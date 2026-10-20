@@ -187,11 +187,15 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   (`#15585E` is 1.57:1 there, anthracite 1.35:1), and the primary button turns
   white with a teal label. A light container on the gradient (`.hero-panel`,
   `.card`, `.stat`, `.notice`, `.table-wrap`, `.split-main`, `.dialog`,
-  `.tinted`) and a light control (`.segmented`, `.badge`, `.btn-tonal`, form
-  fields) keep the light-surface colours. This works through the colour
-  tokens, which the gradient overrides and a light container sets back, so the
-  nearest surface decides at any depth (section "Surfaces" in
-  `templates/styles.css`).
+  `.tinted`) and a light control (`.segmented`, `.badge`, `.btn-tonal`) keep the
+  light-surface colours. This works through the colour tokens, which the
+  gradient overrides and a light container sets back, so the nearest surface
+  decides at any depth (section "Surfaces" in `templates/styles.css`).
+  `.hero`, `.page-band` and `.split-panel` paint the gradient; `.on-gradient`
+  only switches the tokens, for a surface the author paints with the same
+  gradient. Forms, with their fields and error messages, sit inside a light
+  container (`.hero-panel`, `.split-main`, a `.card`), never directly on the
+  gradient: in dark a field's fill and border fall to 1.2–2.9:1 there.
 
 **External and download links** get a marker so users know what a click
 does before they click it:
