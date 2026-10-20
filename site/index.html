@@ -163,7 +163,7 @@
     code, .mono {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: max(14px, 0.875em);
-      overflow-wrap: anywhere;
+      overflow-wrap: break-word;
       background: var(--nr-bg-alt);
       padding: 2px 6px;
       border-radius: 4px;
@@ -379,7 +379,7 @@
     /* --- findings --- */
     .finding { border-left: 4px solid var(--nr-accent); }
     .finding .kind { font-family: var(--font-headline); font-weight: 700; font-size: 14px; letter-spacing: .5px; text-transform: uppercase; color: var(--nr-accent-text); }
-    .finding .cite { font-family: ui-monospace, monospace; font-size: 14px; color: var(--nr-text-secondary); margin-top: var(--space-sm); }
+    .finding .cite { font-family: ui-monospace, monospace; font-size: 14px; color: var(--nr-text-secondary); margin-top: var(--space-sm); overflow-wrap: break-word; }
     .finding details { margin-top: var(--space-sm); }
     .finding summary { cursor: pointer; font-weight: 600; color: var(--nr-primary-text); font-family: var(--font-headline); }
     .finding details[open] summary { margin-bottom: var(--space-sm); }
