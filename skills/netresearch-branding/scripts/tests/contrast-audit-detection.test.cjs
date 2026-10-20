@@ -343,6 +343,26 @@ test('a hover-out delegated from <body> releases; handler properties and listene
   assert.strictEqual(code, 0);
 });
 
+test('a skipped leave reaches only its own listener, as a mouse event with an in-page target', async () => {
+  const { code, json } = await run(fixture('round17',
+    'body{margin:0}a.logo{position:absolute;top:0;left:0;color:#000}a.logo.hot{color:#ccc}'
+    + 'a.logo.ph{color:#ccc}' // a pointer hover delegated from <html> that only counts the mouse
+    + '.pop{display:none}.pop.on{display:block;color:#ddd}main{padding-top:40px}',
+    '<a class="logo" href="#l">Logo</a><p class="pop" id="p1">Popup one</p><p class="pop" id="p2">Popup two</p>'
+    + '<script>const l=document.querySelector(".logo");'
+    // A toggle on the element itself, plus a harmless listener on <body> so a leave is skipped there.
+    + 'l.addEventListener("mouseover",()=>l.classList.toggle("hot"));l.addEventListener("mouseout",()=>l.classList.toggle("hot"));'
+    + 'document.body.addEventListener("mouseout",()=>{});'
+    + 'document.documentElement.addEventListener("pointerover",(e)=>{if(e.target===l&&e.pointerType==="mouse")l.classList.add("ph")});'
+    + 'document.documentElement.addEventListener("pointerout",(e)=>{if(e.pointerType!=="mouse")return;if(e.target===l)l.classList.remove("ph")});'
+    // The widely copied exit-intent check treats a relatedTarget of <html> as leaving the window.
+    + 'document.body.addEventListener("mouseout",(e)=>{const f=e.relatedTarget||e.toElement;if(!f||f.nodeName==="HTML")document.getElementById("p1").classList.add("on")});'
+    // A listener object that gets its handleEvent only after it is added.
+    + 'const o={};document.documentElement.addEventListener("mouseout",o);o.handleEvent=(e)=>{if(!e.relatedTarget)document.getElementById("p2").classList.add("on")};</script>'));
+  assert.deepStrictEqual(json.contrastFailures, []);
+  assert.strictEqual(code, 0);
+});
+
 test('only keyboard-reachable controls are judged as focus indicators', async () => {
   const { code, json } = await run(fixture('reach',
     'button{background:#fff;border:1px solid #000;color:#000}:focus-visible{outline:2px solid #ddd}', // 1.36:1
