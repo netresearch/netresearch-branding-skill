@@ -33,6 +33,9 @@
  * smallest rendered font size; SVGs inside text badges without aria-hidden. Hidden
  * elements (their own or an ancestor's display or visibility) are skipped; a submenu that
  * only a parent item's :hover reveals is therefore measured only through its focus state.
+ * Measured although checkVisibility() calls them hidden: the options of a <select>, the
+ * content of a closed <details> (both one click away) and display: contents (no box, but
+ * its text is painted).
  * Exits non-zero on a contrast failure (text or non-text) OR on a stylesheet/script
  * the page failed to load: an unstyled page has no contrast failures and would otherwise
  * pass for the wrong reason. Other failed requests (a template's placeholder images) are
@@ -58,18 +61,21 @@
  * requestAnimationFrame (not a CSS or Web Animations API animation) is measured where it
  * stands. Not covered: text that is not a control and appears only on scroll (a banner),
  * the scrolled look of a control already visible at the top (a sticky header's scrolled
- * palette), a control with display: contents, and a scrolling container inside the
- * page; the scroll pass covers the window's own scroll. Before anything is
- * measured, the page is scrolled through once, instantly (content revealed on scroll,
- * also content that hides again when scrolled away), infinite animations are cancelled
- * and finite ones finished, unless finishing leaves the element less visible (a toast
- * fading out), so a fade-in counts at its final opacity.
- * An animation started later by a forced :hover or :focus is measured at its start. An
- * <a> without href is measured hovered, never focused; a tabindex="-1" element without a
- * widget role (a skip-link target), inert content and a tabindex="-1" element under
- * aria-hidden are not judged as focus indicators; <area> is not measured. An outline that only moves on
- * focus counts as changed, except the moves Chromium's own focus styles apply (1px on a
- * link, 2px on a checkbox or radio). Elements whose focus
+ * palette), a control with display: contents shown only on scroll, and a scrolling
+ * container inside the page; the scroll pass covers the window's own scroll. Before
+ * anything is measured, the pointer is moved outside the viewport (with mouseout and
+ * mouseleave held back, so an exit-intent popup does not open), the page is scrolled
+ * through once, instantly (content revealed on scroll, also content that hides again
+ * when scrolled away), infinite animations are cancelled and finite ones finished,
+ * unless finishing leaves the element less visible (a toast fading out), so a fade-in
+ * counts at its final opacity. An animation started later by a forced :hover or :focus
+ * is measured at its start. An <a> without href is measured hovered, never focused; a
+ * tabindex="-1" element without a widget role (a skip-link target), inert content and a
+ * tabindex="-1" element under aria-hidden are not judged as focus indicators; <area> is
+ * not measured. A state failure names the control and, where it differs, the text
+ * inside it that fails; a text that fails the same way at rest is reported only there.
+ * An outline that only moves on focus counts as changed, except the moves Chromium's own
+ * focus styles apply (1px on a link, 2px on a checkbox or radio). Elements whose focus
  * changes no outline, ring or border are counted in `focusWithoutRing`, and the
  * browser's own `outline: auto` ring in `focusUserAgentRing`; neither is judged. A ring
  * drawn on another element (a sibling label, a :focus-within ancestor) is not seen.
@@ -413,7 +419,10 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   // The headless mouse rests at (0, 0), so an element there (a fixed header's logo link)
   // is really hovered and would be measured in its :hover colours as if at rest. Hover is
   // measured on purpose by forcing it, one element at a time; the pointer stays outside.
+  const LEAVE = ['mouseout', 'mouseleave', 'pointerout', 'pointerleave'];
+  await page.evaluate((ev) => { window.__stopLeave = (e) => e.stopImmediatePropagation(); for (const t of ev) window.addEventListener(t, window.__stopLeave, true); }, LEAVE);
   await page.mouse.move(-10, -10);
+  await page.evaluate((ev) => { for (const t of ev) window.removeEventListener(t, window.__stopLeave, true); }, LEAVE);
   // Kill transitions before measuring anything: see the note on stateFailures above.
   await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important}' });
   // Content revealed on scroll and every animation are put into the state a user sees:
@@ -550,8 +559,19 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     let exempt = 0;
     // <title>/<desc> inside an SVG are accessible names, never painted; script/style/
     // template hold source text. None of them have a rendered contrast.
-    const describe = (el) => el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).trim().replaceAll(/\s+/g, '.') : '');
+    // An SVG element's className is an SVGAnimatedString; its baseVal is the class list.
+    const describe = (el) => { const c = String(el.className?.baseVal ?? el.className ?? '').trim(); return el.tagName.toLowerCase() + (c ? '.' + c.replaceAll(/\s+/g, '.') : ''); };
     const NOT_PAINTED = new Set(['TITLE', 'DESC', 'SCRIPT', 'STYLE', 'TEMPLATE', 'METADATA', 'NOSCRIPT']);
+    // Hidden by its own or an ancestor's display: none, or by visibility (inherited, so an
+    // ancestor's counts unless the element overrides it). Not checkVisibility(): that also
+    // drops a closed <details>, a <select>'s options and display: contents, which paint.
+    window.__displayed = (el) => { for (let a = el; a; a = a.parentElement) if (getComputedStyle(a).display === 'none') return false;
+      return !['hidden', 'collapse'].includes(getComputedStyle(el).visibility); };
+    window.__painted = (el) => {
+      if (el.checkVisibility({ visibilityProperty: true })) return true;
+      if (!(getComputedStyle(el).display === 'contents' || el.closest('details:not([open]), select'))) return false;
+      return window.__displayed(el);
+    };
     const ownText = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
     // The text pass over a set of elements, each with its own text in its own colour. Run
     // on the whole page here, and later on the subtree of each control measured at another
@@ -561,7 +581,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (!ownText(el)) continue;
       const cs = getComputedStyle(el);
       // Hidden by its own or an ancestor's display or visibility: not painted.
-      if (!el.checkVisibility({ visibilityProperty: true })) continue;
+      if (!window.__painted(el)) continue;
       // A style guide legitimately shows failing pairs as specimens. They must be declared
       // with data-contrast-demo, and the count is reported so the exemption is visible.
       if (el.closest('[data-contrast-demo]')) { exempt++; continue; }
@@ -595,20 +615,26 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (!el.hasAttribute('data-contrast-audit-at') && window.__seenAt?.has(el)
         && !el.checkVisibility({ opacityProperty: true, checkOpacity: true, visibilityProperty: true })) { window.__deferred.add(el); return null; }
       const cs = getComputedStyle(el);
-      if (!el.checkVisibility({ visibilityProperty: true })) return null;
+      if (!window.__painted(el)) return null;
       // Each painted text inside the control, in its own colour: in <a><span>Read more</span></a>
       // the colour :hover changes may sit on the <a> (inherited) or on the <span>. The text of
       // an SVG <title> or <desc> is an accessible name, never painted, and is left out.
       let worst = null;
       for (const t of [el, ...el.querySelectorAll('*')]) {
         if (NOT_PAINTED.has(t.tagName.toUpperCase()) || !ownText(t)) continue;
-        if (!t.checkVisibility({ visibilityProperty: true })) continue;
+        if (!window.__painted(t)) continue;
+        if (t.closest('[data-contrast-demo]')) continue;
         const ts = t === el ? cs : getComputedStyle(t);
         const fg = parse(ts.color); const bg = bgOf(t); const r = ratio(fg, bg);
         const size = Number.parseFloat(ts.fontSize);
         const bold = (Number.parseInt(ts.fontWeight, 10) || 400) >= 700;
         const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
-        if (r < need && (!worst || r < worst.ratio)) worst = { state, element: describe(el), text: el.textContent.trim().slice(0, 40), fg: ts.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
+        // A text that fails the same way at rest is reported there already, not again here.
+        if (r >= need || seen.has(`${t.tagName}.${t.className}|${ts.color}|${bg.r},${bg.g},${bg.b}`)) continue;
+        if (!worst || r < worst.ratio) {
+          const own = [...t.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
+          worst = { state, element: describe(el) + (t === el ? '' : ` ${describe(t)}`), text: own.slice(0, 40), fg: ts.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
+        }
       }
       return worst;
     };
@@ -811,7 +837,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     window.__topSet = new WeakSet(document.querySelectorAll(sel));
     // Controls the text pass could not see at the top: hidden by display or visibility,
     // their own or an ancestor's.
-    window.__textSkipped = new WeakSet([...document.querySelectorAll(sel)].filter((el) => !el.checkVisibility({ visibilityProperty: true })));
+    window.__textSkipped = new WeakSet([...document.querySelectorAll(sel)].filter((el) => !window.__painted(el)));
     window.__mountedMeasured = new WeakSet();
     const ys = new Set([...window.__deferred].map((el) => window.__seenAt.get(el)));
     for (const y of window.__mountedAt) ys.add(y);

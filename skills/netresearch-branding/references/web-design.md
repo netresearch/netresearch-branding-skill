@@ -207,13 +207,13 @@ node scripts/contrast-audit.cjs https://pages.nrdev.de/<ns>/<project>/ --header 
 ```
 
 It lists every text element below AA for its size, every focus indicator below 3:1 (what
-changes on focus: the outline, a box-shadow ring or the border, under forced `:focus` and
-`:focus-visible`) and every form-control boundary below 3:1 (SC 1.4.11; disabled and
-hidden controls skipped), plus skip link, labelled `nav`, `main`, table captions, the smallest font,
-decorative SVGs without `aria-hidden` and whether the page switches colours under
-`prefers-color-scheme` or `data-theme`; exit 1 on any contrast failure, at rest or under
-forced `:hover` and `:focus-visible`. Icons and other
-graphics are not measured.
+changes on focus: the outline, a box-shadow ring or the border, under forced `:focus`
+and `:focus-visible`) and every form-control boundary below 3:1 (SC 1.4.11; disabled and
+hidden controls skipped), plus skip link, labelled `nav`, `main`, table captions, the
+smallest font, decorative SVGs without `aria-hidden` and whether the page switches
+colours under `prefers-color-scheme` or `data-theme`; exit 1 on any contrast failure, at
+rest or under forced `:hover` and `:focus-visible`. Icons and other graphics are not
+measured.
 
 TLS certificates are verified for the page and every request it makes; an invalid
 certificate aborts that connection before any request, and with it any `--header` value, is

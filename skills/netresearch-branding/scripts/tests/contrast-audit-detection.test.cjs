@@ -238,7 +238,8 @@ test('text shown on scroll is measured in its own colour; an SVG title is not pa
     + '<script>addEventListener("scroll",()=>{document.querySelector("nav.mini").classList.toggle("on",scrollY>300);'
     + 'document.querySelectorAll("button").forEach((b)=>b.classList.toggle("on",scrollY>300));});</script>'));
   assert.deepStrictEqual(json.contrastFailures.map((f) => `${f.element} ${f.ratio}`).sort(), ['a.mn 1.09', 'span 1.92']);
-  assert.deepStrictEqual(json.stateFailures.map((f) => `${f.state} ${f.element}`).sort(), ['focus-visible button.wc.on', 'hover button.wc.on']);
+  // The wrapped label fails at rest and is reported there, not again under hover and focus.
+  assert.deepStrictEqual(json.stateFailures, []);
   assert.strictEqual(json.demoExemptElements, 1);
   assert.strictEqual(code, 1);
 });
@@ -250,6 +251,30 @@ test('an element under the resting mouse position is measured at rest; text unde
     + '<div style="display:none"><p style="color:#eee">Never shown</p></div>')); // hidden by its ancestor: not painted
   assert.deepStrictEqual(json.contrastFailures, []);
   assert.deepStrictEqual(json.stateFailures.map((f) => `${f.state} ${f.element}`), ['hover a.logo']);
+  assert.strictEqual(code, 1);
+});
+
+test('select, closed details, display: contents and an exit-intent page are measured as shown', async () => {
+  const { code, json } = await run(fixture('round13',
+    'select.sl{color:#bbb;background:#fff}' // 1.92:1, its text sits in closed <option>s
+    + 'details p.dt{color:#bbb}' // inside a closed <details>
+    + 'div.dc{display:contents;color:#bbb}' // no box of its own
+    + 'a.card{color:#000}a.card span.m{color:#999}a.card:hover span.m{color:#aaa}' // descendant: 2.85 at rest, 2.32 hovered
+    + 'main{outline:0}#exit{display:none}#exit.on{display:block;color:#ddd}', // an exit-intent popup must not open
+    '<select class="sl" aria-label="Pick"><option>One</option></select>'
+    + '<details><summary>More</summary><p class="dt">Answer</p></details>'
+    + '<div class="dc">Contents</div>'
+    + '<a class="card" href="#c">Title <span class="m">muted</span></a>'
+    + '<div data-contrast-demo><p style="color:#eee">Specimen</p></div>'
+    + '<p id="exit">Wait!</p>'
+    + '<script>document.documentElement.addEventListener("mouseleave",()=>document.getElementById("exit").classList.add("on"));'
+    + 'document.addEventListener("mouseout",(e)=>{if(!e.relatedTarget)document.getElementById("exit").classList.add("on")});'
+    + 'document.querySelector("main").tabIndex=-1;</script>'));
+  const text = json.contrastFailures.map((f) => f.element);
+  for (const el of ['option', 'p.dt', 'div.dc', 'span.m']) assert.ok(text.includes(el), `${el} must be measured at rest: ${JSON.stringify(text)}`);
+  assert.ok(!json.contrastFailures.some((f) => f.text === 'Wait!'), `the exit-intent popup must stay closed: ${JSON.stringify(text)}`);
+  assert.deepStrictEqual(json.stateFailures.filter((f) => f.element.startsWith('a.card')).map((f) => `${f.state} ${f.element}`).sort(), ['hover a.card span.m']);
+  assert.ok(!json.stateFailures.some((f) => f.element.startsWith('main')), `a demo inside the focusable <main> is exempt: ${JSON.stringify(json.stateFailures)}`);
   assert.strictEqual(code, 1);
 });
 
