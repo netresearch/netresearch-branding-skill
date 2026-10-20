@@ -44,13 +44,16 @@
  * an indicator. `controlBoundaryFailures`: the border (painted over the control's fill)
  * or the fill of each input, select and textarea against the surface around it.
  * Disabled controls (also in a disabled fieldset), controls in a hidden ancestor or a
- * closed dialog and 1px visually hidden form fields are skipped; an element that holds
- * focus when the page loads is blurred first. Elements whose focus
+ * closed dialog, opacity:0 controls and 1px visually hidden form fields are skipped.
+ * An outline that only moves on focus counts as changed, except the 1px move Chromium
+ * itself applies to a focused link. Elements whose focus
  * changes no outline, ring or border are counted in `focusWithoutRing`, and the
  * browser's own `outline: auto` ring in `focusUserAgentRing`; neither is judged. A ring
  * drawn on another element (a sibling label, a :focus-within ancestor) is not seen.
  * Icons, charts and other graphics are not evaluated, so a green run is still not a
- * full AA verdict. Colours are read through a canvas, so oklch() and color() count.
+ * full AA verdict. rgb() and rgba() are read numerically; other notations (oklch(),
+ * color()) go through a canvas. An element focused on load is blurred before any
+ * measurement, and the focused state is always forced as :focus with :focus-visible.
  *
  * `darkScheme` / `darkSchemeBy` say whether the page switches its colours under the
  * other `prefers-color-scheme` or either `data-theme` value, measured from computed
@@ -197,7 +200,10 @@ async function measureInteractiveStates(page) {
     for (const nodeId of nodeIds) {
       let forced = false;
       try {
-        await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [state] });
+        // A browser never shows :focus-visible without :focus; a colour set under :focus
+        // alone must be measured too.
+        const forcedPseudoClasses = state === 'focus-visible' ? ['focus', 'focus-visible'] : [state];
+        await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses });
         forced = true;
         const f = await measureOneNode(cdp, nodeId, state);
         const key = f && `${state}|${f.element}|${f.fg}|${f.bg}`;
@@ -216,10 +222,9 @@ async function measureInteractiveStates(page) {
   }
   // Focus indicators: what an element shows unfocused is recorded first, then :focus and
   // :focus-visible are forced together (a browser never shows one without the other) and
-  // only what changed is judged. An autofocused element would otherwise be recorded
-  // focused, so nothing may hold focus. One element at a time, like the pass above:
-  // a forced state must be reset before the next element is recorded.
-  if (!aborted) await page.evaluate(() => document.activeElement?.blur?.());
+  // only what changed is judged (the page was blurred before the first pass). One element
+  // at a time, like the pass above: a forced state must be reset before the next element
+  // is recorded.
   for (const nodeId of aborted ? [] : nodeIds) {
     let forced = false;
     try {
@@ -307,6 +312,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   await page.evaluate(() => document.fonts.ready);
   // Kill transitions before measuring anything: see the note on stateFailures above.
   await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important;animation:none !important}' });
+  // An element focused on load (autofocus) would be measured in its focused colours, and
+  // the focus-indicator pass would record it focused: nothing may hold focus.
+  await page.evaluate(() => document.activeElement?.blur?.());
   const result = await page.evaluate(() => {
     // Colours: rgb()/rgba() are read numerically, exactly; any other notation the browser
     // computes (oklch(), color()) goes through a 1x1 canvas, which returns sRGB bytes with
@@ -477,11 +485,12 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     const over = (c, b) => ({ r: c.r * c.a + b.r * (1 - c.a), g: c.g * c.a + b.g * (1 - c.a), b: c.b * c.a + b.b * (1 - c.a) });
     const rgb = (c) => `rgb(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)})`;
     // Whether a control can be seen and used at all: a closed <dialog>, a display:none or
-    // visibility:hidden ancestor, a disabled control (also inside <fieldset disabled>) and a
+    // visibility:hidden ancestor, an opacity:0 control (a custom switch's input over its
+    // drawn track), a disabled control (also inside <fieldset disabled>) and a
     // 1px visually hidden form field (its look is drawn by a sibling) have no visible state.
     const perceivable = (el) => {
       if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return false;
-      if (!el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true })) return false;
+      if (!el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true, opacityProperty: true, checkOpacity: true })) return false;
       if (!el.matches('input, select, textarea')) return true;
       const b = el.getBoundingClientRect();
       return b.width > 1 && b.height > 1;
@@ -522,9 +531,8 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     const ringState = (el) => {
       const cs = getComputedStyle(el);
       return {
-        // Not the offset: Chromium's own a:focus-visible moves a link's outline by 1px,
-        // which would make a permanent outline look like a focus indicator.
         outline: `${cs.outlineStyle}|${cs.outlineWidth}|${cs.outlineColor}`,
+        offset: cs.outlineOffset,
         shadows: shadowLayers(cs.boxShadow).map((l) => l.text),
         borders: SIDES.map((sd) => ['Style', 'Width', 'Color'].map((p) => cs['border' + sd + p]).join('|')),
       };
@@ -540,9 +548,17 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // another element (a sibling label, a :focus-within ancestor) is not seen.
     // A changed, visible outline: against the parent's background, or the element's own
     // when it is drawn inside (negative offset).
-    const outlinePart = (cs, before, after, { outer, own }) => {
+    // Whether focus changed the outline. A moved outline counts, except Chromium's own
+    // a:focus-visible, which moves a link's outline from 0 to 1px and would make a
+    // permanent outline look like a focus indicator.
+    const outlineChanged = (el, before, after) => {
+      if (after.outline !== before.outline) return true;
+      if (after.offset === before.offset) return false;
+      return !(el.matches(':any-link') && before.offset === '0px' && after.offset === '1px');
+    };
+    const outlinePart = (el, cs, before, after, { outer, own }) => {
       const width = Number.parseFloat(cs.outlineWidth);
-      if (after.outline === before.outline || cs.outlineStyle === 'none' || Number.isNaN(width) || width <= 0) return [];
+      if (!outlineChanged(el, before, after) || cs.outlineStyle === 'none' || Number.isNaN(width) || width <= 0) return [];
       const c = parse(cs.outlineColor);
       if (!c || c.a === 0) return [];
       const against = (Number.parseFloat(cs.outlineOffset) || 0) < 0 ? own : outer;
@@ -583,9 +599,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       const cs = getComputedStyle(el);
       const after = ringState(el);
       const surfaces = { outer: bgOf(el.parentElement || el), own: bgOf(el) };
-      if (after.outline !== before.outline && cs.outlineStyle === 'auto') { window.__focusUserAgentRing++; return null; }
+      if (outlineChanged(el, before, after) && cs.outlineStyle === 'auto') { window.__focusUserAgentRing++; return null; }
       const parts = [
-        ...outlinePart(cs, before, after, surfaces),
+        ...outlinePart(el, cs, before, after, surfaces),
         ...shadowParts(cs, before, surfaces),
         ...borderParts(cs, before, after, surfaces),
       ];

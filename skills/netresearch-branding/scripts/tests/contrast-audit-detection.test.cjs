@@ -56,6 +56,22 @@ test('a palette only under data-theme="dark" is detected in the dark run too', a
   assert.deepStrictEqual(json.darkSchemeBy, ['data-theme']);
 });
 
+test('a dark page whose light palette sits under data-theme="light" is detected', async () => {
+  const { json } = await run(fixture('themelight', 'body{background:#111;color:#eee}[data-theme="light"] body{background:#fff;color:#000}', '<p>Text</p>'));
+  assert.deepStrictEqual(json.darkSchemeBy, ['data-theme']);
+});
+
+test('text under :focus alone and the unfocused text of an autofocused element are measured', async () => {
+  const { code, json } = await run(fixture('focustext',
+    'button{background:#fff;border:1px solid #000;color:#000}'
+    + 'button.fc:focus{color:#ccc}' // only under :focus
+    + 'button.af2{color:#ccc}button.af2:focus{color:#000}', // weak unless focused, focused on load
+    '<button type="button" class="af2" autofocus>Start</button> <button type="button" class="fc">Go</button>'));
+  assert.ok(json.contrastFailures.some((f) => f.element === 'button.af2'), `button.af2 must be measured unfocused: ${JSON.stringify(json.contrastFailures)}`);
+  assert.ok(json.stateFailures.some((f) => f.element === 'button.fc'), `button.fc must be measured under :focus: ${JSON.stringify(json.stateFailures)}`);
+  assert.strictEqual(code, 1);
+});
+
 test('a page without a dark palette reports none', async () => {
   const { code, json } = await run(fixture('plain', '', '<p>Text</p>'));
   assert.strictEqual(json.darkScheme, false);
@@ -100,14 +116,17 @@ test('weak indicators in their common shapes fail', async () => {
     + 'input.af{border:1px solid #000}input.af:focus-visible{outline:2px solid #eee}' // focused on load (autofocus)
     + 'a.fl{display:inline}a.fl:focus-visible{outline:2px solid #eee}' // only floated content: a 0x0 box
     + 'button.bc:focus-visible{outline:none;border-color:#eee}' // focus shown by the border alone
-    + 'button.tb2{border:2px solid #000}button.tb2:focus-visible{outline:none;border-color:rgba(0,0,0,.5)}', // over the white fill: 2.5:1 on #ccc
+    + 'button.tb2{border:2px solid #000}button.tb2:focus-visible{outline:none;border-color:rgba(0,0,0,.5)}' // over the white fill: 2.5:1 on #ccc
+    + 'a.off{outline:2px solid #e8e8e8}a.off:focus-visible{outline-offset:4px}' // a weak outline that only moves out
+    + 'button.boff{outline:2px solid #eee;outline-offset:-8px}button.boff:focus-visible{outline-offset:2px}', // moved from inside to outside
     '<p><a class="fo" href="#a">One</a> <a class="tr" href="#b">Two</a> <a class="ok" href="#c">Three</a></p>'
     + '<button type="button" class="tf">Go</button> <button type="button" class="ot">Go</button>'
     + '<div class="grey"><label>Name <input class="tb"></label> <button type="button" class="tb2">Go</button></div>'
     + '<label>Search <input class="af" autofocus></label> <button type="button" class="bc">Go</button>'
-    + '<p><a class="fl" href="#f"><span style="float:left">Floated</span></a></p>'));
+    + '<p><a class="fl" href="#f"><span style="float:left">Floated</span></a></p>'
+    + '<p><a class="off" href="#o">Moves</a> <button type="button" class="boff">Moves</button></p>'));
   assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element).sort(),
-    ['a.fl', 'a.fo', 'a.ok', 'a.tr', 'button.bc', 'button.ot', 'button.tb2', 'button.tf', 'input.af']);
+    ['a.fl', 'a.fo', 'a.off', 'a.ok', 'a.tr', 'button.bc', 'button.boff', 'button.ot', 'button.tb2', 'button.tf', 'input.af']);
   assert.deepStrictEqual(json.controlBoundaryFailures.map((f) => f.element), ['input.tb']);
   assert.strictEqual(code, 1);
 });
@@ -127,6 +146,11 @@ test('strong, unchanged, unreachable and hidden indicators do not fail', async (
     + 'a.perm{outline:1px solid #eee}' // a permanent outline is not a focus indicator
     + 'a.pr{box-shadow:0 0 0 3px #eee}a.pr:focus-visible{outline:none;text-decoration-thickness:3px}' // nor a permanent ring
     + 'button.ins{background:#222}button.ins:focus-visible{outline:none;box-shadow:inset 0 0 0 3px #fff}' // inset ring: white on #222
+    + 'button.gl:focus-visible{outline:none;box-shadow:0 0 8px #eee}' // a blur glow without spread is no ring
+    // a custom switch: a transparent input over a track its parent draws
+    + '.sw{position:relative;display:inline-block;width:40px;height:20px;background:#15585E;border-radius:10px}'
+    // (transparent and borderless, its "fill" is the track itself: 1.00:1 if it were judged)
+    + '.sw input{appearance:none;position:absolute;inset:0;margin:0;opacity:0;background:transparent;border:0}'
     // the usual visually hidden input: its white fill alone is 1.00:1 on white
     + 'input.sr{position:absolute;width:1px;height:1px;padding:0;border:0;background:#fff;overflow:hidden;clip-path:inset(50%)}',
     '<p><a class="tw" href="#a">Ring</a> <a class="decor" href="#b">Card link</a></p>'
@@ -136,7 +160,8 @@ test('strong, unchanged, unreachable and hidden indicators do not fail', async (
     + '<div style="display:none"><input class="faint"></div><dialog><input class="faint"></dialog>'
     + '<div style="visibility:hidden"><input class="faint"></div><fieldset disabled><input class="faint"></fieldset>'
     + '<p><a class="perm" href="#p">Outlined</a> <a class="pr" href="#q">Ringed</a> <button type="button" class="ins">Inset</button></p>'
-    + '<label>Hidden <input class="sr"></label>'));
+    + '<label>Hidden <input class="sr"></label>'
+    + '<p><button type="button" class="gl">Glow</button> <label>Notify <span class="sw"><input type="checkbox"></span></label></p>'));
   assert.deepStrictEqual(json.focusRingFailures, []);
   assert.deepStrictEqual(json.controlBoundaryFailures, []);
   assert.ok(json.focusWithoutRing >= 1, `the card link shows focus without a ring and must be counted, got ${json.focusWithoutRing}`);
