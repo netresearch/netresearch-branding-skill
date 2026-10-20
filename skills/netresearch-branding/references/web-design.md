@@ -177,8 +177,13 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   block a surface at least 72px tall (a card, a panel, a grid of cards), so
   no text and no later block sits on the band. A focused element in the first
   block gets a 9px halo in the page background, because no outline colour
-  reaches 3:1 against both white and `#257880`; inside a card, a gradient or
-  a segmented track the outline sits on that surface and gets none.
+  reaches 3:1 against both white and `#257880`. Inside a light container
+  (`.card`, `.stat`, `.notice`, `.table-wrap`, `.hero-panel`, `.tinted`,
+  `.split-main`, `.dialog`), a gradient surface or a segmented track the
+  outline sits on that surface, and a link in running text is never on the
+  band, so neither gets one. Hide an element placed before the first block
+  with `hidden`, not with your own `display: none`, or it counts as the
+  first block.
 - **Dialog** (`.dialog`): 24px radius, blurred dark backdrop.
 - **Footer** (`.footer`): anthracite (`#585961`) background per the mandatory
   footer rule in `SKILL.md`; company name and link to netresearch.de in
