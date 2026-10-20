@@ -1396,10 +1396,15 @@ a[download]::before { content: '\2B07  '; }
   box-shadow: inset 0 0 0 1.5px var(--nr-primary), var(--shadow-sm);
 }
 
+/* Forced colours: the selected state is a Highlight border, so the outline stays
+   free for focus: a focused selected segment shows the border and the CanvasText
+   focus outline inside it (an outline for both left focus invisible there). */
 @media (forced-colors: active) {
   .segmented [aria-current="page"],
   .segmented [aria-pressed="true"],
-  .segmented [aria-selected="true"] { outline: 2px solid Highlight; outline-offset: -2px; }
+  .segmented [aria-selected="true"] { border: 2px solid Highlight; padding: 3px 12px; }
+  .segmented a:focus-visible,
+  .segmented button:focus-visible { outline-offset: -5px; }
 }
 
 /* ============================================
@@ -1545,9 +1550,16 @@ a[download]::before { content: '\2B07  '; }
 
 /* The first block straddles the band and the page: no outline colour clears
    3:1 against both #FFFFFF and #257880 (they are only 5.15:1 apart), so a
-   focused block gets a surface-coloured halo and its outline sits on that
-   (3.38:1 light, 7.83:1 dark). */
-.page-body > :focus-visible { box-shadow: 0 0 0 9px var(--nr-surface); }
+   focused block, or a focused tile of a first-block grid, gets a halo in the
+   page background and its outline sits on that (3.38:1 light, 8.92:1 dark);
+   on a later block the halo matches the page and does not show. */
+.page-body > :focus-visible,
+.page-body > :first-child > :focus-visible { box-shadow: 0 0 0 9px var(--nr-bg); }
+/* Controls keep their soft focus ring on top of the halo. */
+.page-body > :is(.btn-primary, .btn-secondary, .btn-outline, .btn-tonal, .btn-ghost, .form-input, .form-select, .form-textarea):focus-visible,
+.page-body > :first-child > :is(.btn-primary, .btn-secondary, .btn-outline, .btn-tonal, .btn-ghost, .form-input, .form-select, .form-textarea):focus-visible {
+  box-shadow: var(--nr-ring), 0 0 0 9px var(--nr-bg);
+}
 
 .dialog {
   width: min(520px, calc(100% - 32px));
