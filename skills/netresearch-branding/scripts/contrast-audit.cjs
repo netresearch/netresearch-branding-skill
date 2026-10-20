@@ -67,10 +67,13 @@
  * container inside the page; the scroll pass covers the window's own scroll. Before
  * anything is measured, the pointer is moved outside the viewport. mouseleave and
  * pointerleave on the document, <html> and <body>, and mouseout and pointerout that leave
- * the window (also to a page's own listener on <html> or <body>), are held back, so an
+ * the window (also to a page's own listener, listener object or onmouseout/onpointerout
+ * handler on <html> or <body>), are held back, so an
  * exit-intent popup does not open, while an element's own leave events still release its
- * hover. Not covered: an exit-intent capture listener on window, and a hover delegated
- * from the document for an element at (0, 0), where the pointer starts. The page is
+ * hover; a leave such a listener skipped is replayed with a target inside the page, so a
+ * hover-out delegated from <html> or <body> still releases. Not covered: an exit-intent
+ * capture listener on window or the document, and a hover delegated from the document for
+ * an element at (0, 0), where the pointer starts. The page is
  * scrolled through once, instantly (content revealed on scroll, also content that hides
  * again when scrolled away), infinite animations are cancelled and finite ones finished,
  * unless finishing leaves the element less visible (a toast fading out), so a fade-in
@@ -419,10 +422,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     const remove = EventTarget.prototype.removeEventListener;
     const wrapped = new WeakMap();
     const guarded = (target, type, fn) => (target === document.documentElement || target === document.body)
-      && (type === 'mouseout' || type === 'pointerout') && typeof fn === 'function' && !fn.__audit;
+      && (type === 'mouseout' || type === 'pointerout') && (typeof fn === 'function' || typeof fn?.handleEvent === 'function') && !fn.__audit;
     EventTarget.prototype.addEventListener = function (type, fn, opts) {
       if (guarded(this, type, fn)) {
-        if (!wrapped.has(fn)) { const orig = fn; wrapped.set(fn, function (e) { if (window.__auditLeaving && !e.relatedTarget) return undefined; return orig.call(this, e); }); }
+        // A listener object's handleEvent is looked up when the event arrives, as the DOM does.
+        if (!wrapped.has(fn)) { const orig = fn; wrapped.set(fn, function (e) { if (window.__auditLeaving && !e.relatedTarget) { (window.__auditSkipped ||= new Map()).set(e.type, e.target); return undefined; } return typeof orig === 'function' ? orig.call(this, e) : orig.handleEvent(e); }); }
         return add.call(this, type, wrapped.get(fn), opts);
       }
       return add.call(this, type, fn, opts);
@@ -453,9 +457,24 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     for (const t of ['mouseleave', 'pointerleave']) window.addEventListener(t, window.__stopLeave, true);
     for (const t of ['mouseout', 'pointerout']) { window.addEventListener(t, window.__stopLeave, true); document.documentElement.addEventListener(t, window.__stopOut); }
   });
-  await page.evaluate(() => { window.__auditLeaving = true; });
+  // An onmouseout or onpointerout handler (property or attribute) on <html> or <body> is not
+  // an addEventListener call: it is taken off for the rest of the run, in which no mouse
+  // event reaches the page again (hover and focus are forced).
+  await page.evaluate(() => {
+    window.__auditLeaving = true;
+    for (const el of [document.documentElement, document.body]) {
+      for (const prop of ['onmouseout', 'onpointerout']) if (el?.[prop]) el[prop] = null;
+    }
+  });
   await page.mouse.move(-10, -10);
-  await page.evaluate(() => { window.__auditLeaving = false; });
+  await page.evaluate(() => { window.__auditLeaving = false;
+    // The leave a wrapped listener skipped is replayed with a relatedTarget inside the page:
+    // a delegated hover-out releases, an exit-intent check for a null relatedTarget stays shut.
+    for (const [type, t] of window.__auditSkipped ?? []) {
+      const b = t.getBoundingClientRect?.() ?? { left: 0, top: 0, width: 0, height: 0 };
+      const init = { bubbles: true, cancelable: true, composed: true, relatedTarget: document.documentElement, clientX: b.left + b.width / 2, clientY: b.top + b.height / 2 };
+      t.dispatchEvent(type === 'pointerout' ? new PointerEvent(type, init) : new MouseEvent(type, init));
+    } });
   await page.evaluate(() => {
     for (const t of ['mouseleave', 'pointerleave', 'mouseout', 'pointerout']) window.removeEventListener(t, window.__stopLeave, true);
     for (const t of ['mouseout', 'pointerout']) document.documentElement.removeEventListener(t, window.__stopOut);

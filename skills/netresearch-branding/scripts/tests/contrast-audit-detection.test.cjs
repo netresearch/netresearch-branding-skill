@@ -326,6 +326,23 @@ test('an exit-intent listener on <html>, select names and a select without a val
   assert.strictEqual(code, 1);
 });
 
+test('a hover-out delegated from <body> releases; handler properties and listener objects stay shut', async () => {
+  const { code, json } = await run(fixture('round16',
+    'body{margin:0}a.logo{position:absolute;top:0;left:0;color:#000}a.logo.hot{color:#ccc}' // scripted hover at (0, 0)
+    + '.pop{display:none}.pop.on{display:block;color:#ddd}main{padding-top:40px}',
+    '<a class="logo" href="#l">Logo</a><p class="pop" id="p1">Popup one</p><p class="pop" id="p2">Popup two</p>'
+    + '<script>const l=document.querySelector(".logo");'
+    + 'document.body.addEventListener("mouseover",(e)=>{if(e.target===l)l.classList.add("hot")});'
+    + 'document.body.addEventListener("mouseout",(e)=>{if(e.target===l)l.classList.remove("hot")});'
+    + 'document.body.onmouseout=(e)=>{if(!e.relatedTarget)document.getElementById("p1").classList.add("on")};'
+    + 'document.documentElement.addEventListener("mouseout",{handleEvent(e){if(!e.relatedTarget)document.getElementById("p2").classList.add("on")}});</script>'));
+  const text = json.contrastFailures.map((f) => f.text);
+  assert.ok(!text.includes('Logo'), `the delegated hover-out releases the logo: ${JSON.stringify(text)}`);
+  assert.ok(!text.includes('Popup one') && !text.includes('Popup two'), `handler property and listener object stay shut: ${JSON.stringify(text)}`);
+  assert.deepStrictEqual(json.contrastFailures, []);
+  assert.strictEqual(code, 0);
+});
+
 test('only keyboard-reachable controls are judged as focus indicators', async () => {
   const { code, json } = await run(fixture('reach',
     'button{background:#fff;border:1px solid #000;color:#000}:focus-visible{outline:2px solid #ddd}', // 1.36:1
