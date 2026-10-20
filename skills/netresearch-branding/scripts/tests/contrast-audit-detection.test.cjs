@@ -146,6 +146,23 @@ test('content revealed on scroll and every animation are measured as a user sees
   assert.strictEqual(code, 1);
 });
 
+test('a control shown only after scrolling is measured where it is shown', async () => {
+  const { code, json } = await run(fixture('scrolled',
+    'header{position:fixed;top:0;left:0;right:0;height:60px;display:flex;gap:16px;align-items:center;background:transparent}'
+    + 'header.scrolled{background:#15585E}header input{opacity:0;background:transparent;color:#fff}header.scrolled input{opacity:1}'
+    + 'input.lt{border:1px solid #fff}' // 8.11:1 on the scrolled header, 1:1 on the page at the top
+    + 'input.dk{border:1px solid #1E6A71}' // 1.3:1 on the scrolled header, 6.26:1 at the top
+    + 'header button{opacity:0;background:#15585E;color:#fff;border:0}header.scrolled button{opacity:1}'
+    + 'header button:focus-visible{outline:3px solid #1E6A71;outline-offset:2px}' // 1.3:1 on the scrolled header
+    + 'section{height:900px}',
+    '<header><input class="lt" aria-label="Light"><input class="dk" aria-label="Dark"><button type="button" class="rk">Call</button></header><section></section><section></section><section></section>'
+    + '<script>addEventListener("scroll",()=>document.querySelector("header").classList.toggle("scrolled",scrollY>100));</script>'));
+  assert.deepStrictEqual(json.controlBoundaryFailures.map((f) => f.element), ['input.dk']);
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element), ['button.rk']);
+  assert.strictEqual(json.transparentControlsSkipped, 0);
+  assert.strictEqual(code, 1);
+});
+
 test('only keyboard-reachable controls are judged as focus indicators', async () => {
   const { code, json } = await run(fixture('reach',
     'button{background:#fff;border:1px solid #000;color:#000}:focus-visible{outline:2px solid #ddd}', // 1.36:1
