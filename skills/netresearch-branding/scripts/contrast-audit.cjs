@@ -43,7 +43,9 @@
  * passes when any changed part reaches 3:1, and a shadow present in both states is not
  * an indicator. `controlBoundaryFailures`: the border (painted over the control's fill)
  * or the fill of each input, select and textarea against the surface around it.
- * Disabled, hidden and 1px visually hidden controls are skipped. Elements whose focus
+ * Disabled controls (also in a disabled fieldset), controls in a hidden ancestor or a
+ * closed dialog and 1px visually hidden form fields are skipped; an element that holds
+ * focus when the page loads is blurred first. Elements whose focus
  * changes no outline, ring or border are counted in `focusWithoutRing`, and the
  * browser's own `outline: auto` ring in `focusUserAgentRing`; neither is judged. A ring
  * drawn on another element (a sibling label, a :focus-within ancestor) is not seen.
@@ -214,7 +216,10 @@ async function measureInteractiveStates(page) {
   }
   // Focus indicators: what an element shows unfocused is recorded first, then :focus and
   // :focus-visible are forced together (a browser never shows one without the other) and
-  // only what changed is judged.
+  // only what changed is judged. An autofocused element would otherwise be recorded
+  // focused, so nothing may hold focus. One element at a time, like the pass above:
+  // a forced state must be reset before the next element is recorded.
+  if (!aborted) await page.evaluate(() => document.activeElement?.blur?.());
   for (const nodeId of aborted ? [] : nodeIds) {
     let forced = false;
     try {
@@ -238,17 +243,20 @@ async function measureInteractiveStates(page) {
   return { failures, focusFailures };
 }
 
-// Fingerprint of the computed colours, taken under the current scheme and again with
-// `attr` set as data-theme (then restored). Run inside the page.
-function colourFingerprint(attr) {
+// Fingerprints of the computed colours, one per entry of `attrs`: null for the page as
+// it is, a value for the page with that data-theme set (and then restored). In the page.
+function colourFingerprints(attrs) {
   const html = document.documentElement;
   const prev = html.dataset.theme;
-  if (attr) html.dataset.theme = attr;
-  const fp = [...document.querySelectorAll('html, body, body *')].slice(0, 3000).map((e) => {
-    const c = getComputedStyle(e); return `${c.color}/${c.backgroundColor}/${c.borderTopColor}`;
+  const take = () => [...document.querySelectorAll('html, body, body *')].slice(0, 3000).map((e) => {
+    const c = getComputedStyle(e); return [c.color, c.backgroundColor, c.borderTopColor].join('/');
   }).join('|');
-  if (attr) { if (prev === undefined) delete html.dataset.theme; else html.dataset.theme = prev; }
-  return fp;
+  const out = attrs.map((attr) => {
+    if (attr) html.dataset.theme = attr;
+    return take();
+  });
+  if (prev === undefined) delete html.dataset.theme; else html.dataset.theme = prev;
+  return out;
 }
 
 // Which mechanisms switch this page's colours. Detected from computed colours, not by
@@ -257,19 +265,19 @@ function colourFingerprint(attr) {
 // whose dark palette renders.
 async function detectDarkScheme(page, scheme) {
   const other = scheme === 'dark' ? 'light' : 'dark';
-  const base = await page.evaluate(colourFingerprint, null);
+  const [base] = await page.evaluate(colourFingerprints, [null]);
   const by = [];
   await page.emulateMedia({ colorScheme: other });
   try {
-    if (await page.evaluate(colourFingerprint, null) !== base) by.push('prefers-color-scheme');
+    const [flipped] = await page.evaluate(colourFingerprints, [null]);
+    if (flipped !== base) by.push('prefers-color-scheme');
   } finally {
     await page.emulateMedia({ colorScheme: scheme });
   }
   // Both values: a page may define only data-theme="dark" (or only "light"), and the
   // value opposite to the run's scheme would then change nothing.
-  for (const value of ['dark', 'light']) {
-    if (await page.evaluate(colourFingerprint, value) !== base) { by.push('data-theme'); break; }
-  }
+  const themed = await page.evaluate(colourFingerprints, ['dark', 'light']);
+  if (themed.some((fp) => fp !== base)) by.push('data-theme');
   return by;
 }
 
@@ -300,19 +308,42 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   // Kill transitions before measuring anything: see the note on stateFailures above.
   await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important;animation:none !important}' });
   const result = await page.evaluate(() => {
-    // Colours through a canvas: any colour the browser computes (rgb, oklch, color())
-    // comes back as sRGB bytes with its alpha.
+    // Colours: rgb()/rgba() are read numerically, exactly; any other notation the browser
+    // computes (oklch(), color()) goes through a 1x1 canvas, which returns sRGB bytes with
+    // 8-bit alpha. Filling over two different colours tells an unparseable value (it leaves
+    // the fill as it was) from a real one: null, never black.
     const ctx2d = Object.assign(document.createElement('canvas'), { width: 1, height: 1 }).getContext('2d', { willReadFrequently: true });
     const colourCache = new Map();
+    const RGB_FN = /^rgba?\(([^)]*)\)$/;
+    const channel = (x) => (x.endsWith('%') ? Number.parseFloat(x) * 2.55 : Number.parseFloat(x));
+    const alpha = (x) => {
+      if (x === undefined) return 1;
+      return x.endsWith('%') ? Number.parseFloat(x) / 100 : Number.parseFloat(x);
+    };
+    const viaCanvas = (c) => {
+      const fill = (sentinel) => {
+        ctx2d.clearRect(0, 0, 1, 1);
+        ctx2d.fillStyle = sentinel;
+        ctx2d.fillStyle = c;
+        ctx2d.fillRect(0, 0, 1, 1);
+        return ctx2d.getImageData(0, 0, 1, 1).data;
+      };
+      const a = fill('#000000');
+      const b = fill('#ffffff');
+      if (!a.every((x, i) => x === b[i])) return null;
+      return { r: a[0], g: a[1], b: a[2], a: a[3] / 255 };
+    };
     const parse = (c) => {
       if (!c) return null;
       if (colourCache.has(c)) return colourCache.get(c);
-      ctx2d.clearRect(0, 0, 1, 1);
-      ctx2d.fillStyle = '#000';
-      ctx2d.fillStyle = c;
-      ctx2d.fillRect(0, 0, 1, 1);
-      const d = ctx2d.getImageData(0, 0, 1, 1).data;
-      const v = { r: d[0], g: d[1], b: d[2], a: d[3] / 255 };
+      const m = RGB_FN.exec(c.trim());
+      let v;
+      if (m) {
+        const n = m[1].split(/[\s,/]+/).filter(Boolean);
+        v = { r: channel(n[0]), g: channel(n[1]), b: channel(n[2]), a: alpha(n[3]) };
+      } else {
+        v = viaCanvas(c);
+      }
       colourCache.set(c, v);
       return v;
     };
@@ -445,13 +476,30 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // composited over what lies behind it.
     const over = (c, b) => ({ r: c.r * c.a + b.r * (1 - c.a), g: c.g * c.a + b.g * (1 - c.a), b: c.b * c.a + b.b * (1 - c.a) });
     const rgb = (c) => `rgb(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)})`;
-    // Whether a control can be seen and used at all: a closed <dialog>, a display:none
-    // ancestor, a disabled control or a 1px visually hidden input has no visible state.
+    // Whether a control can be seen and used at all: a closed <dialog>, a display:none or
+    // visibility:hidden ancestor, a disabled control (also inside <fieldset disabled>) and a
+    // 1px visually hidden form field (its look is drawn by a sibling) have no visible state.
     const perceivable = (el) => {
-      if (el.disabled || el.getAttribute('aria-disabled') === 'true') return false;
+      if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return false;
       if (!el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true })) return false;
+      if (!el.matches('input, select, textarea')) return true;
       const b = el.getBoundingClientRect();
       return b.width > 1 && b.height > 1;
+    };
+    // Chromium writes a computed shadow layer colour first: a function up to its closing
+    // parenthesis, or a single word.
+    const leadingColour = (layer) => {
+      const paren = layer.indexOf('(');
+      const space = layer.indexOf(' ');
+      if (paren > 0 && (space === -1 || paren < space)) {
+        let depth = 0;
+        for (let i = paren; i < layer.length; i++) {
+          if (layer[i] === '(') depth++;
+          if (layer[i] === ')' && --depth === 0) return layer.slice(0, i + 1);
+        }
+        return layer;
+      }
+      return space === -1 ? layer : layer.slice(0, space);
     };
     // A box-shadow value split into its layers (commas inside colour functions kept).
     const shadowLayers = (v) => {
@@ -460,21 +508,25 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       for (const ch of v) {
         if (ch === '(') depth++;
         if (ch === ')') depth--;
-        if (ch === ',' && depth === 0) { out.push(cur.trim()); cur = ''; } else cur += ch;
+        if (ch === ',' && depth === 0) { out.push(cur.trim()); cur = ''; } else { cur += ch; }
       }
       if (cur.trim()) out.push(cur.trim());
       return out.map((layer) => {
-        const colour = (/^([a-z-]+\([^)]*\)|#[0-9a-f]+|[a-z]+)/i.exec(layer) || [''])[0];
-        const lengths = (layer.slice(colour.length).match(/-?\d+(\.\d+)?px/g) || []).map(Number.parseFloat);
-        return { text: layer, colour, inset: /\binset\b/.test(layer), spread: lengths[3] || 0 };
+        const colour = leadingColour(layer);
+        const rest = layer.slice(colour.length).split(/\s+/);
+        const lengths = rest.filter((t) => t.endsWith('px')).map(Number.parseFloat);
+        return { text: layer, colour, inset: rest.includes('inset'), spread: lengths[3] || 0 };
       });
     };
+    const SIDES = ['Top', 'Right', 'Bottom', 'Left'];
     const ringState = (el) => {
       const cs = getComputedStyle(el);
       return {
-        outline: `${cs.outlineStyle}|${cs.outlineWidth}|${cs.outlineColor}|${cs.outlineOffset}`,
+        // Not the offset: Chromium's own a:focus-visible moves a link's outline by 1px,
+        // which would make a permanent outline look like a focus indicator.
+        outline: `${cs.outlineStyle}|${cs.outlineWidth}|${cs.outlineColor}`,
         shadows: shadowLayers(cs.boxShadow).map((l) => l.text),
-        borders: ['Top', 'Right', 'Bottom', 'Left'].map((sd) => `${cs[`border${sd}Style`]}|${cs[`border${sd}Width`]}|${cs[`border${sd}Color`]}`),
+        borders: SIDES.map((sd) => ['Style', 'Width', 'Color'].map((p) => cs['border' + sd + p]).join('|')),
       };
     };
     // The focus indicator of ONE element: what changes between its unfocused state
@@ -486,6 +538,36 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // ring or border is counted in focusWithoutRing; the browser's own `outline: auto` ring,
     // which SC 1.4.11 leaves to the user agent, in focusUserAgentRing. A ring drawn on
     // another element (a sibling label, a :focus-within ancestor) is not seen.
+    // A changed, visible outline: against the parent's background, or the element's own
+    // when it is drawn inside (negative offset).
+    const outlinePart = (cs, before, after, { outer, own }) => {
+      if (after.outline === before.outline || cs.outlineStyle === 'none' || !(Number.parseFloat(cs.outlineWidth) > 0)) return [];
+      const c = parse(cs.outlineColor);
+      if (!c || c.a === 0) return [];
+      const against = (Number.parseFloat(cs.outlineOffset) || 0) < 0 ? own : outer;
+      return [{ indicator: 'outline', shown: over(c, against), against }];
+    };
+    // Each new shadow layer with a spread (a ring): inset against the element's own
+    // background, outer against the parent's.
+    const shadowParts = (cs, before, { outer, own }) => shadowLayers(cs.boxShadow)
+      .filter((layer) => !before.shadows.includes(layer.text) && layer.spread > 0)
+      .map((layer) => ({ layer, c: parse(layer.colour) }))
+      .filter(({ c }) => c && c.a > 0)
+      .map(({ layer, c }) => {
+        const against = layer.inset ? own : outer;
+        return { indicator: 'box-shadow', shown: over(c, against), against };
+      });
+    // Each changed, visible border side, painted over the element's fill unless
+    // background-clip stops the fill short of it, against the parent's background.
+    const borderParts = (cs, before, after, { outer, own }) => SIDES.flatMap((sd, k) => {
+      const p = 'border' + sd;
+      if (after.borders[k] === before.borders[k] || cs[p + 'Style'] === 'none') return [];
+      const w = Number.parseFloat(cs[p + 'Width']);
+      const c = parse(cs[p + 'Color']);
+      if (Number.isNaN(w) || w <= 0 || !c || c.a === 0) return [];
+      const under = cs.backgroundClip === 'border-box' ? own : outer;
+      return [{ indicator: 'border', shown: over(c, under), against: outer }];
+    });
     const ringBefore = new WeakMap();
     window.__focusWithoutRing = 0;
     window.__focusUserAgentRing = 0;
@@ -496,32 +578,13 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (!before) return null;
       const cs = getComputedStyle(el);
       const after = ringState(el);
-      const outer = bgOf(el.parentElement || el);
-      const own = bgOf(el);
-      const parts = [];
-      if (after.outline !== before.outline && cs.outlineStyle !== 'none' && Number.parseFloat(cs.outlineWidth) > 0) {
-        if (cs.outlineStyle === 'auto') { window.__focusUserAgentRing++; return null; }
-        const c = parse(cs.outlineColor);
-        if (c && c.a > 0) {
-          const against = (Number.parseFloat(cs.outlineOffset) || 0) < 0 ? own : outer;
-          parts.push({ indicator: 'outline', shown: over(c, against), against });
-        }
-      }
-      for (const layer of shadowLayers(cs.boxShadow)) {
-        if (before.shadows.includes(layer.text) || layer.spread <= 0) continue;
-        const c = parse(layer.colour);
-        if (!c || c.a === 0) continue;
-        const against = layer.inset ? own : outer;
-        parts.push({ indicator: 'box-shadow', shown: over(c, against), against });
-      }
-      ['Top', 'Right', 'Bottom', 'Left'].forEach((sd, k) => {
-        if (after.borders[k] === before.borders[k] || cs[`border${sd}Style`] === 'none') return;
-        const w = Number.parseFloat(cs[`border${sd}Width`]);
-        const c = parse(cs[`border${sd}Color`]);
-        if (Number.isNaN(w) || w <= 0 || !c || c.a === 0) return;
-        const under = cs.backgroundClip === 'border-box' ? own : outer;
-        parts.push({ indicator: 'border', shown: over(c, under), against: outer });
-      });
+      const surfaces = { outer: bgOf(el.parentElement || el), own: bgOf(el) };
+      if (after.outline !== before.outline && cs.outlineStyle === 'auto') { window.__focusUserAgentRing++; return null; }
+      const parts = [
+        ...outlinePart(cs, before, after, surfaces),
+        ...shadowParts(cs, before, surfaces),
+        ...borderParts(cs, before, after, surfaces),
+      ];
       if (!parts.length) { window.__focusWithoutRing++; return null; }
       const best = parts.map((p) => ({ ...p, r: ratio(p.shown, p.against) })).sort((a, b) => b.r - a.r)[0];
       if (best.r >= 3) return null;

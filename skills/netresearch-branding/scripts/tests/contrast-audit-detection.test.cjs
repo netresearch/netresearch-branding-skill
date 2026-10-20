@@ -96,11 +96,18 @@ test('weak indicators in their common shapes fail', async () => {
     + 'button.ot:focus-visible{outline:2px solid transparent;box-shadow:0 0 0 3px #eee}' // transparent outline, shadow ring
     + 'a.tr:focus-visible{outline:3px solid rgba(0,0,0,.2);outline-offset:2px}' // translucent: renders #ccc, 1.6:1
     + 'a.ok:focus-visible{outline:3px solid oklch(0.95 0 0)}' // a non-rgb colour
-    + '.grey{background:#ccc;padding:8px}input.tb{border:2px solid rgba(0,0,0,.5);background:#fff}', // border over the white fill: 2.5:1 on #ccc
+    + '.grey{background:#ccc;padding:8px}input.tb{border:2px solid rgba(0,0,0,.5);background:#fff}' // border over the white fill: 2.5:1 on #ccc
+    + 'input.af{border:1px solid #000}input.af:focus-visible{outline:2px solid #eee}' // focused on load (autofocus)
+    + 'a.fl{display:inline}a.fl:focus-visible{outline:2px solid #eee}' // only floated content: a 0x0 box
+    + 'button.bc:focus-visible{outline:none;border-color:#eee}' // focus shown by the border alone
+    + 'button.tb2{border:2px solid #000}button.tb2:focus-visible{outline:none;border-color:rgba(0,0,0,.5)}', // over the white fill: 2.5:1 on #ccc
     '<p><a class="fo" href="#a">One</a> <a class="tr" href="#b">Two</a> <a class="ok" href="#c">Three</a></p>'
     + '<button type="button" class="tf">Go</button> <button type="button" class="ot">Go</button>'
-    + '<div class="grey"><label>Name <input class="tb"></label></div>'));
-  assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element).sort(), ['a.fo', 'a.ok', 'a.tr', 'button.ot', 'button.tf']);
+    + '<div class="grey"><label>Name <input class="tb"></label> <button type="button" class="tb2">Go</button></div>'
+    + '<label>Search <input class="af" autofocus></label> <button type="button" class="bc">Go</button>'
+    + '<p><a class="fl" href="#f"><span style="float:left">Floated</span></a></p>'));
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element).sort(),
+    ['a.fl', 'a.fo', 'a.ok', 'a.tr', 'button.bc', 'button.ot', 'button.tb2', 'button.tf', 'input.af']);
   assert.deepStrictEqual(json.controlBoundaryFailures.map((f) => f.element), ['input.tb']);
   assert.strictEqual(code, 1);
 });
@@ -116,12 +123,20 @@ test('strong, unchanged, unreachable and hidden indicators do not fail', async (
     + 'button.ir{background:#222}button.ir:focus-visible{outline:2px solid #fff;outline-offset:-4px}' // inset outline: white on #222
     + 'button.dis:focus-visible{outline:2px solid #eee}'
     + '.mid{background:#595959;padding:8px}input.fill{border:0;background:#fff}' // no border, the fill carries the boundary
-    + 'input.faint{border:1px solid #eee;background:#fff}',
+    + 'input.faint{border:1px solid #eee;background:#fff}'
+    + 'a.perm{outline:1px solid #eee}' // a permanent outline is not a focus indicator
+    + 'a.pr{box-shadow:0 0 0 3px #eee}a.pr:focus-visible{outline:none;text-decoration-thickness:3px}' // nor a permanent ring
+    + 'button.ins{background:#222}button.ins:focus-visible{outline:none;box-shadow:inset 0 0 0 3px #fff}' // inset ring: white on #222
+    // the usual visually hidden input: its white fill alone is 1.00:1 on white
+    + 'input.sr{position:absolute;width:1px;height:1px;padding:0;border:0;background:#fff;overflow:hidden;clip-path:inset(50%)}',
     '<p><a class="tw" href="#a">Ring</a> <a class="decor" href="#b">Card link</a></p>'
     + '<div class="dark"><button type="button" class="inset">Go</button></div>'
     + '<button type="button" class="ir">Inset</button> <button type="button" class="dis" disabled>Off</button>'
     + '<div class="mid"><label style="color:#fff">Name <input class="fill"></label></div>'
-    + '<div style="display:none"><input class="faint"></div><dialog><input class="faint"></dialog>'));
+    + '<div style="display:none"><input class="faint"></div><dialog><input class="faint"></dialog>'
+    + '<div style="visibility:hidden"><input class="faint"></div><fieldset disabled><input class="faint"></fieldset>'
+    + '<p><a class="perm" href="#p">Outlined</a> <a class="pr" href="#q">Ringed</a> <button type="button" class="ins">Inset</button></p>'
+    + '<label>Hidden <input class="sr"></label>'));
   assert.deepStrictEqual(json.focusRingFailures, []);
   assert.deepStrictEqual(json.controlBoundaryFailures, []);
   assert.ok(json.focusWithoutRing >= 1, `the card link shows focus without a ring and must be counted, got ${json.focusWithoutRing}`);
