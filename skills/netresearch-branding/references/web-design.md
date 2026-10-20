@@ -59,7 +59,8 @@ lightness and the box disappears.
 On the gradient the primary button turns white with a teal label, because a
 `#257880` fill would vanish into a gradient that starts at `#257880`.
 Focus is a solid 3px outline in `--nr-focus` (3.38:1 on white; white on the
-gradient, on `.on-gradient` and on the footer; `CanvasText` in forced colours)
+gradient, on `.on-gradient` and on the footer; in forced colours a system colour,
+`CanvasText` or the browser's own substitute)
 with the soft `--nr-ring` on top; never `outline: none` alone. An invalid input
 gets a 2px red edge, a change in form as well as hue. Checkboxes and radios are drawn (`.form-check`) so the
 box keeps its 3:1 edge in both schemes. Two to four mutually exclusive views
@@ -168,8 +169,8 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
 - **Split layout** (`.split-layout`, `.split-panel`, `.split-main`, `.steps`):
   sign-in, request and upload screens. Brand panel with the real steps of the
   process on the left, the task on plain white on the right; stacks below
-  1024px. The current step carries `aria-current="step"`, which also draws
-  its filled number.
+  1024px. The current step carries `aria-current="step"`, which also fills
+  its number: white on the gradient, teal on a light surface.
 - **App page** (`.page-band`, `.page-body`): a short gradient header band with
   eyebrow and title; the first content block overlaps it by 72px.
 - **Dialog** (`.dialog`): 24px radius, blurred dark backdrop.
@@ -180,8 +181,11 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
 - **Links** (`a`, `.link-standalone`): `#15585E` default (8.11:1), `#0A5057` on
   hover (9.14:1), underlined in running text. The brand `#2F99A4` is 3.38:1 and
   is not a link colour at body size. On the gradient (`.hero`, `.page-band`,
-  `.split-panel`, `.on-gradient`) links, standalone links and ghost buttons
-  turn white (`#15585E` is 1.57:1 there), and so do eyebrows and headings.
+  `.split-panel`, `.on-gradient`) headings, eyebrows, links, standalone links,
+  ghost buttons and the focus outline turn white (`#15585E` is 1.57:1 there,
+  anthracite 1.35:1), and the primary button turns white with a teal label. A
+  light container on the gradient (`.hero-panel`, `.card`, `.stat`, `.notice`,
+  `.table-wrap`, `.dialog`, `.tinted`) keeps the light-surface colours.
 
 **External and download links** get a marker so users know what a click
 does before they click it:
