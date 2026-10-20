@@ -11,6 +11,10 @@
  *   browser's own `outline: auto` ring is counted and not judged.
  * - controlBoundaryFailures: an enabled input whose border and fill are below 3:1
  *   against the surface fails the run; a disabled one is exempt.
+ * - What a user sees is what is measured: text in its own colour (also of a closed
+ *   <select>, a closed <details> and display: contents), hover and focus states, content
+ *   revealed on scroll or by an animation, and the page at rest once the pointer has
+ *   left it without opening an exit-intent popup or leaving a hover on.
  *
  * Needs playwright-core (PLAYWRIGHT_CORE or require resolution, as the audit does).
  */
@@ -374,6 +378,16 @@ test('a replayed leave keeps the path and phase it had and a related target in t
     + 'document.body.addEventListener("mouseover",(e)=>{if(e.target===l)l.classList.add("ph")});'
     + 'document.body.addEventListener("mouseout",(e)=>{if(e.eventPhase!==Event.BUBBLING_PHASE)return;if(e.target===l)l.classList.remove("ph")});'
     + 'document.body.addEventListener("mouseout",(e)=>{if(!document.documentElement.contains(e.relatedTarget))document.getElementById("p1").classList.add("on")});</script>'));
+  assert.deepStrictEqual(json.contrastFailures, []);
+  assert.strictEqual(code, 0);
+});
+
+test('a hover-out that runs after a delay is waited for', async () => {
+  const { code, json } = await run(fixture('round19',
+    'body{margin:0}a.logo{position:absolute;top:0;left:0;color:#000}a.logo.hot{color:#ccc}main{padding-top:40px}',
+    '<a class="logo" href="#l">Logo</a>'
+    + '<script>const l=document.querySelector(".logo");l.addEventListener("mouseover",()=>l.classList.add("hot"));'
+    + 'l.addEventListener("mouseout",()=>setTimeout(()=>l.classList.remove("hot"),800));</script>')); // hover intent
   assert.deepStrictEqual(json.contrastFailures, []);
   assert.strictEqual(code, 0);
 });

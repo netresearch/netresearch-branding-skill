@@ -73,9 +73,12 @@
  * leave events still release its hover. A leave such a listener skipped is then handed
  * to that listener alone, with <body> as related target and the path and phase it had,
  * so a hover-out delegated from <html> or <body> still releases. Not covered: an
- * exit-intent capture listener on window or the document; a hover delegated from the
- * document for an element at (0, 0), where the pointer starts; and the order of leave
- * listeners when an element's own mouseleave replaces it. The page is scrolled through
+ * exit-intent capture listener on window or the document; an exit check that compares the
+ * related target with <body>; a hover state on <html> or <body> itself that ends only when
+ * the pointer leaves the page (the same check an exit-intent popup makes); a hover
+ * delegated from the document for an element at (0, 0), where the pointer starts; a
+ * hover-out that waits longer than 1 s; and the order of leave listeners when an
+ * element's own mouseleave replaces it. The page is scrolled through
  * once, instantly (content revealed on scroll, also content that hides again when
  * scrolled away), infinite animations are cancelled and finite ones finished,
  * unless finishing leaves the element less visible (a toast fading out), so a fade-in
@@ -473,7 +476,8 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // The leave a wrapped listener skipped is replayed with <body> as relatedTarget:
     // a delegated hover-out releases, an exit-intent check for a null relatedTarget stays shut.
     // The related target is inside the document (an exit check that tests contains() stays
-    // shut) and is not <html> (the classic relatedTarget-or-HTML check stays shut either).
+    // shut) and, on a page with a <body>, is not <html> (the classic relatedTarget-or-HTML
+    // check stays shut either).
     const rel = document.body ?? document.documentElement;
     for (const { orig, ctx, e, path, phase } of window.__auditSkipped ?? []) {
       const b = e.target.getBoundingClientRect?.() ?? { left: 0, top: 0, width: 0, height: 0 };
@@ -486,6 +490,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     for (const t of ['mouseleave', 'pointerleave', 'mouseout', 'pointerout']) window.removeEventListener(t, window.__stopLeave, true);
     for (const t of ['mouseout', 'pointerout']) document.documentElement.removeEventListener(t, window.__stopOut);
   });
+  // A hover-out may run after a delay (hover intent, usually 100 to 500 ms). A pending timer
+  // cannot be observed, so the page is given a fixed second to settle at rest.
+  await page.evaluate(() => new Promise((done) => { setTimeout(done, 1000); }));
   // Kill transitions before measuring anything: see the note on stateFailures above.
   await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important}' });
   // Content revealed on scroll and every animation are put into the state a user sees:
