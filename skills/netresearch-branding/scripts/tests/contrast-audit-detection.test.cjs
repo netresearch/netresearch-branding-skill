@@ -384,12 +384,25 @@ test('a replayed leave keeps the path and phase it had and a related target in t
 
 test('a hover-out that runs after a delay is waited for', async () => {
   const { code, json } = await run(fixture('round19',
-    'body{margin:0}a.logo{position:absolute;top:0;left:0;color:#000}a.logo.hot{color:#ccc}main{padding-top:40px}',
+    'body{margin:0}a.logo{position:absolute;top:0;left:0;color:#000}a.logo.hot,a.logo.dg{color:#ccc}main{padding-top:40px}',
     '<a class="logo" href="#l">Logo</a>'
     + '<script>const l=document.querySelector(".logo");l.addEventListener("mouseover",()=>l.classList.add("hot"));'
-    + 'l.addEventListener("mouseout",()=>setTimeout(()=>l.classList.remove("hot"),800));</script>')); // hover intent
+    + 'const later=setTimeout;' // a library's own reference to setTimeout, as debounce helpers keep
+    + 'l.addEventListener("mouseout",()=>later(()=>l.classList.remove("hot"),300));' // hover intent on the element
+    // the same, delegated from <body>: its leave is skipped and replayed, and its timer waited for too
+    + 'document.body.addEventListener("mouseover",(e)=>{if(e.target===l)l.classList.add("dg")});'
+    + 'document.body.addEventListener("mouseout",(e)=>{if(e.target===l)later(()=>l.classList.remove("dg"),900)});</script>'));
   assert.deepStrictEqual(json.contrastFailures, []);
   assert.strictEqual(code, 0);
+});
+
+test('the settle wait does not depend on the page\'s own setTimeout', { timeout: 60000 }, async () => {
+  // A page that replaces setTimeout with a stub that never fires must not hang the run.
+  const { code, json } = await run(fixture('stubtimer',
+    'p.weak{color:#aaa}',
+    '<p class="weak">Weak</p><script>window.setTimeout=()=>0;</script>'));
+  assert.deepStrictEqual(json.contrastFailures.map((f) => f.element), ['p.weak']);
+  assert.strictEqual(code, 1);
 });
 
 test('only keyboard-reachable controls are judged as focus indicators', async () => {

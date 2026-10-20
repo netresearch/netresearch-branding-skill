@@ -426,6 +426,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     const add = EventTarget.prototype.addEventListener;
     const remove = EventTarget.prototype.removeEventListener;
     const wrapped = new WeakMap();
+    // Timers the page sets while the audit's leave runs: native copies, taken before any page script.
+    const st = window.setTimeout; const ct = window.clearTimeout; const pending = new Set();
+    Object.defineProperty(window, '__auditTimers', { value: { pending } });
+    window.setTimeout = function (fn, ms, ...args) { const id = st.call(this, function (...x) { pending.delete(id); return typeof fn === 'function' ? fn.apply(this, x) : undefined; }, ms, ...args); if ((window.__auditLeaving || window.__auditReplaying) && !(Number(ms) > 1000)) pending.add(id); return id; };
+    window.clearTimeout = function (id) { pending.delete(id); return ct.call(this, id); };
     const guarded = (target, type, fn) => (target === document.documentElement || target === document.body)
       && (type === 'mouseout' || type === 'pointerout') && (typeof fn === 'function' || (typeof fn === 'object' && fn !== null)) && !fn.__audit;
     EventTarget.prototype.addEventListener = function (type, fn, opts) {
@@ -472,7 +477,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     }
   });
   await page.mouse.move(-10, -10);
-  await page.evaluate(() => { window.__auditLeaving = false;
+  await page.evaluate(() => { window.__auditReplaying = true; window.__auditLeaving = false;
     // The leave a wrapped listener skipped is replayed with <body> as relatedTarget:
     // a delegated hover-out releases, an exit-intent check for a null relatedTarget stays shut.
     // The related target is inside the document (an exit check that tests contains() stays
@@ -490,9 +495,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     for (const t of ['mouseleave', 'pointerleave', 'mouseout', 'pointerout']) window.removeEventListener(t, window.__stopLeave, true);
     for (const t of ['mouseout', 'pointerout']) document.documentElement.removeEventListener(t, window.__stopOut);
   });
-  // A hover-out may run after a delay (hover intent, usually 100 to 500 ms). A pending timer
-  // cannot be observed, so the page is given a fixed second to settle at rest.
-  await page.evaluate(() => new Promise((done) => { setTimeout(done, 1000); }));
+  // A hover-out may run after a delay (hover intent, usually 100 to 500 ms). Timers of at
+  // most 1 s that the page set while the audit's leave ran are waited for, at most 1 s;
+  // the page's other timers run on as they would anyway (a toast is measured as before).
+  await page.evaluate(() => { window.__auditReplaying = false; });
+  await page.waitForFunction(() => window.__auditTimers.pending.size === 0, null, { timeout: 1000, polling: 50 }).catch(() => {});
   // Kill transitions before measuring anything: see the note on stateFailures above.
   await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important}' });
   // Content revealed on scroll and every animation are put into the state a user sees:
