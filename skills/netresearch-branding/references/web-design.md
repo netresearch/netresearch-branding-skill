@@ -156,8 +156,11 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   its tint), never brand orange, so they read as errors.
 - **Segmented control** (`.segmented`): pill track, selected item as a white
   pill with a bold `#15585E` label and a 1.5px `#2F99A4` ring (3.10:1 against
-  the track; the white pill alone is 1.09:1); mark it with `aria-current`, `aria-pressed` or
-  `aria-selected`.
+  the track; the white pill alone is 1.09:1). The state attribute follows the
+  markup: `aria-pressed="true"` on toggle `<button>`s in a `role="group"`,
+  `aria-selected="true"` on `role="tab"` items in a `role="tablist"`,
+  `aria-current="page"` on links to the current page. The states are not
+  interchangeable.
 - **Split layout** (`.split-layout`, `.split-panel`, `.split-main`, `.steps`):
   sign-in, request and upload screens. Brand panel with the real steps of the
   process on the left, the task on plain white on the right; stacks below
