@@ -343,7 +343,7 @@ test('a hover-out delegated from <body> releases; handler properties and listene
   assert.strictEqual(code, 0);
 });
 
-test('a skipped leave reaches only its own listener, as a mouse event with an in-page target', async () => {
+test('a skipped leave reaches only its own listener, with <body> as related target', async () => {
   const { code, json } = await run(fixture('round17',
     'body{margin:0}a.logo{position:absolute;top:0;left:0;color:#000}a.logo.hot{color:#ccc}'
     + 'a.logo.ph{color:#ccc}' // a pointer hover delegated from <html> that only counts the mouse
@@ -359,6 +359,21 @@ test('a skipped leave reaches only its own listener, as a mouse event with an in
     + 'document.body.addEventListener("mouseout",(e)=>{const f=e.relatedTarget||e.toElement;if(!f||f.nodeName==="HTML")document.getElementById("p1").classList.add("on")});'
     // A listener object that gets its handleEvent only after it is added.
     + 'const o={};document.documentElement.addEventListener("mouseout",o);o.handleEvent=(e)=>{if(!e.relatedTarget)document.getElementById("p2").classList.add("on")};</script>'));
+  assert.deepStrictEqual(json.contrastFailures, []);
+  assert.strictEqual(code, 0);
+});
+
+test('a replayed leave keeps the path and phase it had and a related target in the document', async () => {
+  const { code, json } = await run(fixture('round18',
+    'body{margin:0}a.logo{position:absolute;top:0;left:0;color:#000}a.logo.hot,a.logo.ph{color:#ccc}'
+    + '.pop{display:none}.pop.on{display:block;color:#ddd}main{padding-top:40px}',
+    '<a class="logo" href="#l">Logo</a><p class="pop" id="p1">Popup one</p>'
+    + '<script>const l=document.querySelector(".logo");'
+    + 'document.body.addEventListener("mouseover",(e)=>{if(e.composedPath().includes(l))l.classList.add("hot")});'
+    + 'document.body.addEventListener("mouseout",(e)=>{if(e.composedPath().includes(l))l.classList.remove("hot")});'
+    + 'document.body.addEventListener("mouseover",(e)=>{if(e.target===l)l.classList.add("ph")});'
+    + 'document.body.addEventListener("mouseout",(e)=>{if(e.eventPhase!==Event.BUBBLING_PHASE)return;if(e.target===l)l.classList.remove("ph")});'
+    + 'document.body.addEventListener("mouseout",(e)=>{if(!document.documentElement.contains(e.relatedTarget))document.getElementById("p1").classList.add("on")});</script>'));
   assert.deepStrictEqual(json.contrastFailures, []);
   assert.strictEqual(code, 0);
 });
