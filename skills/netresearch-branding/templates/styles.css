@@ -119,12 +119,38 @@
   /* Interaction */
   /* Focus: a solid outline, offset from the control, is the indicator; it
      sits on the page background (3.38:1 on white, 3.10:1 on #F5F5F5). On
-     the gradient it turns white (see .hero :focus-visible). The soft ring
+     the gradient it turns white (see SURFACES). The soft ring
      is decoration on top of it. */
   --nr-focus: #2F99A4;
   /* On a light tint #2F99A4 drops to 2.94:1; tinted containers use this. */
   --nr-focus-on-tint: #257880;  /* 4.48:1 on the danger tint, 4.50:1 on the primary tint */
   --nr-ring: 0 0 0 4px rgba(47, 153, 164, 0.28);
+
+  /* Surface tokens (see SURFACES). Their values here are the light-surface
+     ones; a gradient surface overrides them and a light container sets them
+     back from the --nr-base-* copies, which resolve on :root and so follow
+     the colour scheme. */
+  --nr-base-text: var(--nr-text);
+  --nr-base-text-secondary: var(--nr-text-secondary);
+  --nr-base-primary-text: var(--nr-primary-text);
+  --nr-base-primary-deep: var(--nr-primary-deep);
+  --nr-base-focus: var(--nr-focus);
+  --nr-base-focus-on-tint: var(--nr-focus-on-tint);
+  --nr-link-underline: 1px;
+  --nr-code-bg: var(--nr-bg-alt);
+  --nr-code-border: var(--nr-border-light);
+  --nr-btn-primary-bg: var(--nr-primary-fill);
+  --nr-btn-primary-fg: var(--nr-on-fill);
+  --nr-btn-primary-hover-bg: var(--nr-primary-fill-hover);
+  --nr-btn-primary-hover-fg: var(--nr-on-fill);
+  --nr-btn-outline-fg: var(--nr-primary-text);
+  --nr-btn-outline-border: var(--nr-primary);
+  --nr-btn-outline-hover-bg: var(--nr-primary-tint);
+  --nr-btn-outline-hover-fg: var(--nr-primary-text);
+  --nr-btn-ghost-hover-bg: var(--nr-primary-tint);
+  --nr-step-current-bg: var(--nr-primary-fill);
+  --nr-step-current-fg: var(--nr-on-fill);
+  --nr-step-current-border: var(--nr-primary-text);
   --nr-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --nr-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600' fill='none' stroke='%23FFFFFF' stroke-opacity='.14' stroke-width='3'%3E%3Crect x='70' y='70' width='460' height='460' rx='64'/%3E%3Crect x='150' y='150' width='300' height='300' rx='44'/%3E%3Crect x='230' y='230' width='140' height='140' rx='26'/%3E%3C/svg%3E");
 }
@@ -293,6 +319,87 @@ img, svg { max-width: 100%; }
 .skip-link:hover { top: var(--spacing-sm); color: var(--nr-on-fill); }
 
 /* ============================================
+   SURFACES
+   .hero, .page-band, .split-panel, .on-gradient carry the teal gradient (#257880 to #0A5057;
+   #1B6C74 to #0B3539 in dark). White is 5.15:1 or more on every stop; the
+   teal text roles are not (the link colour is 1.57:1, 3.05:1 in dark) and
+   anthracite is 1.35:1. A gradient surface therefore turns the colour tokens
+   white, and a light container on it (a panel, card, notice, badge, form
+   field ...) sets them back. The tokens inherit, so the nearest surface wins
+   at any depth: a card on the hero is light, a gradient tile in that card is
+   a gradient again.
+   ============================================ */
+.hero, .page-band, .split-panel, .on-gradient {
+  --nr-text: var(--nr-on-fill);
+  --nr-text-secondary: var(--nr-on-fill);
+  --nr-primary-text: var(--nr-on-fill);
+  --nr-primary-deep: var(--nr-on-fill);
+  --nr-focus: var(--nr-on-fill);
+  --nr-focus-on-tint: var(--nr-on-fill);
+  --nr-link-underline: 2px;
+  /* Chips and inline code are border-only, never an rgba() fill: a translucent
+     fill lightens the stop under white text (white on #257880 lifted by 15%
+     white is 3.9:1) and no audit can measure it. */
+  --nr-code-bg: transparent;
+  --nr-code-border: rgba(255, 255, 255, 0.45);
+  /* A #257880 button on a gradient that starts at #257880 has no visible fill,
+     and buttons are identified by their fill: white with a teal label, 5.15:1
+     (6.10:1 in dark); hover 7.09:1. */
+  --nr-btn-primary-bg: #FFFFFF;
+  --nr-btn-primary-fg: var(--nr-primary-fill);
+  --nr-btn-primary-hover-bg: #E6F2F3;
+  --nr-btn-primary-hover-fg: #15585E;
+  --nr-btn-outline-fg: var(--nr-on-fill);
+  --nr-btn-outline-border: rgba(255, 255, 255, 0.7);
+  --nr-btn-outline-hover-bg: var(--nr-on-fill);
+  --nr-btn-outline-hover-fg: var(--nr-on-light);
+  --nr-btn-ghost-hover-bg: transparent;
+  --nr-step-current-bg: var(--nr-on-fill);
+  --nr-step-current-fg: var(--nr-on-light);
+  --nr-step-current-border: var(--nr-on-fill);
+  color: var(--nr-on-fill);
+}
+
+.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted,
+.segmented, .badge, .btn-tonal, .form-input, .form-select, .form-textarea {
+  --nr-text: var(--nr-base-text);
+  --nr-text-secondary: var(--nr-base-text-secondary);
+  --nr-primary-text: var(--nr-base-primary-text);
+  --nr-primary-deep: var(--nr-base-primary-deep);
+  --nr-link-underline: 1px;
+  --nr-code-bg: var(--nr-bg-alt);
+  --nr-code-border: var(--nr-border-light);
+  --nr-btn-primary-bg: var(--nr-primary-fill);
+  --nr-btn-primary-fg: var(--nr-on-fill);
+  --nr-btn-primary-hover-bg: var(--nr-primary-fill-hover);
+  --nr-btn-primary-hover-fg: var(--nr-on-fill);
+  --nr-btn-outline-fg: var(--nr-primary-text);
+  --nr-btn-outline-border: var(--nr-primary);
+  --nr-btn-outline-hover-bg: var(--nr-primary-tint);
+  --nr-btn-outline-hover-fg: var(--nr-primary-text);
+  --nr-btn-ghost-hover-bg: var(--nr-primary-tint);
+  --nr-step-current-bg: var(--nr-primary-fill);
+  --nr-step-current-fg: var(--nr-on-fill);
+  --nr-step-current-border: var(--nr-primary-text);
+}
+
+/* The focus outline is drawn outside an element, on the surface around it: a
+   card link or a tonal button on the gradient keeps the white outline, and
+   only what sits inside a light container gets the light-surface one. Inside
+   a tinted container that is the darker tint outline. */
+:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted,
+    .segmented, .badge, .btn-tonal, .form-input, .form-select, .form-textarea) > * {
+  --nr-focus: var(--nr-base-focus);
+  --nr-focus-on-tint: var(--nr-base-focus-on-tint);
+}
+:is(.badge, .table tr.row-danger, .table tr.row-warning, .table tr.row-success, .tinted) > * {
+  --nr-focus: var(--nr-base-focus-on-tint);
+}
+
+/* Containers set their text colour too, so nothing inherits the gradient's white. */
+.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted { color: var(--nr-text); }
+
+/* ============================================
    TYPOGRAPHY
    ============================================ */
 h1, h2, h3, h4, h5, h6 {
@@ -375,7 +482,7 @@ p {
 a {
   color: var(--nr-primary-text);
   text-decoration: underline;
-  text-decoration-thickness: 1px;
+  text-decoration-thickness: var(--nr-link-underline);
   text-underline-offset: 3px;
   transition: color 0.15s var(--nr-ease);
 }
@@ -389,8 +496,13 @@ code, kbd {
   font-size: max(var(--font-size-sm), 0.9em);
   padding: 0.1em 0.4em;
   border-radius: 6px;
-  background: var(--nr-bg-alt);
-  border: 1px solid var(--nr-border-light);
+  background: var(--nr-code-bg);
+  border: 1px solid var(--nr-code-border);
+}
+
+.chip {
+  background: var(--nr-code-bg);
+  border: 1px solid var(--nr-code-border);
 }
 
 /* The browser's `smaller` would give 13.3px; no text goes below 14px. */
@@ -689,8 +801,8 @@ small { font-size: var(--font-size-sm); }
 }
 
 .btn-primary {
-  background-color: var(--nr-primary-fill);
-  color: var(--nr-on-fill);
+  background-color: var(--nr-btn-primary-bg);
+  color: var(--nr-btn-primary-fg);
   box-shadow: 0 1px 2px rgba(10, 80, 87, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
@@ -704,7 +816,8 @@ small { font-size: var(--font-size-sm); }
 }
 
 .btn-primary:hover {
-  background-color: var(--nr-primary-fill-hover);
+  background-color: var(--nr-btn-primary-hover-bg);
+  color: var(--nr-btn-primary-hover-fg);
   box-shadow: 0 6px 16px rgba(10, 80, 87, 0.28);
 }
 
@@ -718,17 +831,17 @@ small { font-size: var(--font-size-sm); }
   background-color: var(--nr-accent-fill-hover);
 }
 
-/* For dark or filled surfaces only (the hero). */
+/* Made for the gradient (white outline); on a light surface it draws in teal. */
 .btn-outline {
   background-color: transparent;
-  color: var(--nr-on-fill);
-  border-color: rgba(255, 255, 255, 0.7);
+  color: var(--nr-btn-outline-fg);
+  border-color: var(--nr-btn-outline-border);
 }
 
 .btn-outline:hover {
-  background-color: var(--nr-on-fill);
-  border-color: var(--nr-on-fill);
-  color: var(--nr-on-light);
+  background-color: var(--nr-btn-outline-hover-bg);
+  border-color: var(--nr-btn-outline-hover-bg);
+  color: var(--nr-btn-outline-hover-fg);
 }
 
 /* The quiet second action on light surfaces. */
@@ -749,7 +862,7 @@ small { font-size: var(--font-size-sm); }
 }
 
 .btn-ghost:hover {
-  background: var(--nr-primary-tint);
+  background: var(--nr-btn-ghost-hover-bg);
   color: var(--nr-primary-text);
 }
 
@@ -901,8 +1014,7 @@ small { font-size: var(--font-size-sm); }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .badge-info,
   :root:not([data-theme="light"]) .badge-accent,
-  :root:not([data-theme="light"]) .eyebrow:not(:is(.hero, .page-band, .split-panel, .on-gradient) *),
-  :root:not([data-theme="light"]) :is(.hero, .page-band, .split-panel, .on-gradient) :is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) .eyebrow,
+  :root:not([data-theme="light"]) .eyebrow,
   :root:not([data-theme="light"]) .navbar-link.active,
   :root:not([data-theme="light"]) .navbar-link[aria-current],
   :root:not([data-theme="light"]) .segmented [aria-pressed="true"],
@@ -914,8 +1026,7 @@ small { font-size: var(--font-size-sm); }
 :root[data-theme="dark"] .feature-icon { color: var(--nr-primary-text); }
 :root[data-theme="dark"] .badge-info,
 :root[data-theme="dark"] .badge-accent,
-:root[data-theme="dark"] .eyebrow:not(:is(.hero, .page-band, .split-panel, .on-gradient) *),
-:root[data-theme="dark"] :is(.hero, .page-band, .split-panel, .on-gradient) :is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) .eyebrow,
+:root[data-theme="dark"] .eyebrow,
 :root[data-theme="dark"] .navbar-link.active,
 :root[data-theme="dark"] .navbar-link[aria-current],
 :root[data-theme="dark"] .segmented [aria-pressed="true"],
@@ -1364,22 +1475,20 @@ a[download]::before { content: '\2B07  '; }
 
 /* The current step is marked with aria-current="step", so assistive
    technology announces it; the filled number is the visual half: teal on a
-   light surface (white on it 5.15:1, 6.10:1 in dark), white on the gradient
-   (see GRADIENT SURFACES). */
+   light surface (white on it 5.15:1, 6.10:1 in dark; its rim in the link
+   colour, 7.83:1 on the dark panel), white on the gradient (see SURFACES). */
 .steps [aria-current="step"] .step-num {
-  background: var(--nr-primary-fill);
-  border-color: var(--nr-primary-fill);
-  color: var(--nr-on-fill);
+  background: var(--nr-step-current-bg);
+  border-color: var(--nr-step-current-border);
+  color: var(--nr-step-current-fg);
 }
 
-/* !important: the gradient variant is more specific, and in forced colours
-   its white fill would be reset to Canvas, hiding the current step again. */
 @media (forced-colors: active) {
   .steps [aria-current="step"] .step-num {
-    forced-color-adjust: none !important;
-    background: CanvasText !important;
-    border-color: CanvasText !important;
-    color: Canvas !important;
+    forced-color-adjust: none;
+    background: CanvasText;
+    border-color: CanvasText;
+    color: Canvas;
   }
 }
 
@@ -1409,67 +1518,6 @@ a[download]::before { content: '\2B07  '; }
   background: var(--nr-motif) center / contain no-repeat;
 }
 
-/* ============================================
-   GRADIENT SURFACES
-   .hero, .page-band, .split-panel and .on-gradient carry the teal gradient
-   (#257880 to #0A5057; #1B6C74 to #0B3539 in dark). White is 5.15:1 or more
-   on every stop; the teal text roles are not (the link colour is 1.57:1,
-   3.05:1 in dark) and anthracite is 1.35:1. So everything that would carry
-   them turns white. None of these rules reaches into a light container on
-   the gradient (the hero panel, a card, a notice, a dialog ...): inside one,
-   the light-surface defaults apply unchanged.
-   ============================================ */
-:is(.hero, .page-band, .split-panel, .on-gradient) :is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) { color: var(--nr-text); }
-
-:is(.hero, .page-band, .split-panel, .on-gradient) :is(h1, h2, h3, h4, h5, h6, .eyebrow):not(:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) *) { color: var(--nr-on-fill); }
-
-/* Chips and inline code are border-only, never an rgba() fill: a translucent
-   fill lightens the stop under white text (white on #257880 lifted by 15%
-   white is 3.9:1) and no audit can measure it. */
-:is(.hero, .page-band, .split-panel, .on-gradient) :is(code, .chip):not(:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) *) {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  color: var(--nr-on-fill);
-}
-
-/* Links, standalone links and ghost buttons. A text link keeps its underline
-   (2px), so it is still told apart from the white body text; a standalone link
-   and a ghost button underline on hover. Anchors styled as filled or outlined
-   buttons (`btn-*`) and chips keep their own colours. */
-:is(.hero, .page-band, .split-panel, .on-gradient) :is(a:not([class*="btn-"], .chip), .btn-ghost):not(:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) *),
-:is(.hero, .page-band, .split-panel, .on-gradient) :is(a:not([class*="btn-"], .chip), .btn-ghost):not(:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) *):hover { color: var(--nr-on-fill); }
-:is(.hero, .page-band, .split-panel, .on-gradient) a:not([class*="btn-"], .chip, .link-standalone):not(:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) *) { text-decoration-thickness: 2px; }
-:is(.hero, .page-band, .split-panel, .on-gradient) :is(.link-standalone, .btn-ghost):not(:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) *):hover {
-  background: transparent;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-/* A #257880 button on a gradient that starts at #257880 has no visible fill,
-   and buttons are identified by their fill: it turns white with a teal label,
-   5.15:1 (6.10:1 in dark); hover 7.09:1. */
-:is(.hero, .page-band, .split-panel, .on-gradient) .btn-primary:not(:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) *) { background-color: #FFFFFF; color: var(--nr-primary-fill); }
-:is(.hero, .page-band, .split-panel, .on-gradient) .btn-primary:not(:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) *):hover { background-color: #E6F2F3; color: #15585E; }
-
-/* .btn-outline is the white outline button of the gradient; inside a light
-   container on it, it would be white on white (1.00:1), so it takes the tonal
-   button's colours there. */
-:is(.hero, .page-band, .split-panel, .on-gradient) :is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) .btn-outline {
-  background-color: var(--nr-surface);
-  color: var(--nr-primary-text);
-  border-color: var(--nr-primary);
-}
-:is(.hero, .page-band, .split-panel, .on-gradient) :is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) .btn-outline:hover {
-  background-color: var(--nr-primary-tint);
-  color: var(--nr-primary-text);
-}
-
-/* The current step's number is filled white on the gradient (teal elsewhere). */
-:is(.hero, .page-band, .split-panel, .on-gradient) .steps:not(:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) *) [aria-current="step"] .step-num {
-  background: var(--nr-on-fill);
-  border-color: var(--nr-on-fill);
-  color: var(--nr-on-light);
-}
 .page-band h1 { font-size: var(--font-size-4xl); margin-bottom: var(--spacing-xs); }
 .page-band-inner { max-width: 1152px; margin: 0 auto; }
 
@@ -1660,10 +1708,6 @@ a[download]::before { content: '\2B07  '; }
   .hero-panel { padding: var(--spacing-lg); }
   .footer-bottom { justify-content: center; text-align: center; }
 }
-
-/* On the gradient the teal outline is 1.52:1 against #257880; use white.
-   Placed after the component rules so it wins over .btn-*:focus-visible. */
-:is(.hero, .page-band, .split-panel, .on-gradient) :focus-visible:not(:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted) *) { outline-color: var(--nr-on-fill); }
 
 /* The teal outline is 2.06:1 on the #585961 footer; use the footer's own
    foreground (6.96:1 light, 15.45:1 dark). */
