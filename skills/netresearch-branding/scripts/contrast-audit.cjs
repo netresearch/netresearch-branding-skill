@@ -47,8 +47,10 @@
  * closed dialog, controls at opacity 0 (their own or an ancestor's) at every position
  * the scroll pass reaches and 1px visually hidden form fields are skipped; the opacity-0
  * ones are counted in `transparentControlsSkipped`, with a note on stderr. A control
- * at opacity 0 at the top that was visible further down is measured at that position,
- * and so is a control that exists only while the page is scrolled. Animations are settled
+ * hidden at the top (opacity 0, display or visibility) that was visible further down is
+ * measured at that position, and so is a control that exists only while the page is
+ * scrolled. A scroll-driven animation (animation-timeline) is left to show the state
+ * of each position. Animations are settled
  * again at each such position; a colour tween driven by requestAnimationFrame (not a CSS
  * or Web Animations API animation) is measured where it stands. The scroll pass covers
  * the window's own scroll, not a scrolling container inside it. Before anything is
@@ -206,8 +208,9 @@ async function measureOneNode(cdp, nodeId, state, fn = '__measureOne') {
   return value;
 }
 
-// `scope` narrows both passes to the elements that also match it (an attribute selector).
-async function measureInteractiveStates(page, scope = '') {
+// `scope` narrows both passes to the elements that also match it (an attribute selector);
+// `seen` is shared by every call of one run, so a failure is reported once.
+async function measureInteractiveStates(page, scope = '', seen = new Set()) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('DOM.enable'); await cdp.send('CSS.enable'); await cdp.send('Runtime.enable');
   const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
@@ -215,7 +218,6 @@ async function measureInteractiveStates(page, scope = '') {
   const focusable = new Set((await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: `${FOCUSABLE}${scope}` })).nodeIds);
   const failures = [];
   const focusFailures = [];
-  const seen = new Set();
   // Errors are collected, never thrown from a finally — a throw there replaces the
   // exception already on its way out, which would be the measurement failure this
   // whole pass exists to surface. Everything collected is reported together at the
@@ -304,7 +306,8 @@ async function revealOnScroll(selector) {
   const record = (y) => {
     for (const el of document.querySelectorAll(selector)) {
       if (!el.checkVisibility({ opacityProperty: true, checkOpacity: true, visibilityProperty: true })) continue;
-      if (!window.__seenAt.has(el)) window.__seenAt.set(el, y);
+      if (window.__seenAt.has(el)) continue;
+      window.__seenAt.set(el, y);
       if (!initial.has(el)) window.__mountedAt.add(y);
     }
   };
@@ -328,6 +331,9 @@ function settleAnimations() {
     return cs.visibility === 'hidden' ? 0 : Number.parseFloat(cs.opacity);
   };
   for (const a of document.getAnimations()) {
+    // A scroll-driven animation (animation-timeline: scroll() or view()) shows the state
+    // of the current scroll position; finishing it would pin its end state at the top.
+    if (a.timeline && !(a.timeline instanceof DocumentTimeline)) continue;
     const before = seen(a);
     // finish() throws InvalidStateError for an infinite animation, which is cancelled.
     try { a.finish(); } catch (e) { a.cancel(); continue; }
@@ -566,9 +572,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // nothing in the page has to be marked or mutated to find it again.
     window.__measureOne = (el, state) => {
       if (!el || el.closest('[data-contrast-demo]')) return null;
-      // A control visible only at another scroll position is measured there, not here.
+      // A control visible only at another scroll position (at opacity 0 here, or hidden by
+      // display or visibility) is queued and measured there, not here; this also covers a
+      // control the focus passes never see (a link without href, a tabindex="-1" element).
       if (!el.hasAttribute('data-contrast-audit-at') && window.__seenAt?.has(el)
-        && !el.checkVisibility({ opacityProperty: true, checkOpacity: true })) return null;
+        && !el.checkVisibility({ opacityProperty: true, checkOpacity: true })) { window.__deferred.add(el); return null; }
       const cs = getComputedStyle(el);
       if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) return null;
       // Unlike the main pass, a wrapped label counts here: in <a><span>Read more</span></a>
@@ -769,7 +777,8 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       unreadableStylesheets: [...document.styleSheets].filter((ss) => { try { return !ss.cssRules; } catch (e) { return true; } }).length,
     };
   });
-  const states = await measureInteractiveStates(page);
+  const reported = new Set();
+  const states = await measureInteractiveStates(page, '', reported);
   result.stateFailures = states.failures;
   result.focusRingFailures = states.focusFailures;
   // Controls visible only at another scroll position, measured there: one position at a
@@ -803,7 +812,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     await page.evaluate(settleAnimations);
     result.controlBoundaryFailures.push(...await page.evaluate(() => [...document.querySelectorAll('[data-contrast-audit-at]')]
       .filter((el) => el.matches('input, select, textarea')).map(window.__boundaryOf).filter(Boolean)));
-    const at = await measureInteractiveStates(page, '[data-contrast-audit-at]');
+    const at = await measureInteractiveStates(page, '[data-contrast-audit-at]', reported);
     result.stateFailures.push(...at.failures);
     result.focusRingFailures.push(...at.focusFailures);
     await page.evaluate(() => { for (const el of document.querySelectorAll('[data-contrast-audit-at]')) el.removeAttribute('data-contrast-audit-at'); });

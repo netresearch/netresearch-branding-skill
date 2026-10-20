@@ -183,6 +183,28 @@ test('controls mounted on scroll, a header animating on scroll and a hover state
   assert.strictEqual(code, 1);
 });
 
+test('hidden-at-top, hover-only, scroll-driven and re-rendered controls are measured once each', async () => {
+  const { code, json } = await run(fixture('round10',
+    'button,a{background:#fff;color:#000;border:1px solid #000}'
+    + 'button.td{display:none;position:fixed;bottom:16px;right:16px}button.td.show{display:inline-block}'
+    + 'button.td:focus-visible{outline:2px solid #e8e8e8}' // 1.23:1, hidden by display at the top
+    + '.reveal{opacity:0}.reveal.in{opacity:1}a.lnk:hover{color:#ddd}' // a link without href, hover 1.36:1
+    + 'header{position:sticky;top:0;animation:tint linear both;animation-timeline:scroll();animation-range:0 300px}'
+    + '@keyframes tint{from{background:#fff;color:#aaa}to{background:#15585E;color:#fff}}' // 2.32:1 at the top
+    + 'a.rl{position:absolute;left:16px}a.rl:hover{color:#ddd}' // a row rendered anew at each position
+    + 'section{height:900px}',
+    '<header><p class="hd">Title</p></header><section></section><section></section>'
+    + '<section class="reveal"><a class="lnk">Anchor</a></section><section></section>'
+    + '<button type="button" class="td">Top</button>'
+    + '<script>const r=document.querySelector(".reveal");new IntersectionObserver((es)=>es.forEach((e)=>r.classList.toggle("in",e.isIntersecting))).observe(r);'
+    + 'addEventListener("scroll",()=>{document.querySelector(".td").classList.toggle("show",scrollY>300);'
+    + 'document.querySelector(".rl")?.remove();if(scrollY>0){const a=document.createElement("a");a.href="#";a.className="rl";a.textContent="Row";a.style.top=(scrollY+100)+"px";document.body.append(a);}});</script>'));
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element), ['button.td.show']);
+  assert.deepStrictEqual(json.stateFailures.filter((f) => f.state === 'hover').map((f) => f.element).sort(), ['a.lnk', 'a.rl']);
+  assert.ok(json.contrastFailures.some((f) => f.element === 'p.hd'), `the scroll-driven header must be measured at the top: ${JSON.stringify(json.contrastFailures)}`);
+  assert.strictEqual(code, 1);
+});
+
 test('only keyboard-reachable controls are judged as focus indicators', async () => {
   const { code, json } = await run(fixture('reach',
     'button{background:#fff;border:1px solid #000;color:#000}:focus-visible{outline:2px solid #ddd}', // 1.36:1
