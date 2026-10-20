@@ -1559,12 +1559,13 @@ a[download]::before { content: '\2B07  '; }
    background and its outline sits on that (3.38:1 light, 8.92:1 dark); on a
    later block the halo matches the page and does not show. The first block is
    the first one that renders: a visually hidden heading, a <style>, a hidden
-   input, a closed dialog or a [hidden] element before it does not count (an
-   element hidden with an author's display:none does; use [hidden]). Inside a
-   surface that paints its own background (a light container, a gradient, a
-   segmented track) the outline is drawn on that surface, and a link in running
-   text never sits on the band, so neither gets a halo: it would paint over the
-   neighbouring glyphs. */
+   input, a closed dialog or popover or a [hidden] element before it does not
+   count (an element hidden with an author's display:none does; use [hidden]).
+   Inside a surface that paints its own background (a light container, a
+   gradient, a segmented track) the outline is drawn on that surface, and a
+   plain link in text (a paragraph, list item, table cell, caption, label or
+   heading) never sits on the band, so neither gets a halo: it would paint over
+   the neighbouring glyphs. A card, button or badge in a list item keeps it. */
 .page-body > :focus-visible,
 .page-body > :nth-child(1 of :not(.visually-hidden, style, script, template, link, meta, noscript, input[type="hidden"], dialog:not([open]), [popover], [hidden])):not(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient) :focus-visible:not(:is(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient, .segmented) *):not(:is(p, li, dd, dt, figcaption, blockquote, td, th, caption, label, h1, h2, h3, h4, h5, h6) a:not(.card, .btn-primary, .btn-secondary, .btn-outline, .btn-tonal, .btn-ghost, .badge)) { box-shadow: 0 0 0 9px var(--nr-bg); }
 /* Controls keep their soft focus ring on top of the halo, an invalid field its red edge. */

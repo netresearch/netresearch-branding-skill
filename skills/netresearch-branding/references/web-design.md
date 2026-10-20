@@ -180,10 +180,13 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   reaches 3:1 against both white and `#257880`. Inside a light container
   (`.card`, `.stat`, `.notice`, `.table-wrap`, `.hero-panel`, `.tinted`,
   `.split-main`, `.dialog`), a gradient surface or a segmented track the
-  outline sits on that surface, and a link in running text is never on the
-  band, so neither gets one. Hide an element placed before the first block
-  with `hidden`, not with your own `display: none`, or it counts as the
-  first block.
+  outline sits on that surface, and a plain link in text (a paragraph, list
+  item, table cell, caption, label or heading) is never on the band, so
+  neither gets one; a card, button or badge in a list item keeps it. A
+  closed dialog or popover, a hidden input and a `hidden` element before the
+  first block do not count as the first block. Hide such an element with
+  `hidden`, not with your own `display: none`, or it counts as the first
+  block.
 - **Dialog** (`.dialog`): 24px radius, blurred dark backdrop.
 - **Footer** (`.footer`): anthracite (`#585961`) background per the mandatory
   footer rule in `SKILL.md`; company name and link to netresearch.de in
