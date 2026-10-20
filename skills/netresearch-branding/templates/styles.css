@@ -1558,19 +1558,22 @@ a[download]::before { content: '\2B07  '; }
    focused first block, or anything focused inside it, gets a halo in the page
    background and its outline sits on that (3.38:1 light, 8.92:1 dark); on a
    later block the halo matches the page and does not show. The first block is
-   the first one that renders: a visually hidden heading or a <style> before it
-   does not count. Inside a surface that paints its own background (a light
-   container, a gradient, a segmented track) the outline is drawn on that
-   surface, so nothing in it gets a halo. */
+   the first one that renders: a visually hidden heading, a <style>, a hidden
+   input, a closed dialog or a [hidden] element before it does not count (an
+   element hidden with an author's display:none does; use [hidden]). Inside a
+   surface that paints its own background (a light container, a gradient, a
+   segmented track) the outline is drawn on that surface, and a link in running
+   text never sits on the band, so neither gets a halo: it would paint over the
+   neighbouring glyphs. */
 .page-body > :focus-visible,
-.page-body > :nth-child(1 of :not(.visually-hidden, style, script, template, [hidden])):not(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient) :focus-visible:not(:is(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient, .segmented) *) { box-shadow: 0 0 0 9px var(--nr-bg); }
+.page-body > :nth-child(1 of :not(.visually-hidden, style, script, template, link, meta, noscript, input[type="hidden"], dialog:not([open]), [hidden])):not(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient) :focus-visible:not(:is(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient, .segmented, p, li, dd, figcaption, blockquote) *) { box-shadow: 0 0 0 9px var(--nr-bg); }
 /* Controls keep their soft focus ring on top of the halo, an invalid field its red edge. */
 .page-body > :is(.btn-primary, .btn-secondary, .btn-outline, .btn-tonal, .btn-ghost, .form-input, .form-select, .form-textarea, .form-check input):focus-visible,
-.page-body > :nth-child(1 of :not(.visually-hidden, style, script, template, [hidden])):not(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient) :is(.btn-primary, .btn-secondary, .btn-outline, .btn-tonal, .btn-ghost, .form-input, .form-select, .form-textarea, .form-check input):focus-visible:not(:is(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient, .segmented) *) {
+.page-body > :nth-child(1 of :not(.visually-hidden, style, script, template, link, meta, noscript, input[type="hidden"], dialog:not([open]), [hidden])):not(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient) :is(.btn-primary, .btn-secondary, .btn-outline, .btn-tonal, .btn-ghost, .form-input, .form-select, .form-textarea, .form-check input):focus-visible:not(:is(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient, .segmented, p, li, dd, figcaption, blockquote) *) {
   box-shadow: var(--nr-ring), 0 0 0 9px var(--nr-bg);
 }
 .page-body > :is(.form-input, .form-textarea):user-invalid:focus-visible,
-.page-body > :nth-child(1 of :not(.visually-hidden, style, script, template, [hidden])):not(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient) :is(.form-input, .form-textarea):user-invalid:focus-visible:not(:is(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient, .segmented) *) {
+.page-body > :nth-child(1 of :not(.visually-hidden, style, script, template, link, meta, noscript, input[type="hidden"], dialog:not([open]), [hidden])):not(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient) :is(.form-input, .form-textarea):user-invalid:focus-visible:not(:is(.card, .stat, .notice, .table-wrap, .hero-panel, .tinted, .split-main, .dialog, .hero, .page-band, .split-panel, .on-gradient, .segmented, p, li, dd, figcaption, blockquote) *) {
   box-shadow: inset 0 0 0 1px var(--nr-danger), var(--nr-ring), 0 0 0 9px var(--nr-bg);
 }
 
