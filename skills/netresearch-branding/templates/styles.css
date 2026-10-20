@@ -1379,6 +1379,12 @@ a[download]::before { content: '\2B07  '; }
   cursor: pointer;
 }
 
+/* Inside the segment: an outline outside it would reach past the 3px track
+   padding onto whatever surrounds the control (1.70:1 on the gradient). On
+   the track it is 3.10:1, on the selected pill 3.38:1. */
+.segmented a:focus-visible,
+.segmented button:focus-visible { outline-offset: -3px; }
+
 .segmented [aria-current="page"],
 .segmented [aria-pressed="true"],
 .segmented [aria-selected="true"] {
@@ -1536,6 +1542,12 @@ a[download]::before { content: '\2B07  '; }
   margin: -72px auto 0;
   padding: 0 var(--spacing-lg) var(--spacing-3xl);
 }
+
+/* The first block straddles the band and the page: no outline colour clears
+   3:1 against both #FFFFFF and #257880 (they are only 5.15:1 apart), so a
+   focused block gets a surface-coloured halo and its outline sits on that
+   (3.38:1 light, 7.83:1 dark). */
+.page-body > :focus-visible { box-shadow: 0 0 0 9px var(--nr-surface); }
 
 .dialog {
   width: min(520px, calc(100% - 32px));
