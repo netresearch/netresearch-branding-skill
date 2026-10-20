@@ -108,8 +108,8 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   (`--nr-primary-fill-hover` `#15585E` / `--nr-accent-fill-hover` `#9A2E00`, a
   fill, not a text token: a text token is free to lift on a dark scheme, and
   white over the lifted value fails with nothing able to measure it). The brand
-  hues `#2F99A4` and `#FF4D00` are **not** used as fills under white label
-  text: they give 3.38:1 and 3.33:1, and a 16px/600 label is normal text
+  hues `#2F99A4` and `#FF4D00` are **not** used as fills under white text
+  labels: they give 3.38:1 and 3.33:1, and a 16px/600 label is normal text
   needing 4.5:1.
 - **Cards** (`.card`, `.card-interactive`): white surface, hairline border,
   16px radius, Raleway title. `.feature-icon` puts a stroke icon on a teal tint
