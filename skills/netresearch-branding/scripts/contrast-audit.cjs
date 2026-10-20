@@ -47,8 +47,11 @@
  * closed dialog, controls at opacity 0 (their own or an ancestor's) at every position
  * the scroll pass reaches and 1px visually hidden form fields are skipped; the opacity-0
  * ones are counted in `transparentControlsSkipped`, with a note on stderr. A control
- * at opacity 0 at the top that was visible further down is measured at that position.
- * The scroll pass covers the window's own scroll, not a scrolling container inside it. Before anything is
+ * at opacity 0 at the top that was visible further down is measured at that position,
+ * and so is a control that exists only while the page is scrolled. Animations are settled
+ * again at each such position; a colour tween driven by requestAnimationFrame (not a CSS
+ * or Web Animations API animation) is measured where it stands. The scroll pass covers
+ * the window's own scroll, not a scrolling container inside it. Before anything is
  * measured, the page is scrolled through once, instantly (content revealed on scroll,
  * also content that hides again when scrolled away), infinite animations are cancelled
  * and finite ones finished, unless finishing leaves the element less visible (a toast
@@ -269,6 +272,9 @@ async function measureInteractiveStates(page, scope = '') {
       if (forced) await reset(nodeId);
     }
   }
+  // A session left attached would stay open for the rest of the run; a failure to detach
+  // changes no measurement.
+  try { await cdp.detach?.(); } catch (e) { /* nothing measured depends on it */ }
   if (errors.length) {
     const [first, ...rest] = errors;
     if (rest.length) first.message += ` (+${rest.length} more: ${rest.map((e) => e.message).join('; ')})`;
@@ -286,12 +292,20 @@ async function measureInteractiveStates(page, scope = '') {
 // (a reveal that hides again when scrolled away, a header button shown once the page
 // scrolls) is measured at that position, where the page looks as the user saw it. In
 // the page.
+// A control that exists only while the page is scrolled (a back-to-top button a framework
+// mounts past some offset) is not in the page at the top: the positions where such a
+// control was visible are recorded in __mountedAt, and every control visible there that
+// is not in the page at the top is measured there.
 async function revealOnScroll(selector) {
   const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   window.__seenAt = new Map();
+  window.__mountedAt = new Set();
+  const initial = new WeakSet(document.querySelectorAll(selector));
   const record = (y) => {
     for (const el of document.querySelectorAll(selector)) {
-      if (!window.__seenAt.has(el) && el.checkVisibility({ opacityProperty: true, checkOpacity: true, visibilityProperty: true })) window.__seenAt.set(el, y);
+      if (!el.checkVisibility({ opacityProperty: true, checkOpacity: true, visibilityProperty: true })) continue;
+      if (!window.__seenAt.has(el)) window.__seenAt.set(el, y);
+      if (!initial.has(el)) window.__mountedAt.add(y);
     }
   };
   const max = Math.min(document.documentElement.scrollHeight, innerHeight * 200);
@@ -552,6 +566,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // nothing in the page has to be marked or mutated to find it again.
     window.__measureOne = (el, state) => {
       if (!el || el.closest('[data-contrast-demo]')) return null;
+      // A control visible only at another scroll position is measured there, not here.
+      if (!el.hasAttribute('data-contrast-audit-at') && window.__seenAt?.has(el)
+        && !el.checkVisibility({ opacityProperty: true, checkOpacity: true })) return null;
       const cs = getComputedStyle(el);
       if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) return null;
       // Unlike the main pass, a wrapped label counts here: in <a><span>Read more</span></a>
@@ -757,15 +774,33 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   result.focusRingFailures = states.focusFailures;
   // Controls visible only at another scroll position, measured there: one position at a
   // time, each control marked with an attribute that scopes the state passes to it.
-  const positions = await page.evaluate(() => [...new Set([...window.__deferred].map((el) => window.__seenAt.get(el)))]);
+  // Positions in ascending order, as the scroll pass visited them (a header that reacts to
+  // the scroll direction looks as it did then).
+  const positions = await page.evaluate((sel) => {
+    window.__topSet = new WeakSet(document.querySelectorAll(sel));
+    window.__mountedMeasured = new WeakSet();
+    const ys = new Set([...window.__deferred].map((el) => window.__seenAt.get(el)));
+    for (const y of window.__mountedAt) ys.add(y);
+    return [...ys].sort((a, b) => a - b);
+  }, INTERACTIVE);
   for (const y of positions) {
-    await page.evaluate(async (top) => {
+    await page.evaluate(async ({ top, sel }) => {
       scrollTo({ top, behavior: 'instant' });
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       // Marked even if it is at opacity 0 again (a carousel slide whose animation was
       // cancelled): it was seen, and opacity does not change the colours measured.
       for (const el of window.__deferred) if (window.__seenAt.get(el) === top) el.setAttribute('data-contrast-audit-at', '');
-    }, y);
+      // Controls that are not in the page at the top, each measured once.
+      for (const el of document.querySelectorAll(sel)) {
+        if (window.__topSet.has(el) || window.__mountedMeasured.has(el)) continue;
+        if (!el.checkVisibility({ opacityProperty: true, checkOpacity: true, visibilityProperty: true })) continue;
+        window.__mountedMeasured.add(el);
+        el.setAttribute('data-contrast-audit-at', '');
+      }
+    }, { top: y, sel: INTERACTIVE });
+    // A scroll can start an animation again (a header that animates to its scrolled
+    // colours): it is settled like the ones on load.
+    await page.evaluate(settleAnimations);
     result.controlBoundaryFailures.push(...await page.evaluate(() => [...document.querySelectorAll('[data-contrast-audit-at]')]
       .filter((el) => el.matches('input, select, textarea')).map(window.__boundaryOf).filter(Boolean)));
     const at = await measureInteractiveStates(page, '[data-contrast-audit-at]');
@@ -778,7 +813,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   result.focusUserAgentRing = await page.evaluate(() => window.__focusUserAgentRing);
   result.transparentControlsSkipped = await page.evaluate(() => window.__transparent.size);
   if (result.transparentControlsSkipped) {
-    console.error(`note: ${result.transparentControlsSkipped} control(s) at opacity 0 were not measured: not visible at any position the scroll pass reached (the window's own scroll, at most 200 viewports)`);
+    console.error(`note: ${result.transparentControlsSkipped} control(s) at opacity 0 at the top were not measured: not visible as the same element at any position the scroll pass reached (the window's own scroll, at most 200 viewports); a control a framework replaces on scroll is measured as the new element`);
   }
   result.darkSchemeBy = darkSchemeBy;
   result.darkScheme = darkSchemeBy.length > 0;

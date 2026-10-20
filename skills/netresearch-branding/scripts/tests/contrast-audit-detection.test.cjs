@@ -163,6 +163,26 @@ test('a control shown only after scrolling is measured where it is shown', async
   assert.strictEqual(code, 1);
 });
 
+test('controls mounted on scroll, a header animating on scroll and a hover state are measured once', async () => {
+  const { code, json } = await run(fixture('mounted',
+    'header{position:fixed;top:0;left:0;right:0;height:60px;display:flex;gap:16px;align-items:center;background:transparent}'
+    + 'header.scrolled{animation:teal .4s both}@keyframes teal{from{background:transparent}to{background:#15585E}}'
+    + 'header input{opacity:0;background:transparent;color:#fff;border:1px solid #fff}header.scrolled input{opacity:1}' // 8.11:1 once teal
+    + 'header button{opacity:0;background:#fff;color:#000;border:1px solid #000}header.scrolled button{opacity:1}'
+    + 'header button:hover{color:#aaa}' // 2.32:1, one failure
+    + 'button.totop{position:fixed;bottom:16px;right:16px;background:#fff;color:#000;border:1px solid #000}'
+    + 'button.totop:focus-visible{outline:2px solid #eee}' // 1.16:1
+    + 'section{height:900px}', // the header turns teal at the first position, the button appears at the third
+    '<header><input class="lt" aria-label="Search"><button type="button" class="hb">Menu</button></header><section></section><section></section><section></section>'
+    + '<script>addEventListener("scroll",()=>{document.querySelector("header").classList.toggle("scrolled",scrollY>100);'
+    + 'const b=document.querySelector(".totop");if(scrollY>1500&&!b){const n=document.createElement("button");n.className="totop";n.type="button";n.textContent="Top";document.body.append(n);}'
+    + 'else if(scrollY<=1500&&b)b.remove();});</script>'));
+  assert.deepStrictEqual(json.controlBoundaryFailures, []);
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element), ['button.totop']);
+  assert.deepStrictEqual(json.stateFailures.map((f) => `${f.state} ${f.element}`), ['hover button.hb']);
+  assert.strictEqual(code, 1);
+});
+
 test('only keyboard-reachable controls are judged as focus indicators', async () => {
   const { code, json } = await run(fixture('reach',
     'button{background:#fff;border:1px solid #000;color:#000}:focus-visible{outline:2px solid #ddd}', // 1.36:1
