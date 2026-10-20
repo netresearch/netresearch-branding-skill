@@ -98,6 +98,36 @@ test('controls in a fade-in section are measured; the browser\'s own outline mov
   assert.strictEqual(code, 1);
 });
 
+test('a named data-theme is kept and measured as the page ships it', async () => {
+  const { code, json } = await run(fixture('named',
+    '[data-theme="corporate"] body{color:#aaa}', // 2.32:1 under the page's own theme
+    '<script>document.documentElement.dataset.theme = "corporate";</script><p>Text</p>'));
+  assert.deepStrictEqual(json.darkSchemeBy, []);
+  assert.strictEqual(json.dataThemeSet, null);
+  assert.strictEqual(json.dataThemeKept, 'corporate');
+  assert.ok(json.contrastFailures.length > 0, `the corporate theme must be measured: ${JSON.stringify(json.contrastFailures)}`);
+  assert.strictEqual(code, 1);
+  // The same page with a dark palette as well: data-theme switches, and the page's own
+  // value is still kept.
+  const both = await run(fixture('namedboth',
+    '[data-theme="corporate"] body{color:#aaa}[data-theme="dark"] body{background:#111;color:#eee}',
+    '<script>document.documentElement.dataset.theme = "corporate";</script><p>Text</p>'));
+  assert.deepStrictEqual(both.json.darkSchemeBy, ['data-theme']);
+  assert.strictEqual(both.json.dataThemeKept, 'corporate');
+  assert.ok(both.json.contrastFailures.length > 0, `the corporate theme must be measured: ${JSON.stringify(both.json.contrastFailures)}`);
+});
+
+test('a control that fades in is measured at its end state; a tabindex="-1" target is no indicator', async () => {
+  const { code, json } = await run(fixture('round5',
+    '.fadeb{opacity:0;animation:in .3s forwards}@keyframes in{to{opacity:1}}'
+    + 'button{background:#fff;border:1px solid #000;color:#000}'
+    + ':focus-visible{outline:2px solid #ddd}', // 1.36:1 everywhere
+    '<h1 tabindex="-1">Title</h1><button type="button" class="fadeb">Fades in</button>'
+    + '<div class="tab" role="tab" tabindex="-1">Tab</div>'));
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element).sort(), ['button.fadeb', 'div.tab']);
+  assert.strictEqual(code, 1);
+});
+
 test('a page without a dark palette reports none', async () => {
   const { code, json } = await run(fixture('plain', '', '<p>Text</p>'));
   assert.strictEqual(json.darkScheme, false);

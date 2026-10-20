@@ -44,12 +44,13 @@
  * an indicator. `controlBoundaryFailures`: the border (painted over the control's fill)
  * or the fill of each input, select and textarea against the surface around it.
  * Disabled controls (also in a disabled fieldset), controls in a hidden ancestor or a
- * closed dialog, controls whose own opacity is 0 and 1px visually hidden form fields are
- * skipped; a control in a section at opacity 0 (a fade-in, frozen at its start because
- * animations are disabled) is measured. An <a> without href is measured hovered, never
- * focused. An outline that only moves on focus counts as changed, except the moves
- * Chromium's own focus styles apply (1px on a link, 2px on a checkbox or radio).
- * Elements whose focus
+ * closed dialog, controls at opacity 0 (their own or an ancestor's) and 1px visually
+ * hidden form fields are skipped. Animations run to their end before anything is
+ * measured, so a fade-in counts at its final opacity. An <a> without href is measured
+ * hovered, never focused; a tabindex="-1" element without a role (a skip-link target) is
+ * not judged as a focus indicator; <area> is not measured. An outline that only moves on
+ * focus counts as changed, except the moves Chromium's own focus styles apply (1px on a
+ * link, 2px on a checkbox or radio). Elements whose focus
  * changes no outline, ring or border are counted in `focusWithoutRing`, and the
  * browser's own `outline: auto` ring in `focusUserAgentRing`; neither is judged. A ring
  * drawn on another element (a sibling label, a :focus-within ancestor) is not seen.
@@ -61,9 +62,11 @@
  * `darkScheme` / `darkSchemeBy` say whether the page switches its colours under the
  * other `prefers-color-scheme` or either `data-theme` value, measured from computed
  * colours, so a stylesheet the browser keeps unreadable cannot hide a dark palette.
- * Where `data-theme` switches them, the run sets `data-theme` on <html> to its --scheme
- * before measuring (`dataThemeSet`), so `--scheme dark` measures that palette too.
- * Only `data-theme` on <html> is detected (not on <body>, not `data-bs-theme`).
+ * `data-theme` counts when its "dark" and "light" values give different colours; the run
+ * then sets it on <html> to its --scheme before measuring (`dataThemeSet`), so
+ * `--scheme dark` measures that palette too. A page's own other value (a named theme such
+ * as data-theme="corporate") is kept and reported in `dataThemeKept`. Only `data-theme`
+ * on <html> is detected (not on <body>, not `data-bs-theme`).
  *
  * `stateFailures` repeats the measurement with :hover and :focus-visible forced on every
  * interactive element (CDP CSS.forcePseudoState), because a hover colour is invisible to a
@@ -139,8 +142,10 @@ async function sendHeaderToOriginOnly(page, origin, name, value) {
 // hovered simultaneously — and an ancestor, sibling or :has() selector then resolves
 // against that fiction.
 const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
-// What can take focus: an <a> without href (a named anchor) can be hovered, not focused.
-const FOCUSABLE = 'a[href], button, input, textarea, select, summary, [tabindex]';
+// What the focus passes judge: an <a> without href (a named anchor) can be hovered, not
+// focused, and a tabindex="-1" element without a role (a skip-link target, a heading that
+// receives focus after navigation) is a focus target, not a user interface component.
+const FOCUSABLE = 'a[href], button, input, textarea, select, summary, [tabindex]:not([tabindex^="-"]), [tabindex][role]';
 // A node can legitimately disappear between the query and the force. Anything else is
 // a real failure and must not be swallowed: an element silently dropped here is an
 // element whose hover colour nobody measured, in a run that still exits 0.
@@ -289,10 +294,11 @@ async function detectDarkScheme(page, scheme) {
   } finally {
     await page.emulateMedia({ colorScheme: scheme });
   }
-  // Both values: a page may define only data-theme="dark" (or only "light"), and the
-  // value opposite to the run's scheme would then change nothing.
-  const themed = await page.evaluate(colourFingerprints, ['dark', 'light']);
-  if (themed.some((fp) => fp !== base)) by.push('data-theme');
+  // data-theme switches the scheme when "dark" and "light" give different colours. Not
+  // when either differs from the page as loaded: on a page with a named theme
+  // (data-theme="corporate"), setting either value only drops that theme's rules.
+  const [dark, light] = await page.evaluate(colourFingerprints, ['dark', 'light']);
+  if (dark !== light) by.push('data-theme');
   return by;
 }
 
@@ -321,14 +327,19 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
   // Kill transitions before measuring anything: see the note on stateFailures above.
-  await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important;animation:none !important}' });
+  // Animations run to their end at once instead of being removed: `animation: none` would
+  // leave a fade-in at its starting opacity 0, a state no user sees once it has run.
+  await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important;animation-duration:0s !important;animation-delay:0s !important;animation-iteration-count:1 !important}' });
   // An element focused on load (autofocus) would be measured in its focused colours, and
   // the focus-indicator pass would record it focused: nothing may hold focus.
   await page.evaluate(() => document.activeElement?.blur?.());
   // A palette switched by data-theme is not reached by emulating prefers-color-scheme:
   // where data-theme switches the colours, the run sets it to its own scheme.
+  // A value of the page's own other than light or dark (a named theme) is kept and
+  // reported in dataThemeKept: it is what the page ships.
   const darkSchemeBy = await detectDarkScheme(page, scheme);
-  const dataThemeSet = darkSchemeBy.includes('data-theme');
+  const ownTheme = await page.evaluate(() => document.documentElement.dataset.theme ?? null);
+  const dataThemeSet = darkSchemeBy.includes('data-theme') && [null, 'light', 'dark'].includes(ownTheme);
   if (dataThemeSet) await page.evaluate((t) => { document.documentElement.dataset.theme = t; }, scheme);
   const result = await page.evaluate(() => {
     // Colours: rgb()/rgba() are read numerically, exactly; any other notation the browser
@@ -500,15 +511,14 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     const over = (c, b) => ({ r: c.r * c.a + b.r * (1 - c.a), g: c.g * c.a + b.g * (1 - c.a), b: c.b * c.a + b.b * (1 - c.a) });
     const rgb = (c) => `rgb(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)})`;
     // Whether a control can be seen and used at all: a closed <dialog>, a display:none or
-    // visibility:hidden ancestor, a control whose own opacity is 0 (a custom switch's input
-    // over its drawn track), a disabled control (also inside <fieldset disabled>) and a
-    // 1px visually hidden form field (its look is drawn by a sibling) have no visible state.
-    // An ancestor's opacity does not count: with animations disabled, a fade-in section
-    // stays at its starting opacity 0, which no user sees once the animation has run.
+    // visibility:hidden ancestor, opacity 0 on the control or an ancestor (a custom switch's
+    // input over its drawn track, a closed popover), a disabled control (also inside
+    // <fieldset disabled>) and a 1px visually hidden form field (its look is drawn by a
+    // sibling) have no visible state. Animations have run to their end, so a fade-in
+    // counts at its final opacity.
     const perceivable = (el) => {
       if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return false;
-      if (!el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true })) return false;
-      if (getComputedStyle(el).opacity === '0') return false;
+      if (!el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true, opacityProperty: true, checkOpacity: true })) return false;
       if (!el.matches('input, select, textarea')) return true;
       const b = el.getBoundingClientRect();
       return b.width > 1 && b.height > 1;
@@ -680,6 +690,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   result.darkSchemeBy = darkSchemeBy;
   result.darkScheme = darkSchemeBy.length > 0;
   result.dataThemeSet = dataThemeSet ? scheme : null;
+  result.dataThemeKept = !dataThemeSet && ownTheme !== null ? ownTheme : null;
 
   result.scheme = scheme;
   result.failedRequests = badRequests;
