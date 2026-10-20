@@ -659,27 +659,32 @@
       },
       {
         "type": "content_regex",
-        "value": "(\\.btn|\\.form-input)[^{]*\\{[^}]*border-radius:[[:space:]]*(var\\(--radius-(md|lg|xl)\\)|[12][0-9]px)",
-        "description": "A control rule declares a 10px or larger radius (declaration check, not the computed value)"
+        "value": "(\\.btn|\\.form-input)[^{]*\\{[^}]*border-radius:[[:space:]]*(var\\(--radius-(md|lg|xl)\\)|[1-9][0-9]+px)",
+        "description": "A control rule declares a radius of 10px or more in px, or a --radius-md/lg/xl token (declaration check, not the computed value)"
       },
       {
         "type": "content_regex",
-        "value": "\\.card[^{]*\\{[^}]*border-radius:[[:space:]]*(var\\(--radius-(md|lg|xl)\\)|[12][0-9]px)",
-        "description": "A card rule declares a 10px or larger radius (declaration check, not the computed value)"
+        "value": "\\.card[^{]*\\{[^}]*border-radius:[[:space:]]*(var\\(--radius-(md|lg|xl)\\)|[1-9][0-9]+px)",
+        "description": "A card rule declares a radius of 10px or more in px, or a --radius-md/lg/xl token (declaration check, not the computed value)"
       },
       {
         "type": "content_regex",
         "value": "#257880|--nr-primary-fill",
-        "description": "Filled button carries white text on #257880, not the 3.38:1 brand hue"
+        "description": "The page names the #257880 fill that carries white button text"
       },
       {
         "type": "must_not",
-        "value": ":hover\\s*\\{[^}]*translateY\\(-",
+        "value": "\\.btn[^{]*\\{[^}]*background(-color)?:[[:space:]]*#2F99A4",
+        "description": "No button rule fills with the brand hue #2F99A4 (white on it is 3.38:1)"
+      },
+      {
+        "type": "must_not",
+        "value": ":hover[[:space:]]*\\{[^}]*translateY\\(-",
         "description": "No hover jump on buttons or cards"
       },
       {
         "type": "must_not",
-        "value": "border-left:\\s*[2-9]px\\s+solid",
+        "value": "border-left:[[:space:]]*[2-9]px[[:space:]]+solid",
         "description": "No coloured edge stripe on cards, notices or panels (the standalone construction in web-design.md, which replaced the former 4px .highlight example)"
       }
     ],
@@ -687,7 +692,8 @@
       "passing": "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.form-input{border-radius:10px}.card{border-radius:16px}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
       "failing": [
         "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.btn{border-radius:4px}.btn:hover{transform:translateY(-2px)}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
-        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.form-input{border-radius:10px}.card{border-radius:16px}.notice{border-radius:14px;border-left:4px solid #2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>"
+        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.form-input{border-radius:10px}.card{border-radius:16px}.notice{border-radius:14px;border-left:4px solid #2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.btn-primary{border-radius:10px;background:#2F99A4;color:#fff}.card{border-radius:16px}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>"
       ]
     }
   },

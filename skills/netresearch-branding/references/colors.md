@@ -409,6 +409,7 @@ tints are opaque because a translucent tint has no ratio of its own.
 | `--nr-danger-text` on `--nr-danger-tint` | `#911E2A` on `#FCEBED` | `#FFC4C9` on `#3A1418` | 7.53:1 / 10.82:1 |
 | `--nr-success` / `--nr-warning` / `--nr-danger` (markers) | `#28A745` / `#FFC107` / `#DC3545` | `#3FBF62` / `#F2B92A` / `#F0606C` | non-text; dark: 6.60 / 8.77 / 4.92:1 on `#1E2429` |
 | `--nr-focus` (focus outline) | `#2F99A4` | `#5FC6D2` | 3.38:1 on white / 7.83:1 on `#1E2429`; footer foreground on the footer (2.06:1 on `#585961` otherwise), white on the gradient |
+| `--nr-focus-on-tint` (focus outline inside a badge, tinted row or `.tinted`) | `#257880` | `#5FC6D2` | 4.48:1 or more on the light tints (`#2F99A4` is 2.94:1 there) / 6.19:1 or more on the dark tints |
 | `--nr-hero-end` (third gradient stop) | `#0A5057` | `#0B3539` | white on it: 9.14:1 / 13.27:1 |
 
 The light markers are the semantic set below (`--nr-error` is an alias of

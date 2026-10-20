@@ -56,6 +56,8 @@ lightness and the box disappears.
 **Controls that read as controls.** Inputs are 48px high with a 3:1 boundary
 (`--nr-border-strong`). Buttons are 48px high (`.btn-small` 40px, `.btn-large`
 56px) and identified by their fill and label; a filled button has no border.
+On the gradient the primary button turns white with a teal label, because a
+`#257880` fill would vanish into a gradient that starts at `#257880`.
 Focus is a solid 3px outline in `--nr-focus` (3.38:1 on white; white on the
 gradient, on `.on-gradient` and on the footer; `CanvasText` in forced colours)
 with the soft `--nr-ring` on top; never `outline: none` alone. An invalid input
@@ -148,7 +150,9 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   are styled this way.
 - **Tables** (`.table-wrap`, `.table`): hairline frame with 16px radius,
   14px uppercase header in `--nr-text` on `#F5F5F5`, row hover tint, `.num` for right-aligned
-  tabular figures. The wrapper scrolls horizontally on small screens.
+  tabular figures. The wrapper scrolls horizontally on small screens, so it is
+  reachable by keyboard and named:
+  `<div class="table-wrap" tabindex="0" role="region" aria-labelledby="<caption id>">`.
 - **Forms** (`.form-input`, `.form-select`, `.form-textarea`, `.form-check`,
   `.form-help`, `.form-error`): 48px, 3:1 border, focus ring, drawn
   checkbox/radio. Required fields carry `*` in the label and a note above the
@@ -164,7 +168,8 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
 - **Split layout** (`.split-layout`, `.split-panel`, `.split-main`, `.steps`):
   sign-in, request and upload screens. Brand panel with the real steps of the
   process on the left, the task on plain white on the right; stacks below
-  1024px.
+  1024px. The current step carries `aria-current="step"`, which also draws
+  its filled number.
 - **App page** (`.page-band`, `.page-body`): a short gradient header band with
   eyebrow and title; the first content block overlaps it by 72px.
 - **Dialog** (`.dialog`): 24px radius, blurred dark backdrop.
