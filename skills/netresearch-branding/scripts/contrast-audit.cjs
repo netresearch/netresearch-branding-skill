@@ -222,12 +222,12 @@ async function measureInteractiveStates(page) {
 // `attr` set as data-theme (then restored). Run inside the page.
 function colourFingerprint(attr) {
   const html = document.documentElement;
-  const prev = html.getAttribute('data-theme');
-  if (attr) html.setAttribute('data-theme', attr);
+  const prev = html.dataset.theme;
+  if (attr) html.dataset.theme = attr;
   const fp = [...document.querySelectorAll('html, body, body *')].slice(0, 3000).map((e) => {
     const c = getComputedStyle(e); return `${c.color}/${c.backgroundColor}/${c.borderTopColor}`;
   }).join('|');
-  if (attr) { if (prev === null) html.removeAttribute('data-theme'); else html.setAttribute('data-theme', prev); }
+  if (attr) { if (prev === undefined) delete html.dataset.theme; else html.dataset.theme = prev; }
   return fp;
 }
 
@@ -427,7 +427,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       } else if (cs.boxShadow !== 'none') {
         // The first shadow's colour only: parse() on the whole value would read its
         // offsets as the alpha channel.
-        color = parse((cs.boxShadow.match(/rgba?\([^)]*\)/) || [''])[0]); inside = /\binset\b/.test(cs.boxShadow);
+        color = parse((/rgba?\([^)]*\)/.exec(cs.boxShadow) || [''])[0]); inside = /\binset\b/.test(cs.boxShadow);
       } else { window.__focusWithoutRing++; return null; }
       if (!color || color.a === 0) { window.__focusWithoutRing++; return null; }
       const against = inside ? bgOf(el) : bgOf(el.parentElement || el);
@@ -451,7 +451,8 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       const fill = bgOf(el);
       let best = ratio(fill, outer); let border = null;
       for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
-        if (cs[`border${side}Style`] === 'none' || !(Number.parseFloat(cs[`border${side}Width`]) > 0)) continue;
+        const w = Number.parseFloat(cs[`border${side}Width`]);
+        if (cs[`border${side}Style`] === 'none' || Number.isNaN(w) || w <= 0) continue;
         const c = parse(cs[`border${side}Color`]);
         if (!c) continue;
         const shown = over(c, outer); const r = ratio(shown, outer);
