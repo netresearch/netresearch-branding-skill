@@ -659,13 +659,13 @@
       },
       {
         "type": "content_regex",
-        "value": "(\\.btn|\\.form-input)[^{]*\\{[^}]*border-radius:[[:space:]]*(var\\(--radius-(md|lg|xl)\\)|[1-9][0-9]+px)",
-        "description": "A control rule declares a radius of 10px or more in px, or a --radius-md/lg/xl token (declaration check, not the computed value)"
+        "value": "border-radius:[[:space:]]*(var\\(--radius-(md|lg|xl)\\)|[1-9][0-9]+px)",
+        "description": "A rule declares a radius of 10px or more, or a --radius-md/lg/xl token (the grader matches line by line, so the declaration is checked, not its selector)"
       },
       {
-        "type": "content_regex",
-        "value": "\\.card[^{]*\\{[^}]*border-radius:[[:space:]]*(var\\(--radius-(md|lg|xl)\\)|[1-9][0-9]+px)",
-        "description": "A card rule declares a radius of 10px or more in px, or a --radius-md/lg/xl token (declaration check, not the computed value)"
+        "type": "must_not",
+        "value": "border-radius:[[:space:]]*4px",
+        "description": "No 4px box radius (web-design.md excludes 4px boxes)"
       },
       {
         "type": "content_regex",
@@ -674,13 +674,18 @@
       },
       {
         "type": "must_not",
-        "value": "\\.btn[^{]*\\{[^}]*background(-color)?:[[:space:]]*(#2F99A4|var\\(--nr-primary\\)|rgb\\(47,[[:space:]]*153,[[:space:]]*164\\))",
-        "description": "No button rule fills with the brand hue #2F99A4, as hex, as the --nr-primary token or as rgb() (white on it is 3.38:1)"
+        "value": "background(-color)?:[[:space:]]*(#2F99A4|rgb\\(47,[[:space:]]*153,[[:space:]]*164\\))",
+        "description": "No surface filled with the literal brand hue #2F99A4 (white on it is 3.38:1); the template fills with tokens only"
       },
       {
         "type": "must_not",
-        "value": ":hover[[:space:]]*\\{[^}]*translateY\\(-",
-        "description": "No hover jump on buttons or cards"
+        "value": "\\.btn[^{]*\\{[^}]*background(-color)?:[[:space:]]*var\\(--nr-primary\\)",
+        "description": "No button filled with the --nr-primary token (caught when the rule is written on one line)"
+      },
+      {
+        "type": "must_not",
+        "value": "translateY\\(-",
+        "description": "No upward hover jump on buttons or cards"
       },
       {
         "type": "must_not",
@@ -689,12 +694,13 @@
       }
     ],
     "samples": {
-      "passing": "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.form-input{border-radius:10px}.card{border-radius:16px}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+      "passing": "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header>\n<style>\n:root {\n  --nr-primary-fill: #257880;\n}\n.form-input {\n  border-radius: 10px;\n}\n.card {\n  border-radius: var(--radius-lg);\n}\n</style>\n<footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
       "failing": [
         "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.btn{border-radius:4px}.btn:hover{transform:translateY(-2px)}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
         "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.form-input{border-radius:10px}.card{border-radius:16px}.notice{border-radius:14px;border-left:4px solid #2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
         "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.btn-primary{border-radius:10px;background:#2F99A4;color:#fff}.card{border-radius:16px}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
-        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary:#2F99A4;--nr-primary-fill:#257880}.btn-primary{border-radius:10px;background-color:var(--nr-primary);color:#fff}.card{border-radius:16px}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>"
+        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary:#2F99A4;--nr-primary-fill:#257880}.btn-primary{border-radius:10px;background-color:var(--nr-primary);color:#fff}.card{border-radius:16px}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header>\n<style>\n:root {\n  --nr-primary-fill: #257880;\n}\n.btn-primary {\n  border-radius: 10px;\n  background: #2F99A4;\n  color: #fff;\n}\n.card {\n  border-radius: 16px;\n}\n</style>\n<footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>"
       ]
     }
   },
