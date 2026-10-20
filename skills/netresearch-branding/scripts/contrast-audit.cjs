@@ -45,10 +45,14 @@
  * or the fill of each input, select and textarea against the surface around it.
  * Disabled controls (also in a disabled fieldset), controls in a hidden ancestor or a
  * closed dialog, controls at opacity 0 (their own or an ancestor's) and 1px visually
- * hidden form fields are skipped. Animations run to their end before anything is
- * measured, so a fade-in counts at its final opacity. An <a> without href is measured
- * hovered, never focused; a tabindex="-1" element without a role (a skip-link target) is
- * not judged as a focus indicator; <area> is not measured. An outline that only moves on
+ * hidden form fields are skipped and counted in `transparentControlsSkipped`. Before
+ * anything is measured, the page is scrolled through once (content revealed on scroll),
+ * infinite animations are cancelled and finite ones finished, unless finishing leaves the
+ * element less visible (a toast fading out), so a fade-in counts at its final opacity.
+ * An animation started later by a forced :hover or :focus is measured at its start. An
+ * <a> without href is measured hovered, never focused; a tabindex="-1" element without a
+ * widget role (a skip-link target), inert content and a tabindex="-1" element under
+ * aria-hidden are not judged as focus indicators; <area> is not measured. An outline that only moves on
  * focus counts as changed, except the moves Chromium's own focus styles apply (1px on a
  * link, 2px on a checkbox or radio). Elements whose focus
  * changes no outline, ring or border are counted in `focusWithoutRing`, and the
@@ -145,7 +149,12 @@ const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
 // What the focus passes judge: an <a> without href (a named anchor) can be hovered, not
 // focused, and a tabindex="-1" element without a role (a skip-link target, a heading that
 // receives focus after navigation) is a focus target, not a user interface component.
-const FOCUSABLE = 'a[href], button, input, textarea, select, summary, [tabindex]:not([tabindex^="-"]), [tabindex][role]';
+// A tabindex="-1" element counts only with a widget role (a roving-tabindex tab or
+// option); inert content and a tabindex="-1" element under aria-hidden (a card's
+// duplicate image link) are never reached by keyboard.
+const WIDGET_ROLES = ['button', 'checkbox', 'combobox', 'gridcell', 'link', 'menuitem', 'menuitemcheckbox', 'menuitemradio', 'option', 'radio', 'row', 'slider', 'spinbutton', 'switch', 'tab', 'treeitem'];
+const FOCUSABLE = `:is(a[href], button, input, textarea, select, summary, [tabindex]:not([tabindex^="-"]), [tabindex]:is(${WIDGET_ROLES.map((r) => `[role="${r}"]`).join(', ')}))`
+  + ':not([inert], [inert] *, [aria-hidden="true"][tabindex^="-"], [aria-hidden="true"] [tabindex^="-"])';
 // A node can legitimately disappear between the query and the force. Anything else is
 // a real failure and must not be swallowed: an element silently dropped here is an
 // element whose hover colour nobody measured, in a run that still exits 0.
@@ -263,6 +272,36 @@ async function measureInteractiveStates(page) {
   return { failures, focusFailures };
 }
 
+// Scrolls through the page one viewport at a time, so content revealed on scroll (an
+// IntersectionObserver adding a class, a scroll-triggered animation) is in its revealed
+// state, then back to the top. At most 200 viewports. In the page.
+async function revealOnScroll() {
+  const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const max = Math.min(document.documentElement.scrollHeight, innerHeight * 200);
+  for (let y = 0; y < max; y += innerHeight) { scrollTo(0, y); await frame(); }
+  scrollTo(0, 0);
+  await frame();
+}
+
+// Every animation (CSS or Web Animations API) is put into the state a user sees once it
+// has run: an infinite one (a spinner, a blink) is cancelled, so its element shows its
+// rest style; a finite one is finished, unless that leaves its element less visible
+// (a toast that fades out after a delay), in which case it is cancelled too. In the page.
+function settleAnimations() {
+  const seen = (a) => {
+    const t = a.effect?.target;
+    if (!t) return 1;
+    const cs = getComputedStyle(t, a.effect.pseudoElement || null);
+    return cs.visibility === 'hidden' ? 0 : Number.parseFloat(cs.opacity);
+  };
+  for (const a of document.getAnimations()) {
+    const before = seen(a);
+    // finish() throws InvalidStateError for an infinite animation, which is cancelled.
+    try { a.finish(); } catch (e) { a.cancel(); continue; }
+    if (seen(a) < before - 0.01) a.cancel();
+  }
+}
+
 // Fingerprints of the computed colours, one per entry of `attrs`: null for the page as
 // it is, a value for the page with that data-theme set (and then restored). In the page.
 function colourFingerprints(attrs) {
@@ -327,9 +366,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
   // Kill transitions before measuring anything: see the note on stateFailures above.
-  // Animations run to their end at once instead of being removed: `animation: none` would
-  // leave a fade-in at its starting opacity 0, a state no user sees once it has run.
-  await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important;animation-duration:0s !important;animation-delay:0s !important;animation-iteration-count:1 !important}' });
+  await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important}' });
+  // Content revealed on scroll and every animation are put into the state a user sees:
+  // `animation: none` would leave a fade-in at its starting opacity 0.
+  await page.evaluate(revealOnScroll);
+  await page.evaluate(settleAnimations);
   // An element focused on load (autofocus) would be measured in its focused colours, and
   // the focus-indicator pass would record it focused: nothing may hold focus.
   await page.evaluate(() => document.activeElement?.blur?.());
@@ -514,11 +555,14 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // visibility:hidden ancestor, opacity 0 on the control or an ancestor (a custom switch's
     // input over its drawn track, a closed popover), a disabled control (also inside
     // <fieldset disabled>) and a 1px visually hidden form field (its look is drawn by a
-    // sibling) have no visible state. Animations have run to their end, so a fade-in
-    // counts at its final opacity.
+    // sibling) have no visible state. Animations are settled first, so a fade-in counts
+    // at its final opacity. A control skipped for opacity 0 is counted in
+    // transparentControlsSkipped, so a skip is visible in the report.
+    window.__transparent = new Set();
     const perceivable = (el) => {
       if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return false;
-      if (!el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true, opacityProperty: true, checkOpacity: true })) return false;
+      if (!el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true })) return false;
+      if (!el.checkVisibility({ opacityProperty: true, checkOpacity: true })) { window.__transparent.add(el); return false; }
       if (!el.matches('input, select, textarea')) return true;
       const b = el.getBoundingClientRect();
       return b.width > 1 && b.height > 1;
@@ -687,10 +731,14 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   result.focusRingFailures = states.focusFailures;
   result.focusWithoutRing = await page.evaluate(() => window.__focusWithoutRing);
   result.focusUserAgentRing = await page.evaluate(() => window.__focusUserAgentRing);
+  result.transparentControlsSkipped = await page.evaluate(() => window.__transparent.size);
   result.darkSchemeBy = darkSchemeBy;
   result.darkScheme = darkSchemeBy.length > 0;
   result.dataThemeSet = dataThemeSet ? scheme : null;
   result.dataThemeKept = !dataThemeSet && ownTheme !== null ? ownTheme : null;
+  if (result.dataThemeKept && darkSchemeBy.includes('data-theme')) {
+    console.error(`note: data-theme="${result.dataThemeKept}" was kept; the page's data-theme light and dark palettes were not measured`);
+  }
 
   result.scheme = scheme;
   result.failedRequests = badRequests;

@@ -128,6 +128,36 @@ test('a control that fades in is measured at its end state; a tabindex="-1" targ
   assert.strictEqual(code, 1);
 });
 
+test('content revealed on scroll and every animation are measured as a user sees them', async () => {
+  const { code, json } = await run(fixture('settle',
+    'input{background:#fff;border:1px solid #eee}' // 1.16:1 wherever it is measured
+    + '.spacer{height:2400px}.reveal{opacity:0}.reveal.in{opacity:1}'
+    + 'p.toast{color:#aaa;animation:out .3s 6s forwards}@keyframes out{to{opacity:0;visibility:hidden}}'
+    + 'input.bl{animation:blink 1s infinite alternate both}@keyframes blink{from{opacity:1}to{opacity:0}}'
+    + 'input.pl{border-color:#000;animation:pulse 1s infinite}@keyframes pulse{from,to{border-color:#eee}}', // passes at rest
+    '<p class="toast">Saved</p><input class="bl" aria-label="Blinks"><input class="pl" aria-label="Pulses"><input class="w" aria-label="Animated by script">'
+    + '<div class="spacer"></div><section class="reveal"><input class="r" aria-label="Revealed"></section>'
+    + '<script>document.querySelector("input.w").animate([{opacity:0},{opacity:1}],{duration:300,delay:4000,fill:"both"});'
+    + 'new IntersectionObserver((es)=>es.forEach((e)=>{if(e.isIntersecting)e.target.classList.add("in")})).observe(document.querySelector(".reveal"));</script>'));
+  assert.deepStrictEqual(json.controlBoundaryFailures.map((f) => f.element).sort(), ['input.bl', 'input.r', 'input.w']);
+  assert.ok(json.contrastFailures.some((f) => f.element === 'p.toast'), `the toast must be measured before it fades out: ${JSON.stringify(json.contrastFailures)}`);
+  assert.strictEqual(json.transparentControlsSkipped, 0);
+  assert.strictEqual(code, 1);
+});
+
+test('only keyboard-reachable controls are judged as focus indicators', async () => {
+  const { code, json } = await run(fixture('reach',
+    'button{background:#fff;border:1px solid #000;color:#000}:focus-visible{outline:2px solid #ddd}', // 1.36:1
+    '<button type="button" class="ok">Judged</button>'
+    + '<div aria-hidden="true"><a href="#x" tabindex="-1" class="dup">Duplicate</a></div>'
+    + '<div role="region" aria-label="Target" tabindex="-1" class="lm">Target</div>'
+    + '<div inert><button type="button" class="inert">Inert</button></div>'
+    + '<input class="tr" style="opacity:0" aria-label="Transparent">'));
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element), ['button.ok']);
+  assert.strictEqual(json.transparentControlsSkipped, 1);
+  assert.strictEqual(code, 1);
+});
+
 test('a page without a dark palette reports none', async () => {
   const { code, json } = await run(fixture('plain', '', '<p>Text</p>'));
   assert.strictEqual(json.darkScheme, false);
