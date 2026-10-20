@@ -173,7 +173,12 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   1024px. The current step carries `aria-current="step"`, which also fills
   its number: white on the gradient, teal on a light surface.
 - **App page** (`.page-band`, `.page-body`): a short gradient header band with
-  eyebrow and title; the first content block overlaps it by 72px.
+  eyebrow and title; the first content block overlaps it by 72px. Make that
+  block a surface at least 72px tall (a card, a panel, a grid of cards), so
+  no text and no later block sits on the band. A focused element in the first
+  block gets a 9px halo in the page background, because no outline colour
+  reaches 3:1 against both white and `#257880`; inside a card, a gradient or
+  a segmented track the outline sits on that surface and gets none.
 - **Dialog** (`.dialog`): 24px radius, blurred dark backdrop.
 - **Footer** (`.footer`): anthracite (`#585961`) background per the mandatory
   footer rule in `SKILL.md`; company name and link to netresearch.de in
