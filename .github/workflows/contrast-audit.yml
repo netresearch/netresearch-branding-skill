@@ -2,10 +2,11 @@
 # SPDX-FileCopyrightText: Netresearch DTT GmbH
 name: Contrast Audit
 
-# Runs skills/netresearch-branding/scripts/contrast-audit.cjs against the two
+# Runs skills/netresearch-branding/scripts/contrast-audit.cjs against the three
 # pages this repo ships, in headless Chromium. The script exits non-zero on any
 # text element below its WCAG AA ratio (4.5:1, or 3:1 for >=24px / >=18.66px
-# bold), so the templates cannot regress into the failures they had before:
+# bold), and on an author focus ring or a form-control boundary below 3:1, so
+# the templates cannot regress into the failures they had before:
 # white on the brand #2F99A4 is 3.38:1 and fails for a 16px button label.
 # Both colour schemes are measured: a dark palette is a separate set of pairs and a
 # light-only run says nothing about it.
@@ -55,6 +56,7 @@ jobs:
         node skills/netresearch-branding/scripts/tests/contrast-audit-error-paths.test.cjs
         node skills/netresearch-branding/scripts/tests/contrast-audit-tls.test.cjs
         node skills/netresearch-branding/scripts/tests/contrast-audit-headers.test.cjs
+        node skills/netresearch-branding/scripts/tests/contrast-audit-detection.test.cjs
         for scheme in light dark; do
           for page in \
             skills/netresearch-branding/templates/landing-page.html \

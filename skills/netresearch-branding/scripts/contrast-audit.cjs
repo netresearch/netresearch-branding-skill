@@ -31,13 +31,23 @@
  * for ≥24 px / ≥18.66 px bold) with foreground, effective background and the measured
  * ratio; whether a skip link, a labelled <nav>, <main> and table captions exist; the
  * smallest rendered font size; SVGs inside text badges without aria-hidden. Hidden
- * elements are skipped. Exits non-zero on a contrast failure OR on a stylesheet/script
+ * elements are skipped. Exits non-zero on a contrast failure (text or non-text) OR on a stylesheet/script
  * the page failed to load: an unstyled page has no contrast failures and would otherwise
  * pass for the wrong reason. Other failed requests (a template's placeholder images) are
  * listed under failedRequests without failing the run.
  *
- * Scope: text contrast (SC 1.4.3). It does NOT evaluate SC 1.4.11 non-text contrast —
- * control boundaries, focus rings, icons — so a green run is not a full AA verdict.
+ * Scope: text contrast (SC 1.4.3) and two parts of SC 1.4.11 non-text contrast, each at
+ * 3:1 and each failing the run. `focusRingFailures`: the outline (or else box-shadow ring)
+ * of each interactive element under forced :focus-visible, against the colour next to
+ * it. `controlBoundaryFailures`: the border or fill of each enabled input, select and
+ * textarea against the surface around it. Elements that show focus without an outline
+ * or ring are counted in `focusWithoutRing`, and the browser's own `outline: auto` ring
+ * in `focusUserAgentRing`; neither is judged. Icons, charts and other
+ * graphics are not evaluated, so a green run is still not a full AA verdict.
+ *
+ * `darkScheme` / `darkSchemeBy` say whether the page switches its colours under the
+ * other `prefers-color-scheme` or the other `data-theme` value, measured from computed
+ * colours, so a stylesheet the browser keeps unreadable cannot hide a dark palette.
  *
  * `stateFailures` repeats the measurement with :hover and :focus-visible forced on every
  * interactive element (CDP CSS.forcePseudoState), because a hover colour is invisible to a
@@ -118,7 +128,8 @@ const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
 // element whose hover colour nobody measured, in a run that still exits 0.
 const isDetached = (e) => /Could not find node|No node (found )?with given id|Node with given id does not belong/i.test(String(e?.message));
 
-async function measureOneNode(cdp, nodeId, state) {
+// `fn` names the in-page measurement: __measureOne (text colour) or __measureFocusRing.
+async function measureOneNode(cdp, nodeId, state, fn = '__measureOne') {
   const { object } = await cdp.send('DOM.resolveNode', { nodeId });
   // No throw from a finally anywhere here: it would replace the measurement error
   // with whatever the cleanup said. Both are captured and reported together.
@@ -127,7 +138,7 @@ async function measureOneNode(cdp, nodeId, state) {
   try {
     const { result, exceptionDetails } = await cdp.send('Runtime.callFunctionOn', {
       objectId: object.objectId, returnByValue: true,
-      functionDeclaration: 'function (state) { return window.__measureOne(this, state); }',
+      functionDeclaration: `function (state) { return window.${fn}(this, state); }`,
       arguments: [{ value: state }],
     });
     // callFunctionOn reports a thrown measurement through exceptionDetails and still
@@ -161,6 +172,7 @@ async function measureInteractiveStates(page) {
   const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
   const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: INTERACTIVE });
   const failures = [];
+  const focusFailures = [];
   const seen = new Set();
   // Errors are collected, never thrown from a finally — a throw there replaces the
   // exception already on its way out, which would be the measurement failure this
@@ -180,11 +192,12 @@ async function measureInteractiveStates(page) {
         await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [state] });
         forced = true;
         const f = await measureOneNode(cdp, nodeId, state);
-        if (!f) continue;
-        const key = `${state}|${f.element}|${f.fg}|${f.bg}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        failures.push(f);
+        const key = f && `${state}|${f.element}|${f.fg}|${f.bg}`;
+        if (f && !seen.has(key)) { seen.add(key); failures.push(f); }
+        if (state !== 'focus-visible') continue;
+        const ring = await measureOneNode(cdp, nodeId, state, '__measureFocusRing');
+        const ringKey = ring && `ring|${ring.element}|${ring.color}|${ring.against}`;
+        if (ring && !seen.has(ringKey)) { seen.add(ringKey); focusFailures.push(ring); }
       } catch (e) {
         if (isDetached(e)) continue;
         // Stop measuring, but let this element's reset run and keep whatever the
@@ -202,7 +215,38 @@ async function measureInteractiveStates(page) {
     if (rest.length) first.message += ` (+${rest.length} more: ${rest.map((e) => e.message).join('; ')})`;
     throw first;
   }
-  return failures;
+  return { failures, focusFailures };
+}
+
+// Fingerprint of the computed colours, taken under the current scheme and again with
+// `attr` set as data-theme (then restored). Run inside the page.
+function colourFingerprint(attr) {
+  const html = document.documentElement;
+  const prev = html.getAttribute('data-theme');
+  if (attr) html.setAttribute('data-theme', attr);
+  const fp = [...document.querySelectorAll('html, body, body *')].slice(0, 3000).map((e) => {
+    const c = getComputedStyle(e); return `${c.color}/${c.backgroundColor}/${c.borderTopColor}`;
+  }).join('|');
+  if (attr) { if (prev === null) html.removeAttribute('data-theme'); else html.setAttribute('data-theme', prev); }
+  return fp;
+}
+
+// Which mechanisms switch this page's colours. Detected from computed colours, not by
+// scanning stylesheets: Chromium refuses `cssRules` on a cross-origin sheet and on any
+// external sheet of a file:// page, and a scan then reports "no dark scheme" for a page
+// whose dark palette renders.
+async function detectDarkScheme(page, scheme) {
+  const other = scheme === 'dark' ? 'light' : 'dark';
+  const base = await page.evaluate(colourFingerprint, null);
+  const by = [];
+  await page.emulateMedia({ colorScheme: other });
+  try {
+    if (await page.evaluate(colourFingerprint, null) !== base) by.push('prefers-color-scheme');
+  } finally {
+    await page.emulateMedia({ colorScheme: scheme });
+  }
+  if (await page.evaluate(colourFingerprint, other) !== base) by.push('data-theme');
+  return by;
 }
 
 // Exported when required as a module so the error paths can be tested against a
@@ -358,6 +402,64 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       return { state, element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
     };
 
+    // SC 1.4.11 for non-text parts. A translucent colour is measured as it renders,
+    // composited over what lies behind it.
+    const over = (c, b) => ({ r: c.r * c.a + b.r * (1 - c.a), g: c.g * c.a + b.g * (1 - c.a), b: c.b * c.a + b.b * (1 - c.a) });
+    const rgb = (c) => `rgb(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)})`;
+    // The focus ring of ONE element while :focus-visible is forced on it: an outline, or
+    // else a box-shadow ring, against the colour next to it — the parent's background for
+    // a ring outside the element, the element's own for an inset one. An element with
+    // neither is counted, not failed: it may show focus by a border, a fill or an
+    // underline, which this check does not judge.
+    // `outline-style: auto` is the browser's own ring, which Chromium draws in two tones
+    // whatever its computed colour says; SC 1.4.11 does not apply to an indicator the
+    // author left unmodified, so it is counted, not measured.
+    window.__focusWithoutRing = 0;
+    window.__focusUserAgentRing = 0;
+    window.__measureFocusRing = (el) => {
+      if (!el || el.closest('[data-contrast-demo]')) return null;
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) return null;
+      if (cs.outlineStyle === 'auto') { window.__focusUserAgentRing++; return null; }
+      let color; let inside;
+      if (cs.outlineStyle !== 'none' && Number.parseFloat(cs.outlineWidth) > 0) {
+        color = parse(cs.outlineColor); inside = (Number.parseFloat(cs.outlineOffset) || 0) < 0;
+      } else if (cs.boxShadow !== 'none') {
+        // The first shadow's colour only: parse() on the whole value would read its
+        // offsets as the alpha channel.
+        color = parse((cs.boxShadow.match(/rgba?\([^)]*\)/) || [''])[0]); inside = /\binset\b/.test(cs.boxShadow);
+      } else { window.__focusWithoutRing++; return null; }
+      if (!color || color.a === 0) { window.__focusWithoutRing++; return null; }
+      const against = inside ? bgOf(el) : bgOf(el.parentElement || el);
+      const shown = over(color, against);
+      const r = ratio(shown, against);
+      if (r >= 3) return null;
+      return { element: describe(el), indicator: cs.outlineStyle !== 'none' && Number.parseFloat(cs.outlineWidth) > 0 ? 'outline' : 'box-shadow', color: rgb(shown), against: rgb(against), ratio: +r.toFixed(2), required: 3 };
+    };
+
+    // The visible boundary of a form control: its border, or its own fill where that
+    // differs enough from the surface around it. Disabled controls are exempt (SC 1.4.11),
+    // and native checkboxes and radios draw their own boundary.
+    const NO_BOUNDARY = new Set(['hidden', 'submit', 'button', 'reset', 'image', 'range', 'color', 'file']);
+    const boundaryFailures = [];
+    for (const el of document.querySelectorAll('input, select, textarea')) {
+      if (el.disabled || NO_BOUNDARY.has(el.type) || el.closest('[data-contrast-demo]')) continue;
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) continue;
+      if ((el.type === 'checkbox' || el.type === 'radio') && cs.appearance !== 'none') continue;
+      const outer = bgOf(el.parentElement || el);
+      const fill = bgOf(el);
+      let best = ratio(fill, outer); let border = null;
+      for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
+        if (cs[`border${side}Style`] === 'none' || !(Number.parseFloat(cs[`border${side}Width`]) > 0)) continue;
+        const c = parse(cs[`border${side}Color`]);
+        if (!c) continue;
+        const shown = over(c, outer); const r = ratio(shown, outer);
+        if (r > best) { best = r; border = rgb(shown); }
+      }
+      if (best < 3) boundaryFailures.push({ element: describe(el), border, fill: rgb(fill), against: rgb(outer), ratio: +best.toFixed(2), required: 3 });
+    }
+
     return {
       contrastFailures: [...seen.values()],
       // Advisory only: readability, not conformance. Never gates the exit code.
@@ -369,19 +471,27 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       tablesWithCaption: `${document.querySelectorAll('table caption').length} of ${document.querySelectorAll('table').length}`,
       smallestFontPx: +smallest.toFixed(1),
       decorativeSvgWithoutAriaHidden: [...document.querySelectorAll('a svg, button svg, .badge svg')].filter((s) => s.getAttribute('aria-hidden') !== 'true' && !s.getAttribute('role')).length,
-      darkScheme: [...document.styleSheets].some((ss) => { try { return [...ss.cssRules].some((r) => /prefers-color-scheme|data-theme/.test(r.cssText)); } catch (e) { return false; } }),
-      // Stylesheets the page linked but the browser could not read (cross-origin, or not
-      // served). Rules inside them are invisible to `darkScheme`, so report the count
-      // rather than letting it read as "no dark theme".
+      controlBoundaryFailures: boundaryFailures,
+      // Stylesheets whose rules the browser does not expose to scripts (cross-origin, or
+      // any external sheet of a file:// page). Informational: `darkScheme` is measured
+      // from computed colours and does not depend on them.
       unreadableStylesheets: [...document.styleSheets].filter((ss) => { try { return !ss.cssRules; } catch (e) { return true; } }).length,
     };
   });
-  result.stateFailures = await measureInteractiveStates(page);
+  const states = await measureInteractiveStates(page);
+  result.stateFailures = states.failures;
+  result.focusRingFailures = states.focusFailures;
+  result.focusWithoutRing = await page.evaluate(() => window.__focusWithoutRing);
+  result.focusUserAgentRing = await page.evaluate(() => window.__focusUserAgentRing);
+  result.darkSchemeBy = await detectDarkScheme(page, scheme);
+  result.darkScheme = result.darkSchemeBy.length > 0;
 
   result.scheme = scheme;
   result.failedRequests = badRequests;
   const blocking = badRequests.filter((r) => r.gating);
   console.log(JSON.stringify(result, null, 1));
   await browser.close();
-  process.exit(result.contrastFailures.length || result.stateFailures.length || blocking.length ? 1 : 0);
+  const failed = result.contrastFailures.length || result.stateFailures.length
+    || result.focusRingFailures.length || result.controlBoundaryFailures.length || blocking.length;
+  process.exit(failed ? 1 : 0);
 })().catch((e) => { console.error(e.message); process.exit(2); });

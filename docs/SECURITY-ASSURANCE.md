@@ -64,4 +64,4 @@ The skill has no server component, stores no data, and handles no user accounts.
 - The contrast audit is not a sandbox. It runs the audited page's scripts in an unsandboxed Chromium.
 - A `--header` value is sent unencrypted to an `http://` target on a loopback host (`localhost`, `127.0.0.1`, `[::1]`).
 - The templates load fonts from Google Fonts (`skills/netresearch-branding/templates/landing-page.html`). A project that must not contact third parties has to self-host the fonts.
-- The contrast audit measures text contrast (WCAG SC 1.4.3). It is not a security scanner for the audited page.
+- The contrast audit measures text contrast (WCAG SC 1.4.3) and, under SC 1.4.11, author focus rings and form-control boundaries. It is not a security scanner for the audited page.
