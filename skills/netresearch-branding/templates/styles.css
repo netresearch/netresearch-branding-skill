@@ -320,8 +320,10 @@ img, svg { max-width: 100%; }
 
 /* ============================================
    SURFACES
-   .hero, .page-band, .split-panel, .on-gradient carry the teal gradient (#257880 to #0A5057;
-   #1B6C74 to #0B3539 in dark). White is 5.15:1 or more on every stop; the
+   .hero, .page-band and .split-panel paint the teal gradient (#257880 to
+   #0A5057; #1B6C74 to #0B3539 in dark); .on-gradient switches the tokens for
+   a surface the author paints with the same gradient (it paints nothing
+   itself). White is 5.15:1 or more on every stop; the
    teal text roles are not (the link colour is 1.57:1, 3.05:1 in dark) and
    anthracite is 1.35:1. A gradient surface therefore turns the colour tokens
    white, and a light container on it (a panel, card, notice, badge, form
@@ -329,13 +331,36 @@ img, svg { max-width: 100%; }
    at any depth: a card on the hero is light, a gradient tile in that card is
    a gradient again.
    ============================================ */
+.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted,
+.segmented, .badge, .btn-tonal, .form-input, .form-select, .form-textarea {
+  --nr-text: var(--nr-base-text);
+  --nr-text-secondary: var(--nr-base-text-secondary);
+  --nr-primary-text: var(--nr-base-primary-text);
+  --nr-primary-deep: var(--nr-base-primary-deep);
+  --nr-link-underline: 1px;
+  --nr-code-bg: var(--nr-bg-alt);
+  --nr-code-border: var(--nr-border-light);
+  --nr-btn-primary-bg: var(--nr-primary-fill);
+  --nr-btn-primary-fg: var(--nr-on-fill);
+  --nr-btn-primary-hover-bg: var(--nr-primary-fill-hover);
+  --nr-btn-primary-hover-fg: var(--nr-on-fill);
+  --nr-btn-outline-fg: var(--nr-primary-text);
+  --nr-btn-outline-border: var(--nr-primary);
+  --nr-btn-outline-hover-bg: var(--nr-primary-tint);
+  --nr-btn-outline-hover-fg: var(--nr-primary-text);
+  --nr-btn-ghost-hover-bg: var(--nr-primary-tint);
+  --nr-step-current-bg: var(--nr-primary-fill);
+  --nr-step-current-fg: var(--nr-on-fill);
+  --nr-step-current-border: var(--nr-primary-text);
+}
+
+/* After the reset above, so .on-gradient wins on an element that also carries
+   a container class (.card.on-gradient, .stat.on-gradient). */
 .hero, .page-band, .split-panel, .on-gradient {
   --nr-text: var(--nr-on-fill);
   --nr-text-secondary: var(--nr-on-fill);
   --nr-primary-text: var(--nr-on-fill);
   --nr-primary-deep: var(--nr-on-fill);
-  --nr-focus: var(--nr-on-fill);
-  --nr-focus-on-tint: var(--nr-on-fill);
   --nr-link-underline: 2px;
   /* Chips and inline code are border-only, never an rgba() fill: a translucent
      fill lightens the stop under white text (white on #257880 lifted by 15%
@@ -360,40 +385,24 @@ img, svg { max-width: 100%; }
   color: var(--nr-on-fill);
 }
 
-.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted,
-.segmented, .badge, .btn-tonal, .form-input, .form-select, .form-textarea {
-  --nr-text: var(--nr-base-text);
-  --nr-text-secondary: var(--nr-base-text-secondary);
-  --nr-primary-text: var(--nr-base-primary-text);
-  --nr-primary-deep: var(--nr-base-primary-deep);
-  --nr-link-underline: 1px;
-  --nr-code-bg: var(--nr-bg-alt);
-  --nr-code-border: var(--nr-border-light);
-  --nr-btn-primary-bg: var(--nr-primary-fill);
-  --nr-btn-primary-fg: var(--nr-on-fill);
-  --nr-btn-primary-hover-bg: var(--nr-primary-fill-hover);
-  --nr-btn-primary-hover-fg: var(--nr-on-fill);
-  --nr-btn-outline-fg: var(--nr-primary-text);
-  --nr-btn-outline-border: var(--nr-primary);
-  --nr-btn-outline-hover-bg: var(--nr-primary-tint);
-  --nr-btn-outline-hover-fg: var(--nr-primary-text);
-  --nr-btn-ghost-hover-bg: var(--nr-primary-tint);
-  --nr-step-current-bg: var(--nr-primary-fill);
-  --nr-step-current-fg: var(--nr-on-fill);
-  --nr-step-current-border: var(--nr-primary-text);
-}
-
-/* The focus outline is drawn outside an element, on the surface around it: a
-   card link or a tonal button on the gradient keeps the white outline, and
-   only what sits inside a light container gets the light-surface one. Inside
-   a tinted container that is the darker tint outline. */
-:is(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted,
-    .segmented, .badge, .btn-tonal, .form-input, .form-select, .form-textarea) > * {
+/* The focus outline is drawn outside an element, on the surface around it, so
+   the focus tokens are set on the CHILDREN of a surface: a card link on the
+   gradient gets the white outline from the gradient, a link in the card the
+   light-surface one, a control in a gradient tile inside that card the white
+   one again. Inside a tinted container it is the darker tint outline.
+   :where() keeps the three at zero specificity, so a component's own focus
+   rule (.badge, .tinted and the tinted rows below) still wins on itself. */
+:where(.hero-panel, .card, .stat, .notice, .table-wrap, .split-main, .dialog, .tinted,
+       .segmented, .badge, .btn-tonal, .form-input, .form-select, .form-textarea) > * {
   --nr-focus: var(--nr-base-focus);
   --nr-focus-on-tint: var(--nr-base-focus-on-tint);
 }
-:is(.badge, .table tr.row-danger, .table tr.row-warning, .table tr.row-success, .tinted) > * {
+:where(.badge, .tinted, .table tr.row-danger, .table tr.row-warning, .table tr.row-success) > * {
   --nr-focus: var(--nr-base-focus-on-tint);
+}
+:where(.hero, .page-band, .split-panel, .on-gradient) > * {
+  --nr-focus: var(--nr-on-fill);
+  --nr-focus-on-tint: var(--nr-on-fill);
 }
 
 /* Containers set their text colour too, so nothing inherits the gradient's white. */
