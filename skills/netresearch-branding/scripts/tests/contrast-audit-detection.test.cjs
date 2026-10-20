@@ -72,6 +72,32 @@ test('text under :focus alone and the unfocused text of an autofocused element a
   assert.strictEqual(code, 1);
 });
 
+test('a data-theme palette is measured in the run of its scheme', async () => {
+  const page = fixture('themefail', '[data-theme="dark"] body{background:#111;color:#333}', '<p>Text</p>');
+  const dark = await run(page, '--scheme', 'dark');
+  assert.strictEqual(dark.json.dataThemeSet, 'dark');
+  assert.ok(dark.json.contrastFailures.length > 0, `the data-theme="dark" palette (1.6:1) must be measured: ${JSON.stringify(dark.json.contrastFailures)}`);
+  assert.strictEqual(dark.code, 1);
+  const light = await run(page);
+  assert.strictEqual(light.json.dataThemeSet, 'light');
+  assert.strictEqual(light.code, 0, JSON.stringify(light.json.contrastFailures));
+});
+
+test('controls in a fade-in section are measured; the browser\'s own outline moves are not indicators', async () => {
+  const { code, json } = await run(fixture('round4',
+    '.fade{opacity:0;animation:in .6s forwards}@keyframes in{to{opacity:1}}'
+    + 'input.fi{border:1px solid #ddd;background:#fff}' // in the fade-in section: 1.36:1
+    + 'input.po{outline:2px solid #eee}' // permanent outline, no focus rule
+    + 'a:not([href]){color:#000}a:focus{color:#ccc;outline:2px solid #eee}', // a named anchor cannot take focus
+    '<section class="fade"><input class="fi" aria-label="Email"></section>'
+    + '<input type="checkbox" class="po" aria-label="Box"> <input type="radio" class="po" aria-label="Dot">'
+    + '<a id="top" class="na">Top</a>'));
+  assert.deepStrictEqual(json.controlBoundaryFailures.map((f) => f.element), ['input.fi']);
+  assert.deepStrictEqual(json.focusRingFailures, []);
+  assert.deepStrictEqual(json.stateFailures, []);
+  assert.strictEqual(code, 1);
+});
+
 test('a page without a dark palette reports none', async () => {
   const { code, json } = await run(fixture('plain', '', '<p>Text</p>'));
   assert.strictEqual(json.darkScheme, false);

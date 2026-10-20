@@ -44,9 +44,12 @@
  * an indicator. `controlBoundaryFailures`: the border (painted over the control's fill)
  * or the fill of each input, select and textarea against the surface around it.
  * Disabled controls (also in a disabled fieldset), controls in a hidden ancestor or a
- * closed dialog, opacity:0 controls and 1px visually hidden form fields are skipped.
- * An outline that only moves on focus counts as changed, except the 1px move Chromium
- * itself applies to a focused link. Elements whose focus
+ * closed dialog, controls whose own opacity is 0 and 1px visually hidden form fields are
+ * skipped; a control in a section at opacity 0 (a fade-in, frozen at its start because
+ * animations are disabled) is measured. An <a> without href is measured hovered, never
+ * focused. An outline that only moves on focus counts as changed, except the moves
+ * Chromium's own focus styles apply (1px on a link, 2px on a checkbox or radio).
+ * Elements whose focus
  * changes no outline, ring or border are counted in `focusWithoutRing`, and the
  * browser's own `outline: auto` ring in `focusUserAgentRing`; neither is judged. A ring
  * drawn on another element (a sibling label, a :focus-within ancestor) is not seen.
@@ -58,6 +61,9 @@
  * `darkScheme` / `darkSchemeBy` say whether the page switches its colours under the
  * other `prefers-color-scheme` or either `data-theme` value, measured from computed
  * colours, so a stylesheet the browser keeps unreadable cannot hide a dark palette.
+ * Where `data-theme` switches them, the run sets `data-theme` on <html> to its --scheme
+ * before measuring (`dataThemeSet`), so `--scheme dark` measures that palette too.
+ * Only `data-theme` on <html> is detected (not on <body>, not `data-bs-theme`).
  *
  * `stateFailures` repeats the measurement with :hover and :focus-visible forced on every
  * interactive element (CDP CSS.forcePseudoState), because a hover colour is invisible to a
@@ -133,6 +139,8 @@ async function sendHeaderToOriginOnly(page, origin, name, value) {
 // hovered simultaneously — and an ancestor, sibling or :has() selector then resolves
 // against that fiction.
 const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
+// What can take focus: an <a> without href (a named anchor) can be hovered, not focused.
+const FOCUSABLE = 'a[href], button, input, textarea, select, summary, [tabindex]';
 // A node can legitimately disappear between the query and the force. Anything else is
 // a real failure and must not be swallowed: an element silently dropped here is an
 // element whose hover colour nobody measured, in a run that still exits 0.
@@ -182,6 +190,7 @@ async function measureInteractiveStates(page) {
   await cdp.send('DOM.enable'); await cdp.send('CSS.enable'); await cdp.send('Runtime.enable');
   const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
   const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: INTERACTIVE });
+  const focusable = new Set((await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: FOCUSABLE })).nodeIds);
   const failures = [];
   const focusFailures = [];
   const seen = new Set();
@@ -198,6 +207,7 @@ async function measureInteractiveStates(page) {
   for (const state of ['hover', 'focus-visible']) {
     if (aborted) break;
     for (const nodeId of nodeIds) {
+      if (state === 'focus-visible' && !focusable.has(nodeId)) continue;
       let forced = false;
       try {
         // A browser never shows :focus-visible without :focus; a colour set under :focus
@@ -225,7 +235,7 @@ async function measureInteractiveStates(page) {
   // only what changed is judged (the page was blurred before the first pass). One element
   // at a time, like the pass above: a forced state must be reset before the next element
   // is recorded.
-  for (const nodeId of aborted ? [] : nodeIds) {
+  for (const nodeId of aborted ? [] : nodeIds.filter((id) => focusable.has(id))) {
     let forced = false;
     try {
       await measureOneNode(cdp, nodeId, 'unfocused', '__ringBefore');
@@ -315,6 +325,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   // An element focused on load (autofocus) would be measured in its focused colours, and
   // the focus-indicator pass would record it focused: nothing may hold focus.
   await page.evaluate(() => document.activeElement?.blur?.());
+  // A palette switched by data-theme is not reached by emulating prefers-color-scheme:
+  // where data-theme switches the colours, the run sets it to its own scheme.
+  const darkSchemeBy = await detectDarkScheme(page, scheme);
+  const dataThemeSet = darkSchemeBy.includes('data-theme');
+  if (dataThemeSet) await page.evaluate((t) => { document.documentElement.dataset.theme = t; }, scheme);
   const result = await page.evaluate(() => {
     // Colours: rgb()/rgba() are read numerically, exactly; any other notation the browser
     // computes (oklch(), color()) goes through a 1x1 canvas, which returns sRGB bytes with
@@ -485,12 +500,15 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     const over = (c, b) => ({ r: c.r * c.a + b.r * (1 - c.a), g: c.g * c.a + b.g * (1 - c.a), b: c.b * c.a + b.b * (1 - c.a) });
     const rgb = (c) => `rgb(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)})`;
     // Whether a control can be seen and used at all: a closed <dialog>, a display:none or
-    // visibility:hidden ancestor, an opacity:0 control (a custom switch's input over its
-    // drawn track), a disabled control (also inside <fieldset disabled>) and a
+    // visibility:hidden ancestor, a control whose own opacity is 0 (a custom switch's input
+    // over its drawn track), a disabled control (also inside <fieldset disabled>) and a
     // 1px visually hidden form field (its look is drawn by a sibling) have no visible state.
+    // An ancestor's opacity does not count: with animations disabled, a fade-in section
+    // stays at its starting opacity 0, which no user sees once the animation has run.
     const perceivable = (el) => {
       if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return false;
-      if (!el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true, opacityProperty: true, checkOpacity: true })) return false;
+      if (!el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true })) return false;
+      if (getComputedStyle(el).opacity === '0') return false;
       if (!el.matches('input, select, textarea')) return true;
       const b = el.getBoundingClientRect();
       return b.width > 1 && b.height > 1;
@@ -548,13 +566,14 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // another element (a sibling label, a :focus-within ancestor) is not seen.
     // A changed, visible outline: against the parent's background, or the element's own
     // when it is drawn inside (negative offset).
-    // Whether focus changed the outline. A moved outline counts, except Chromium's own
-    // a:focus-visible, which moves a link's outline from 0 to 1px and would make a
-    // permanent outline look like a focus indicator.
+    // Whether focus changed the outline. A moved outline counts, except the moves of
+    // Chromium's own focus styles, which would make a permanent outline look like a focus
+    // indicator: 0 to 1px on a link, 0 to 2px on a checkbox or radio.
+    const UA_OFFSET = [[':any-link', '1px'], ['input[type=checkbox], input[type=radio]', '2px']];
     const outlineChanged = (el, before, after) => {
       if (after.outline !== before.outline) return true;
       if (after.offset === before.offset) return false;
-      return !(el.matches(':any-link') && before.offset === '0px' && after.offset === '1px');
+      return !(before.offset === '0px' && UA_OFFSET.some(([sel, px]) => el.matches(sel) && after.offset === px));
     };
     const outlinePart = (el, cs, before, after, { outer, own }) => {
       const width = Number.parseFloat(cs.outlineWidth);
@@ -658,8 +677,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   result.focusRingFailures = states.focusFailures;
   result.focusWithoutRing = await page.evaluate(() => window.__focusWithoutRing);
   result.focusUserAgentRing = await page.evaluate(() => window.__focusUserAgentRing);
-  result.darkSchemeBy = await detectDarkScheme(page, scheme);
-  result.darkScheme = result.darkSchemeBy.length > 0;
+  result.darkSchemeBy = darkSchemeBy;
+  result.darkScheme = darkSchemeBy.length > 0;
+  result.dataThemeSet = dataThemeSet ? scheme : null;
 
   result.scheme = scheme;
   result.failedRequests = badRequests;
