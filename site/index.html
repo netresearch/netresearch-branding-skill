@@ -162,7 +162,8 @@
     a:hover { color: var(--nr-primary-deep); }
     code, .mono {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.875em;
+      font-size: max(14px, 0.875em);
+      overflow-wrap: break-word;
       background: var(--nr-bg-alt);
       padding: 2px 6px;
       border-radius: 4px;
@@ -195,10 +196,6 @@
     }
     .navbar-logo { display: inline-flex; align-items: center; gap: var(--space-sm); }
     .navbar-logo svg { width: 44px; height: 44px; display: block; }
-    .navbar-wordmark {
-      font-family: var(--font-headline); font-weight: 700; font-size: 18px;
-      color: var(--nr-text); white-space: nowrap;
-    }
     .navbar-menu {
       display: flex; gap: 4px; list-style: none; margin: 0; padding: 0;
       margin-left: auto; flex-wrap: wrap;
@@ -208,11 +205,6 @@
       color: var(--nr-text); padding: 8px 12px; border-radius: 6px; display: block;
     }
     .navbar-menu a:hover { color: var(--nr-primary-text); font-weight: 600; background: var(--nr-bg-alt); }
-    @media (max-width: 880px) {
-      .navbar-wordmark { display: none; }
-      .navbar-menu { font-size: 13px; }
-    }
-
     /* ============================== HERO ============================== */
     .hero {
       /* Both stops carry white text, so both clear 4.5:1. A gradient has no
@@ -239,7 +231,7 @@
     section.block.alt { background: var(--nr-bg-alt); }
     .section-head { margin-bottom: var(--space-2xl); max-width: 70ch; }
     .section-head .eyebrow {
-      font-family: var(--font-headline); font-weight: 700; font-size: 13px;
+      font-family: var(--font-headline); font-weight: 700; font-size: 14px;
       letter-spacing: 1px; text-transform: uppercase; color: var(--nr-primary-text);
       margin-bottom: var(--space-xs);
     }
@@ -255,19 +247,19 @@
     .rule > h3, .rule > h4 { margin-top: 0; }
     .rule-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
     .rule-id {
-      font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600;
+      font-family: ui-monospace, monospace; font-size: 14px; font-weight: 600;
       color: #fff; background: var(--nr-primary-fill); padding: 2px 8px; border-radius: 4px;
       white-space: nowrap;
     }
     .src {
-      display: inline-block; font-family: ui-monospace, monospace; font-size: 12px;
+      display: inline-block; font-family: ui-monospace, monospace; font-size: 14px;
       color: var(--nr-text-secondary); margin-top: var(--space-xs);
     }
 
     /* --- Issue button (injected by JS for every [data-issue-title]) --- */
     .issue-link {
       display: inline-flex; align-items: center; gap: 6px;
-      font-family: var(--font-headline); font-weight: 600; font-size: 13px;
+      font-family: var(--font-headline); font-weight: 600; font-size: 14px;
       color: var(--nr-primary-text); border: 1px solid var(--nr-border-strong);
       padding: 5px 12px; border-radius: 999px; white-space: nowrap;
       background: var(--nr-bg); transition: all .2s ease; cursor: pointer;
@@ -275,6 +267,9 @@
     .issue-link:hover { background: var(--nr-primary-fill); color: #fff; border-color: var(--nr-primary-fill); }
 
     .grid { display: grid; gap: var(--space-lg); }
+    /* A grid item is min-width:auto by default, so one long path in inline code widened
+       its card past a 320px viewport (SC 1.4.10). Let items shrink; code wraps. */
+    .grid > * { min-width: 0; }
     .grid-2 { grid-template-columns: repeat(2, 1fr); }
     .grid-3 { grid-template-columns: repeat(3, 1fr); }
     .grid-4 { grid-template-columns: repeat(4, 1fr); }
@@ -288,7 +283,7 @@
     .swatch .meta { padding: var(--space-md); }
     .swatch .meta .name { font-family: var(--font-headline); font-weight: 700; margin-bottom: 4px; }
     .swatch .meta .hex { font-family: ui-monospace, monospace; font-size: 14px; color: var(--nr-text); }
-    .swatch .meta .role { font-size: 13px; color: var(--nr-text-secondary); margin-top: 6px; }
+    .swatch .meta .role { font-size: 14px; color: var(--nr-text-secondary); margin-top: 6px; }
     .swatch .issue-link { margin: 0 var(--space-md) var(--space-md); }
 
     /* --- contrast verifier table --- */
@@ -298,7 +293,7 @@
     .contrast-table tr:last-child td { border-bottom: none; }
     .sw-dot { display: inline-block; width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(0,0,0,.12); vertical-align: middle; margin-right: 6px; }
     .ratio { font-family: ui-monospace, monospace; font-weight: 600; }
-    .badge { display: inline-block; font-family: var(--font-headline); font-weight: 600; font-size: 12px; padding: 2px 9px; border-radius: 999px; }
+    .badge { display: inline-block; font-family: var(--font-headline); font-weight: 600; font-size: 14px; padding: 2px 9px; border-radius: 999px; }
     /* Opaque tints: a translucent background has no ratio of its own, and the audit —
        like any static checker — resolves it to whatever sits behind it. */
     .badge.pass { background: var(--nr-tint-pass-bg); color: var(--nr-tint-pass-fg); }
@@ -323,14 +318,14 @@
     .demo-card:hover { box-shadow: var(--shadow-md); transform: translateY(-4px); }
     .demo-card .cc { padding: var(--space-lg); }
     .demo-card .ct { font-family: var(--font-headline); font-weight: 600; font-size: 20px; margin-bottom: var(--space-xs); }
-    .demo-card .cf { padding: var(--space-sm) var(--space-lg); border-top: 1px solid var(--nr-border-light); background: var(--nr-bg-alt); font-size: 13px; color: var(--nr-text-secondary); }
+    .demo-card .cf { padding: var(--space-sm) var(--space-lg); border-top: 1px solid var(--nr-border-light); background: var(--nr-bg-alt); font-size: 14px; color: var(--nr-text-secondary); }
 
     .form-group { margin-bottom: var(--space-md); }
     .form-label { display: block; font-family: var(--font-body); font-weight: 600; font-size: 14px; margin-bottom: 6px; }
     .form-input, .form-textarea { width: 100%; font-family: var(--font-body); font-size: 16px; color: var(--nr-text); padding: 12px 16px; border: 1px solid var(--nr-border-strong); border-radius: 4px; background: var(--nr-surface); transition: all .2s ease; }
     .form-input:focus, .form-textarea:focus { outline: none; border-color: var(--nr-primary); box-shadow: 0 0 0 3px rgba(47,153,164,.1); }
     .form-input::placeholder { color: var(--nr-text-secondary); }
-    .form-help { font-size: 13px; color: var(--nr-text-secondary); margin-top: 6px; }
+    .form-help { font-size: 14px; color: var(--nr-text-secondary); margin-top: 6px; }
 
     blockquote.brand { font-family: var(--font-headline); font-size: 22px; font-weight: 400; font-style: italic; line-height: 1.5; color: var(--nr-primary-text); border-left: 4px solid var(--nr-accent); padding-left: var(--space-lg); margin: 0; }
     blockquote.brand cite { display: block; font-family: var(--font-body); font-size: 14px; font-weight: 600; font-style: normal; color: var(--nr-text); margin-top: var(--space-sm); }
@@ -352,7 +347,7 @@
     .do, .dont { border-radius: var(--radius); padding: var(--space-lg); border: 2px solid; }
     .do { border-color: var(--nr-success); background: var(--nr-do-bg); }
     .dont { border-color: var(--nr-error); background: var(--nr-dont-bg); }
-    .do .tag, .dont .tag { font-family: var(--font-headline); font-weight: 700; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; display: inline-block; margin-bottom: var(--space-sm); }
+    .do .tag, .dont .tag { font-family: var(--font-headline); font-weight: 700; font-size: 14px; letter-spacing: .5px; text-transform: uppercase; display: inline-block; margin-bottom: var(--space-sm); }
     .do .tag { color: var(--nr-tint-pass-fg); }
     .dont .tag { color: var(--nr-tint-fail-fg); }
     .anti { background: var(--nr-surface); border: 1px dashed var(--nr-error); border-radius: 6px; padding: var(--space-md); }
@@ -368,14 +363,14 @@
     .logo-frame svg { display: block; }
     .logo-sizes { display: flex; gap: var(--space-lg); align-items: flex-end; flex-wrap: wrap; }
     .logo-sizes figure { margin: 0; text-align: center; }
-    .logo-sizes figcaption { font-size: 12px; color: var(--nr-text-secondary); margin-top: 6px; font-family: ui-monospace, monospace; }
+    .logo-sizes figcaption { font-size: 14px; color: var(--nr-text-secondary); margin-top: 6px; font-family: ui-monospace, monospace; }
 
     /* --- checkpoints table --- */
     .cp-table { font-size: 14px; }
     .cp-table th { background: var(--nr-footer-bg); color: var(--nr-footer-fg); font-family: var(--font-headline); font-weight: 600; text-align: left; padding: 12px 14px; }
     .cp-table td { padding: 10px 14px; border-bottom: 1px solid var(--nr-border-light); vertical-align: top; }
     .cp-table tbody tr:hover { background: var(--nr-bg-alt); }
-    .sev { font-family: var(--font-headline); font-weight: 600; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+    .sev { font-family: var(--font-headline); font-weight: 600; font-size: 14px; padding: 2px 8px; border-radius: 4px; }
     .sev.error { background: var(--nr-tint-fail-bg); color: var(--nr-tint-fail-fg); }
     .sev.warning { background: var(--nr-tint-warn-bg); color: var(--nr-tint-warn-fg); }
     .sev.info { background: var(--nr-tint-info-bg); color: var(--nr-tint-info-fg); }
@@ -383,8 +378,8 @@
 
     /* --- findings --- */
     .finding { border-left: 4px solid var(--nr-accent); }
-    .finding .kind { font-family: var(--font-headline); font-weight: 700; font-size: 12px; letter-spacing: .5px; text-transform: uppercase; color: var(--nr-accent-text); }
-    .finding .cite { font-family: ui-monospace, monospace; font-size: 13px; color: var(--nr-text-secondary); margin-top: var(--space-sm); }
+    .finding .kind { font-family: var(--font-headline); font-weight: 700; font-size: 14px; letter-spacing: .5px; text-transform: uppercase; color: var(--nr-accent-text); }
+    .finding .cite { font-family: ui-monospace, monospace; font-size: 14px; color: var(--nr-text-secondary); margin-top: var(--space-sm); overflow-wrap: break-word; }
     .finding details { margin-top: var(--space-sm); }
     .finding summary { cursor: pointer; font-weight: 600; color: var(--nr-primary-text); font-family: var(--font-headline); }
     .finding details[open] summary { margin-bottom: var(--space-sm); }
@@ -420,7 +415,6 @@
             <path fill="#585961" d="M221.44,120.41c0-34.48-13.94-57.82-48.93-57.82-26.62,0-48.54,7.74-64.17,26.56l-.7-22.06-28.31.06V232.94h31.59V124.69c7.14-18.38,32.14-34.8,53-34.5,27.38.4,25.2,26.24,26,45.81v96.94h31.58" transform="translate(-0.39 -0.04)"/>
           </g>
         </svg>
-        <span class="navbar-wordmark">Branding Skill</span>
       </a>
       <ul class="navbar-menu">
         <li><a href="#validity">Validity</a></li>
@@ -534,12 +528,12 @@
                like the verifier table above: a hand-typed ratio drifts from the colour
                it labels. -->
           <div class="specimens" id="specimensDo"></div>
-          <p style="font-size:13px;color:var(--nr-text-secondary);margin:12px 0 0">The brand <code>#2F99A4</code> stays on borders, icons, chart series and display type at 24px or more. Under white label text it is 3.38:1.</p>
+          <p style="font-size:14px;color:var(--nr-text-secondary);margin:12px 0 0">The brand <code>#2F99A4</code> stays on borders, icons, chart series and display type at 24px or more. Under white label text it is 3.38:1.</p>
         </div>
         <div class="dont">
           <span class="tag">✗ Don’t — intentional anti-patterns</span>
           <div class="anti specimens" id="specimensDont" data-contrast-demo></div>
-          <p style="font-size:13px;color:var(--nr-text-secondary);margin:12px 0 0">These swatches deliberately violate the brand to illustrate the rule — they are not the page’s chrome.</p>
+          <p style="font-size:14px;color:var(--nr-text-secondary);margin:12px 0 0">These swatches deliberately violate the brand to illustrate the rule — they are not the page’s chrome.</p>
         </div>
       </div>
 
@@ -564,14 +558,14 @@
           <div class="rule-head"><h3 style="font-family:var(--font-headline)">Raleway</h3><span class="rule-id">Headlines</span></div>
           <p style="font-family:var(--font-headline);font-weight:700;font-size:34px;margin:0 0 4px">Aa Bb Cc 123</p>
           <p>Headlines (h1–h5), nav items, button labels, pull quotes, taglines. Weights 400 / 600 / 700.</p>
-          <p style="font-size:13px;color:var(--nr-text-secondary)"><strong>Not</strong> for body paragraphs, long-form, or text below 14px.</p>
+          <p style="font-size:14px;color:var(--nr-text-secondary)"><strong>Not</strong> for body paragraphs, long-form, or text below 14px.</p>
           <span class="src">references/typography.md:19–94</span>
         </div>
         <div class="rule" data-issue-title="[Branding] Open Sans usage rules" data-issue-body="Re: references/typography.md — Open Sans (body).%0A%0AQuestion / proposal:">
           <div class="rule-head"><h3 style="font-family:var(--font-headline)">Open Sans</h3><span class="rule-id">Body</span></div>
           <p style="font-family:var(--font-body);font-weight:400;font-size:24px;margin:0 0 4px">Aa Bb Cc 123</p>
           <p>All body copy, lists, form inputs, captions, table content, footer text. Weights 400 / 600 / 700.</p>
-          <p style="font-size:13px;color:var(--nr-text-secondary)"><strong>Not</strong> for main headlines or display text above 48px.</p>
+          <p style="font-size:14px;color:var(--nr-text-secondary)"><strong>Not</strong> for main headlines or display text above 48px.</p>
           <span class="src">references/typography.md:95–166</span>
         </div>
       </div>
@@ -683,7 +677,7 @@
             <span class="clear">
               <svg width="96" height="96" viewBox="-75 -75 440 440" role="img" aria-label="Netresearch symbol logo"><title>Netresearch DTT GmbH</title><g><path fill="#2F99A4" d="M209.6,0V31.62h32.77a26.38,26.38,0,0,1,26.44,26.43V242a26.38,26.38,0,0,1-26.44,26.44H209.6V300h47.93a42.77,42.77,0,0,0,42.86-42.86V42.89A42.76,42.76,0,0,0,257.53,0ZM43.25,0A42.76,42.76,0,0,0,.39,42.89V257.18A42.76,42.76,0,0,0,43.25,300H91.18V268.46H58.4A26.38,26.38,0,0,1,32,242v-184A26.37,26.37,0,0,1,58.4,31.62H91.18V0Z" transform="translate(-0.39 -0.04)"/><path fill="#585961" d="M221.44,120.41c0-34.48-13.94-57.82-48.93-57.82-26.62,0-48.54,7.74-64.17,26.56l-.7-22.06-28.31.06V232.94h31.59V124.69c7.14-18.38,32.14-34.8,53-34.5,27.38.4,25.2,26.24,26,45.81v96.94h31.58" transform="translate(-0.39 -0.04)"/></g></svg>
             </span>
-            <div style="font-size:12px;color:var(--nr-text-secondary);margin-top:10px;font-family:ui-monospace,monospace">dashed = minimum clear zone</div>
+            <div style="font-size:14px;color:var(--nr-text-secondary);margin-top:10px;font-family:ui-monospace,monospace">dashed = minimum clear zone</div>
           </div>
         </div>
 
@@ -694,7 +688,7 @@
             <figure><svg width="48" height="48" viewBox="-75 -75 440 440" aria-hidden="true"><g><path fill="#2F99A4" d="M209.6,0V31.62h32.77a26.38,26.38,0,0,1,26.44,26.43V242a26.38,26.38,0,0,1-26.44,26.44H209.6V300h47.93a42.77,42.77,0,0,0,42.86-42.86V42.89A42.76,42.76,0,0,0,257.53,0ZM43.25,0A42.76,42.76,0,0,0,.39,42.89V257.18A42.76,42.76,0,0,0,43.25,300H91.18V268.46H58.4A26.38,26.38,0,0,1,32,242v-184A26.37,26.37,0,0,1,58.4,31.62H91.18V0Z" transform="translate(-0.39 -0.04)"/><path fill="#585961" d="M221.44,120.41c0-34.48-13.94-57.82-48.93-57.82-26.62,0-48.54,7.74-64.17,26.56l-.7-22.06-28.31.06V232.94h31.59V124.69c7.14-18.38,32.14-34.8,53-34.5,27.38.4,25.2,26.24,26,45.81v96.94h31.58" transform="translate(-0.39 -0.04)"/></g></svg><figcaption>48px header</figcaption></figure>
             <figure><svg width="120" height="120" viewBox="-75 -75 440 440" aria-hidden="true"><g><path fill="#2F99A4" d="M209.6,0V31.62h32.77a26.38,26.38,0,0,1,26.44,26.43V242a26.38,26.38,0,0,1-26.44,26.44H209.6V300h47.93a42.77,42.77,0,0,0,42.86-42.86V42.89A42.76,42.76,0,0,0,257.53,0ZM43.25,0A42.76,42.76,0,0,0,.39,42.89V257.18A42.76,42.76,0,0,0,43.25,300H91.18V268.46H58.4A26.38,26.38,0,0,1,32,242v-184A26.37,26.37,0,0,1,58.4,31.62H91.18V0Z" transform="translate(-0.39 -0.04)"/><path fill="#585961" d="M221.44,120.41c0-34.48-13.94-57.82-48.93-57.82-26.62,0-48.54,7.74-64.17,26.56l-.7-22.06-28.31.06V232.94h31.59V124.69c7.14-18.38,32.14-34.8,53-34.5,27.38.4,25.2,26.24,26,45.81v96.94h31.58" transform="translate(-0.39 -0.04)"/></g></svg><figcaption>120px anchor</figcaption></figure>
           </div>
-          <p style="font-size:13px;color:var(--nr-text-secondary);margin:16px 0 0">SKILL.md recommends 40–56px in headers; logo.md recommends ≥120px as a visual anchor. Both say “recommended” — which wins, when?</p>
+          <p style="font-size:14px;color:var(--nr-text-secondary);margin:16px 0 0">SKILL.md recommends 40–56px in headers; logo.md recommends ≥120px as a visual anchor. Both say “recommended” — which wins, when?</p>
         </div>
       </div>
 
@@ -993,7 +987,7 @@
         span.style.background = sp.bg;
         span.style.color = sp.fg;
         if (sp.strong) { span.style.fontFamily = "var(--font-headline)"; span.style.fontWeight = "600"; }
-        if (sp.small) span.style.fontSize = "13px";
+        if (sp.small) span.style.fontSize = "14px";
         if (sp.bordered) span.style.border = "1px solid var(--nr-border-strong)";
         host.appendChild(span);
       });
