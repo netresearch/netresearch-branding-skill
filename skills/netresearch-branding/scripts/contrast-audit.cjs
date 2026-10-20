@@ -541,7 +541,8 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // A changed, visible outline: against the parent's background, or the element's own
     // when it is drawn inside (negative offset).
     const outlinePart = (cs, before, after, { outer, own }) => {
-      if (after.outline === before.outline || cs.outlineStyle === 'none' || !(Number.parseFloat(cs.outlineWidth) > 0)) return [];
+      const width = Number.parseFloat(cs.outlineWidth);
+      if (after.outline === before.outline || cs.outlineStyle === 'none' || Number.isNaN(width) || width <= 0) return [];
       const c = parse(cs.outlineColor);
       if (!c || c.a === 0) return [];
       const against = (Number.parseFloat(cs.outlineOffset) || 0) < 0 ? own : outer;
@@ -571,7 +572,10 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     const ringBefore = new WeakMap();
     window.__focusWithoutRing = 0;
     window.__focusUserAgentRing = 0;
-    window.__ringBefore = (el) => { if (el) ringBefore.set(el, ringState(el)); return null; };
+    window.__ringBefore = (el) => {
+      if (el) { ringBefore.set(el, ringState(el)); }
+      return null;
+    };
     window.__measureFocusRing = (el) => {
       if (!el || el.closest('[data-contrast-demo]') || !perceivable(el)) return null;
       const before = ringBefore.get(el);
