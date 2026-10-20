@@ -222,6 +222,37 @@ test('the resting text of a control shown on scroll and a control hidden by visi
   assert.strictEqual(code, 1);
 });
 
+test('text shown on scroll is measured in its own colour; an SVG title is not painted text', async () => {
+  const { code, json } = await run(fixture('round12',
+    'nav.mini{display:none;position:fixed;top:0;left:0;right:0;background:#15585E}nav.mini.on{display:block}'
+    + 'nav.mini a{color:#555}nav.mini a:hover,nav.mini a:focus{color:#fff}' // 1.09:1 at rest, inside a display:none ancestor
+    + 'button{position:fixed;bottom:16px;border:0;opacity:0}button.on{opacity:1}'
+    + 'button.ic{right:16px;background:#2F99A4;color:#fff}' // icon only: the title is a name, not painted text
+    + 'button.wr{left:16px;background:#fff;color:#bbb}button.wr span{color:#000}' // the painted label is #000
+    + 'button.wc{left:120px;background:#fff;color:#000}button.wc span{color:#bbb}' // the painted label is 1.92:1
+    + 'section{height:900px}',
+    '<nav class="mini" aria-label="Mini"><a href="#a" class="mn">Home</a></nav><section></section><section></section>'
+    + '<button type="button" class="ic"><svg width="16" height="16" aria-hidden="false"><title>Back to top</title><path d="M8 2l6 6H2z"/></svg></button>'
+    + '<button type="button" class="wr"><span>Up</span></button><button type="button" class="wc"><span>Top</span></button>'
+    + '<div data-contrast-demo><button type="button" class="dm" style="color:#ccc;background:#fff">Demo</button></div>'
+    + '<script>addEventListener("scroll",()=>{document.querySelector("nav.mini").classList.toggle("on",scrollY>300);'
+    + 'document.querySelectorAll("button").forEach((b)=>b.classList.toggle("on",scrollY>300));});</script>'));
+  assert.deepStrictEqual(json.contrastFailures.map((f) => `${f.element} ${f.ratio}`).sort(), ['a.mn 1.09', 'span 1.92']);
+  assert.deepStrictEqual(json.stateFailures.map((f) => `${f.state} ${f.element}`).sort(), ['focus-visible button.wc.on', 'hover button.wc.on']);
+  assert.strictEqual(json.demoExemptElements, 1);
+  assert.strictEqual(code, 1);
+});
+
+test('an element under the resting mouse position is measured at rest; text under a hidden ancestor is not', async () => {
+  const { code, json } = await run(fixture('pointer',
+    'body{margin:0}header{position:fixed;top:0;left:0;right:0;background:#fff}a.logo{color:#000}a.logo:hover{color:#ddd}main{padding-top:60px}',
+    '<header><a class="logo" href="#">Logo</a></header><p>Text</p>'
+    + '<div style="display:none"><p style="color:#eee">Never shown</p></div>')); // hidden by its ancestor: not painted
+  assert.deepStrictEqual(json.contrastFailures, []);
+  assert.deepStrictEqual(json.stateFailures.map((f) => `${f.state} ${f.element}`), ['hover a.logo']);
+  assert.strictEqual(code, 1);
+});
+
 test('only keyboard-reachable controls are judged as focus indicators', async () => {
   const { code, json } = await run(fixture('reach',
     'button{background:#fff;border:1px solid #000;color:#000}:focus-visible{outline:2px solid #ddd}', // 1.36:1

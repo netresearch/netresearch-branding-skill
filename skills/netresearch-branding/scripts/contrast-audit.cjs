@@ -31,7 +31,9 @@
  * for ≥24 px / ≥18.66 px bold) with foreground, effective background and the measured
  * ratio; whether a skip link, a labelled <nav>, <main> and table captions exist; the
  * smallest rendered font size; SVGs inside text badges without aria-hidden. Hidden
- * elements are skipped. Exits non-zero on a contrast failure (text or non-text) OR on a stylesheet/script
+ * elements (their own or an ancestor's display or visibility) are skipped; a submenu that
+ * only a parent item's :hover reveals is therefore measured only through its focus state.
+ * Exits non-zero on a contrast failure (text or non-text) OR on a stylesheet/script
  * the page failed to load: an unstyled page has no contrast failures and would otherwise
  * pass for the wrong reason. Other failed requests (a template's placeholder images) are
  * listed under failedRequests without failing the run.
@@ -408,6 +410,10 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   page.on('response', (r) => { if (r.status() >= 400) badRequests.push({ what: `HTTP ${r.status()}`, url: r.url(), type: r.request().resourceType(), gating: gates(r.request().resourceType()) }); });
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
+  // The headless mouse rests at (0, 0), so an element there (a fixed header's logo link)
+  // is really hovered and would be measured in its :hover colours as if at rest. Hover is
+  // measured on purpose by forcing it, one element at a time; the pointer stays outside.
+  await page.mouse.move(-10, -10);
   // Kill transitions before measuring anything: see the note on stateFailures above.
   await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important}' });
   // Content revealed on scroll and every animation are put into the state a user sees:
@@ -546,11 +552,16 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // template hold source text. None of them have a rendered contrast.
     const describe = (el) => el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).trim().replaceAll(/\s+/g, '.') : '');
     const NOT_PAINTED = new Set(['TITLE', 'DESC', 'SCRIPT', 'STYLE', 'TEMPLATE', 'METADATA', 'NOSCRIPT']);
-    for (const el of document.querySelectorAll('body *')) {
+    const ownText = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    // The text pass over a set of elements, each with its own text in its own colour. Run
+    // on the whole page here, and later on the subtree of each control measured at another
+    // scroll position, into the same results.
+    window.__textIn = (elements) => { for (const el of elements) {
       if (NOT_PAINTED.has(el.tagName.toUpperCase())) continue;
-      if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
+      if (!ownText(el)) continue;
       const cs = getComputedStyle(el);
-      if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) continue;
+      // Hidden by its own or an ancestor's display or visibility: not painted.
+      if (!el.checkVisibility({ visibilityProperty: true })) continue;
       // A style guide legitimately shows failing pairs as specimens. They must be declared
       // with data-contrast-demo, and the count is reported so the exemption is visible.
       if (el.closest('[data-contrast-demo]')) { exempt++; continue; }
@@ -569,7 +580,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         const key = `${el.tagName}.${el.className}|${cs.color}|${bg.r},${bg.g},${bg.b}`;
         if (!seen.has(key)) seen.set(key, { element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
       }
-    }
+    } };
+    window.__textIn(document.querySelectorAll('body *'));
+    window.__textSummary = () => ({ contrastFailures: [...seen.values()], apcaWarnings: [...apcaSeen.values()], demoExemptElements: exempt, smallestFontPx: +smallest.toFixed(1) });
     // Re-used by the interactive-state pass, which runs after this evaluate returns.
     // Measures ONE element — the one currently forced into `state`. The caller hands
     // it over by object reference (CDP DOM.resolveNode + Runtime.callFunctionOn), so
@@ -582,17 +595,22 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (!el.hasAttribute('data-contrast-audit-at') && window.__seenAt?.has(el)
         && !el.checkVisibility({ opacityProperty: true, checkOpacity: true, visibilityProperty: true })) { window.__deferred.add(el); return null; }
       const cs = getComputedStyle(el);
-      if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) return null;
-      // Unlike the main pass, a wrapped label counts here: in <a><span>Read more</span></a>
-      // the colour that :hover changes sits on the <a>, and requiring a direct text node
-      // would skip exactly those controls.
-      if (!el.textContent.trim()) return null;
-      const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
-      const size = Number.parseFloat(cs.fontSize);
-      const bold = (Number.parseInt(cs.fontWeight, 10) || 400) >= 700;
-      const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
-      if (r >= need) return null;
-      return { state, element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
+      if (!el.checkVisibility({ visibilityProperty: true })) return null;
+      // Each painted text inside the control, in its own colour: in <a><span>Read more</span></a>
+      // the colour :hover changes may sit on the <a> (inherited) or on the <span>. The text of
+      // an SVG <title> or <desc> is an accessible name, never painted, and is left out.
+      let worst = null;
+      for (const t of [el, ...el.querySelectorAll('*')]) {
+        if (NOT_PAINTED.has(t.tagName.toUpperCase()) || !ownText(t)) continue;
+        if (!t.checkVisibility({ visibilityProperty: true })) continue;
+        const ts = t === el ? cs : getComputedStyle(t);
+        const fg = parse(ts.color); const bg = bgOf(t); const r = ratio(fg, bg);
+        const size = Number.parseFloat(ts.fontSize);
+        const bold = (Number.parseInt(ts.fontWeight, 10) || 400) >= 700;
+        const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
+        if (r < need && (!worst || r < worst.ratio)) worst = { state, element: describe(el), text: el.textContent.trim().slice(0, 40), fg: ts.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
+      }
+      return worst;
     };
 
     // SC 1.4.11 for non-text parts. A translucent colour is measured as it renders,
@@ -791,11 +809,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   // the scroll direction looks as it did then).
   const positions = await page.evaluate((sel) => {
     window.__topSet = new WeakSet(document.querySelectorAll(sel));
-    // Controls the text pass skipped at the top (hidden by display or visibility).
-    window.__textSkipped = new WeakSet([...document.querySelectorAll(sel)].filter((el) => {
-      const cs = getComputedStyle(el);
-      return cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]');
-    }));
+    // Controls the text pass could not see at the top: hidden by display or visibility,
+    // their own or an ancestor's.
+    window.__textSkipped = new WeakSet([...document.querySelectorAll(sel)].filter((el) => !el.checkVisibility({ visibilityProperty: true })));
     window.__mountedMeasured = new WeakSet();
     const ys = new Set([...window.__deferred].map((el) => window.__seenAt.get(el)));
     for (const y of window.__mountedAt) ys.add(y);
@@ -821,20 +837,21 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     await page.evaluate(settleAnimations);
     result.controlBoundaryFailures.push(...await page.evaluate(() => [...document.querySelectorAll('[data-contrast-audit-at]')]
       .filter((el) => el.matches('input, select, textarea')).map(window.__boundaryOf).filter(Boolean)));
-    // Resting text of a control the text pass could not see at the top, reported once per
-    // element, colour pair (a row a virtualised list renders anew at each position).
-    const rest = await page.evaluate(() => [...document.querySelectorAll('[data-contrast-audit-at]')]
-      .filter((el) => window.__textSkipped.has(el) || !window.__topSet.has(el))
-      .map((el) => window.__measureOne(el, 'rest')).filter(Boolean).map(({ state, ...f }) => f));
-    const textKey = (f) => `${f.element}|${f.fg}|${f.bg}`;
-    const known = new Set(result.contrastFailures.map(textKey));
-    for (const f of rest) if (!known.has(textKey(f))) { known.add(textKey(f)); result.contrastFailures.push(f); }
+    // Resting text of a control the text pass could not see at the top: the same text
+    // pass, on the control's subtree, into the same results (reported once per element
+    // and colour pair, also for a row a virtualised list renders anew at each position).
+    await page.evaluate(() => {
+      for (const el of document.querySelectorAll('[data-contrast-audit-at]')) {
+        if (window.__textSkipped.has(el) || !window.__topSet.has(el)) window.__textIn([el, ...el.querySelectorAll('*')]);
+      }
+    });
     const at = await measureInteractiveStates(page, '[data-contrast-audit-at]', reported);
     result.stateFailures.push(...at.failures);
     result.focusRingFailures.push(...at.focusFailures);
     await page.evaluate(() => { for (const el of document.querySelectorAll('[data-contrast-audit-at]')) el.removeAttribute('data-contrast-audit-at'); });
   }
   if (positions.length) await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  Object.assign(result, await page.evaluate(() => window.__textSummary()));
   result.focusWithoutRing = await page.evaluate(() => window.__focusWithoutRing);
   result.focusUserAgentRing = await page.evaluate(() => window.__focusUserAgentRing);
   result.transparentControlsSkipped = await page.evaluate(() => window.__transparent.size);
