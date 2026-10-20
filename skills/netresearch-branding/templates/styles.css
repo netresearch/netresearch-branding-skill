@@ -325,15 +325,16 @@ h3 {
   margin-bottom: var(--spacing-md);
 }
 
+/* Fluid below h3 at every width (20-22px, h3 22-28px); h5 and h6 sit under it. */
 h4 {
-  font-size: var(--font-size-2xl);
+  font-size: clamp(var(--font-size-xl), 1.8vw, 22px);
   font-weight: 600;
   margin-bottom: var(--spacing-sm);
 }
 
 /* The browser defaults would be 13.3px and 10.7px. */
-h5 { font-size: var(--font-size-xl); font-weight: 600; margin-bottom: var(--spacing-sm); }
-h6 { font-size: var(--font-size-lg); font-weight: 600; margin-bottom: var(--spacing-sm); }
+h5 { font-size: var(--font-size-lg); font-weight: 600; margin-bottom: var(--spacing-sm); }
+h6 { font-size: var(--font-size-base); font-weight: 700; margin-bottom: var(--spacing-sm); }
 
 p {
   margin-bottom: var(--spacing-md);
@@ -897,11 +898,13 @@ small { font-size: var(--font-size-sm); }
 /* On dark, the lifted link and accent hues stay as verified against
    netresearch.de, but at 14px on their tint they reach only APCA Lc 60 / 53.
    The label turns to body text (Lc 92 / 89); tint and dot keep the hue.
-   An eyebrow on the gradient keeps its white (6.10:1 against 5.17:1). */
+   An eyebrow on the gradient keeps its white (6.10:1 against 5.17:1); one on
+   the white hero panel is a light-surface eyebrow and takes body text too. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .badge-info,
   :root:not([data-theme="light"]) .badge-accent,
   :root:not([data-theme="light"]) .eyebrow:not(.hero *, .page-band *, .split-panel *, .on-gradient *),
+  :root:not([data-theme="light"]) .hero .hero-panel .eyebrow,
   :root:not([data-theme="light"]) .navbar-link.active,
   :root:not([data-theme="light"]) .navbar-link[aria-current],
   :root:not([data-theme="light"]) .segmented [aria-pressed="true"],
@@ -914,6 +917,7 @@ small { font-size: var(--font-size-sm); }
 :root[data-theme="dark"] .badge-info,
 :root[data-theme="dark"] .badge-accent,
 :root[data-theme="dark"] .eyebrow:not(.hero *, .page-band *, .split-panel *, .on-gradient *),
+:root[data-theme="dark"] .hero .hero-panel .eyebrow,
 :root[data-theme="dark"] .navbar-link.active,
 :root[data-theme="dark"] .navbar-link[aria-current],
 :root[data-theme="dark"] .segmented [aria-pressed="true"],
@@ -1422,19 +1426,31 @@ a[download]::before { content: '\2B07  '; }
   color: var(--nr-on-fill);
 }
 
-/* A plain text link on the gradient: the teal link colour is 1.57:1 on #257880
-   (3.05:1 in dark), white is 5.15:1 or more on every stop. The underline stays,
-   so it is still told apart from the white body text. */
-.hero a:not([class]),
-.hero a:not([class]):hover,
-.page-band a:not([class]),
-.page-band a:not([class]):hover,
-.split-panel a:not([class]),
-.split-panel a:not([class]):hover,
-.on-gradient a:not([class]),
-.on-gradient a:not([class]):hover { color: var(--nr-on-fill); text-decoration-thickness: 2px; }
-.hero .hero-panel a:not([class]) { color: var(--nr-primary-text); text-decoration-thickness: 1px; }
-.hero .hero-panel a:not([class]):hover { color: var(--nr-primary-deep); }
+/* Text links and ghost buttons on the gradient: the teal link colour is 1.57:1
+   on #257880 (3.05:1 in dark), white is 5.15:1 or more on every stop. A plain
+   link keeps its underline, so it is still told apart from the white body text;
+   a standalone link and a ghost button underline on hover. A white panel inside
+   the hero is a light surface again. */
+:is(.hero, .page-band, .split-panel, .on-gradient) :is(a:not([class]), .link-standalone, .btn-ghost),
+:is(.hero, .page-band, .split-panel, .on-gradient) :is(a:not([class]), .link-standalone, .btn-ghost):hover {
+  color: var(--nr-on-fill);
+}
+:is(.hero, .page-band, .split-panel, .on-gradient) a:not([class]) { text-decoration-thickness: 2px; }
+:is(.hero, .page-band, .split-panel, .on-gradient) :is(.link-standalone, .btn-ghost):hover {
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.hero .hero-panel :is(a:not([class]), .link-standalone, .btn-ghost) { color: var(--nr-primary-text); }
+.hero .hero-panel a:not([class]) { text-decoration-thickness: 1px; }
+.hero .hero-panel :is(a:not([class]), .link-standalone):hover { color: var(--nr-primary-deep); }
+.hero .hero-panel .btn-ghost:hover { background: var(--nr-primary-tint); color: var(--nr-primary-text); text-decoration: none; }
+.hero .hero-panel .link-standalone:hover { text-decoration: none; }
+
+/* .on-gradient is the class for any other gradient surface; its eyebrow and
+   headings turn white like those of the hero (the anthracite h2 is 1.35:1). */
+.on-gradient .eyebrow,
+.on-gradient :is(h1, h2, h3, h4, h5, h6) { color: var(--nr-on-fill); }
 
 /* A #257880 button on a gradient that starts at #257880 has no visible fill,
    and buttons are identified by their fill. On the gradient it turns white

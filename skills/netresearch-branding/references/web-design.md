@@ -179,7 +179,9 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   teal outline is 2.06:1 on `#585961`.
 - **Links** (`a`, `.link-standalone`): `#15585E` default (8.11:1), `#0A5057` on
   hover (9.14:1), underlined in running text. The brand `#2F99A4` is 3.38:1 and
-  is not a link colour at body size.
+  is not a link colour at body size. On the gradient (`.hero`, `.page-band`,
+  `.split-panel`, `.on-gradient`) links, standalone links and ghost buttons
+  turn white (`#15585E` is 1.57:1 there), and so do eyebrows and headings.
 
 **External and download links** get a marker so users know what a click
 does before they click it:
