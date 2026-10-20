@@ -34,8 +34,10 @@
  * elements (their own or an ancestor's display or visibility) are skipped; a submenu that
  * only a parent item's :hover reveals is therefore measured only through its focus state.
  * Measured although checkVisibility() calls them hidden: the options of a <select>, the
- * content of a closed <details> (both one click away) and display: contents (no box, but
- * its text is painted).
+ * content of a closed <details> (also one nested in another closed one) and display:
+ * contents (no box, but its text is painted; its own background is not painted and is
+ * not composited). A single-line <select> is measured on the shown value in its own
+ * colour.
  * Exits non-zero on a contrast failure (text or non-text) OR on a stylesheet/script
  * the page failed to load: an unstyled page has no contrast failures and would otherwise
  * pass for the wrong reason. Other failed requests (a template's placeholder images) are
@@ -63,8 +65,12 @@
  * the scrolled look of a control already visible at the top (a sticky header's scrolled
  * palette), a control with display: contents shown only on scroll, and a scrolling
  * container inside the page; the scroll pass covers the window's own scroll. Before
- * anything is measured, the pointer is moved outside the viewport (with mouseout and
- * mouseleave held back, so an exit-intent popup does not open), the page is scrolled
+ * anything is measured, the pointer is moved outside the viewport. mouseleave and
+ * pointerleave on the document, <html> and <body>, and mouseout and pointerout that leave
+ * the window, are held back, so an exit-intent popup does not open, while an element's
+ * own leave events still release its hover. Not covered: an exit-intent listener on
+ * <body> or a capture listener on window, and a hover delegated from the document for an
+ * element at (0, 0), where the pointer starts. The page is scrolled
  * through once, instantly (content revealed on scroll, also content that hides again
  * when scrolled away), infinite animations are cancelled and finite ones finished,
  * unless finishing leaves the element less visible (a toast fading out), so a fade-in
@@ -419,10 +425,18 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   // The headless mouse rests at (0, 0), so an element there (a fixed header's logo link)
   // is really hovered and would be measured in its :hover colours as if at rest. Hover is
   // measured on purpose by forcing it, one element at a time; the pointer stays outside.
-  const LEAVE = ['mouseout', 'mouseleave', 'pointerout', 'pointerleave'];
-  await page.evaluate((ev) => { window.__stopLeave = (e) => e.stopImmediatePropagation(); for (const t of ev) window.addEventListener(t, window.__stopLeave, true); }, LEAVE);
+  await page.evaluate(() => {
+    const top = (t) => t === document || t === document.documentElement || t === document.body;
+    window.__stopLeave = (e) => { if (top(e.target)) e.stopImmediatePropagation(); };
+    window.__stopOut = (e) => { if (!e.relatedTarget) e.stopPropagation(); };
+    for (const t of ['mouseleave', 'pointerleave']) window.addEventListener(t, window.__stopLeave, true);
+    for (const t of ['mouseout', 'pointerout']) { window.addEventListener(t, window.__stopLeave, true); document.documentElement.addEventListener(t, window.__stopOut); }
+  });
   await page.mouse.move(-10, -10);
-  await page.evaluate((ev) => { for (const t of ev) window.removeEventListener(t, window.__stopLeave, true); }, LEAVE);
+  await page.evaluate(() => {
+    for (const t of ['mouseleave', 'pointerleave', 'mouseout', 'pointerout']) window.removeEventListener(t, window.__stopLeave, true);
+    for (const t of ['mouseout', 'pointerout']) document.documentElement.removeEventListener(t, window.__stopOut);
+  });
   // Kill transitions before measuring anything: see the note on stateFailures above.
   await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important}' });
   // Content revealed on scroll and every animation are put into the state a user sees:
@@ -487,7 +501,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // invents failures and hides them.
     const bgOf = (el) => {
       const stack = [];
-      while (el) { const c = parse(getComputedStyle(el).backgroundColor);
+      while (el) { const ecs = getComputedStyle(el); const c = ecs.display === 'contents' ? null : parse(ecs.backgroundColor);
         if (c && c.a > 0) { stack.push(c); if (c.a >= 1) break; }
         el = el.parentElement; }
       let out = { r: 255, g: 255, b: 255 };
@@ -554,13 +568,15 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       return null;
     };
     const seen = new Map();
+    const restFail = new WeakMap();
     const apcaSeen = new Map();
     let smallest = Infinity;
     let exempt = 0;
     // <title>/<desc> inside an SVG are accessible names, never painted; script/style/
     // template hold source text. None of them have a rendered contrast.
     // An SVG element's className is an SVGAnimatedString; its baseVal is the class list.
-    const describe = (el) => { const c = String(el.className?.baseVal ?? el.className ?? '').trim(); return el.tagName.toLowerCase() + (c ? '.' + c.replaceAll(/\s+/g, '.') : ''); };
+    const cls = (el) => String(el.className?.baseVal ?? el.className ?? '').trim();
+    const describe = (el) => { const c = cls(el); return el.tagName.toLowerCase() + (c ? '.' + c.replaceAll(/\s+/g, '.') : ''); };
     const NOT_PAINTED = new Set(['TITLE', 'DESC', 'SCRIPT', 'STYLE', 'TEMPLATE', 'METADATA', 'NOSCRIPT']);
     // Hidden by its own or an ancestor's display: none, or by visibility (inherited, so an
     // ancestor's counts unless the element overrides it). Not checkVisibility(): that also
@@ -572,7 +588,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (!(getComputedStyle(el).display === 'contents' || el.closest('details:not([open]), select'))) return false;
       return window.__displayed(el);
     };
-    const ownText = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    const ownText = (el) => (el.tagName === 'SELECT' && !el.multiple && el.size <= 1 && el.selectedOptions[0]?.textContent.trim()) || [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
     // The text pass over a set of elements, each with its own text in its own colour. Run
     // on the whole page here, and later on the subtree of each control measured at another
     // scroll position, into the same results.
@@ -587,18 +603,29 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (el.closest('[data-contrast-demo]')) { exempt++; continue; }
       const size = Number.parseFloat(cs.fontSize); smallest = Math.min(smallest, size);
       const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
+      // An option of a single-line <select> in the select's own colours is the shown value,
+      // already measured on the select.
       const weight = Number.parseInt(cs.fontWeight, 10) || 400;
       const bold = weight >= 700; const large = size >= 24 || (size >= 18.66 && bold);
       const need = large ? 3 : 4.5;
+      const box = el.tagName === 'OPTION' && el.closest('select');
+      if (box && !box.multiple && box.size <= 1 && getComputedStyle(box).color === cs.color
+        && JSON.stringify(bgOf(box)) === JSON.stringify(bg)) {
+        // Its failure is the select's; recorded so the state pass does not repeat it.
+        if (r < need) { if (!restFail.has(el)) restFail.set(el, new Set()); restFail.get(el).add(`${cs.color}|${bg.r},${bg.g},${bg.b}`); }
+        continue;
+      }
       const lc = apcaLc(fg, bg);
       const lcNeed = apcaRequired(size, weight);
       if (lcNeed !== null && Math.abs(lc) < lcNeed) {
-        const akey = `apca|${el.tagName}.${el.className}|${cs.color}|${bg.r},${bg.g},${bg.b}|${size}`;
+        const akey = `apca|${el.tagName}.${cls(el)}|${cs.color}|${bg.r},${bg.g},${bg.b}|${size}`;
         if (!apcaSeen.has(akey)) apcaSeen.set(akey, { element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, lc: +lc.toFixed(1), lcRequired: +lcNeed.toFixed(1), fontSize: size, fontWeight: cs.fontWeight });
       }
       if (r < need) {
-        const key = `${el.tagName}.${el.className}|${cs.color}|${bg.r},${bg.g},${bg.b}`;
-        if (!seen.has(key)) seen.set(key, { element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
+        const key = `${el.tagName}.${cls(el)}|${cs.color}|${bg.r},${bg.g},${bg.b}`;
+        if (!restFail.has(el)) restFail.set(el, new Set());
+        restFail.get(el).add(`${cs.color}|${bg.r},${bg.g},${bg.b}`);
+        if (!seen.has(key)) seen.set(key, { element: describe(el), text: (el.tagName === 'SELECT' ? el.selectedOptions[0]?.textContent : el.textContent).trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
       }
     } };
     window.__textIn(document.querySelectorAll('body *'));
@@ -630,9 +657,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         const bold = (Number.parseInt(ts.fontWeight, 10) || 400) >= 700;
         const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
         // A text that fails the same way at rest is reported there already, not again here.
-        if (r >= need || seen.has(`${t.tagName}.${t.className}|${ts.color}|${bg.r},${bg.g},${bg.b}`)) continue;
+        if (r >= need || restFail.get(t)?.has(`${ts.color}|${bg.r},${bg.g},${bg.b}`)) continue;
         if (!worst || r < worst.ratio) {
-          const own = [...t.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
+          const own = t.tagName === 'SELECT' ? t.selectedOptions[0]?.textContent ?? '' : [...t.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
           worst = { state, element: describe(el) + (t === el ? '' : ` ${describe(t)}`), text: own.slice(0, 40), fg: ts.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
         }
       }

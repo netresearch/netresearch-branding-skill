@@ -271,10 +271,33 @@ test('select, closed details, display: contents and an exit-intent page are meas
     + 'document.addEventListener("mouseout",(e)=>{if(!e.relatedTarget)document.getElementById("exit").classList.add("on")});'
     + 'document.querySelector("main").tabIndex=-1;</script>'));
   const text = json.contrastFailures.map((f) => f.element);
-  for (const el of ['option', 'p.dt', 'div.dc', 'span.m']) assert.ok(text.includes(el), `${el} must be measured at rest: ${JSON.stringify(text)}`);
+  for (const el of ['select.sl', 'p.dt', 'div.dc', 'span.m']) assert.ok(text.includes(el), `${el} must be measured at rest: ${JSON.stringify(text)}`);
+  assert.ok(!text.includes('option'), `the shown option is reported once, on the select: ${JSON.stringify(text)}`);
   assert.ok(!json.contrastFailures.some((f) => f.text === 'Wait!'), `the exit-intent popup must stay closed: ${JSON.stringify(text)}`);
   assert.deepStrictEqual(json.stateFailures.filter((f) => f.element.startsWith('a.card')).map((f) => `${f.state} ${f.element}`).sort(), ['hover a.card span.m']);
   assert.ok(!json.stateFailures.some((f) => f.element.startsWith('main')), `a demo inside the focusable <main> is exempt: ${JSON.stringify(json.stateFailures)}`);
+  assert.strictEqual(code, 1);
+});
+
+test('per-element state keys, the shown select value, a JS hover at the origin, contents backgrounds and SVG classes', async () => {
+  const { code, json } = await run(fixture('round14',
+    'body{margin:0}a.logo{position:absolute;top:0;left:0;color:#000}a.logo.hot{color:#ccc}' // hover state set by script at (0, 0)
+    + 'footer a{color:#999}nav a:hover{color:#999}' // same tag, colour and surface, two elements
+    + 'select.s{color:#bbb;background:#fff}select.s option{color:#000}' // the closed box paints #bbb
+    + 'section.dk{background:#000;color:#fff}div.dc{display:contents;background:#fff}' // the white is never painted
+    + 'svg text.a,svg text.b{color:#ddd}main{padding-top:40px}', // the audit compares color; the key must keep the classes apart
+    '<a class="logo" href="#l">Logo</a><nav aria-label="Main"><a href="#h">Home</a></nav>'
+    + '<select class="s" aria-label="Pick"><option>Choose one</option></select>'
+    + '<section class="dk"><div class="dc">Painted on black</div></section>'
+    + '<svg width="200" height="40" aria-hidden="true"><text class="a" x="0" y="15" fill="#ddd">One</text><text class="b" x="0" y="35" fill="#ddd">Two</text></svg>'
+    + '<footer><a href="#i">Imprint</a></footer>'
+    + '<script>const l=document.querySelector(".logo");l.addEventListener("mouseenter",()=>l.classList.add("hot"));l.addEventListener("mouseleave",()=>l.classList.remove("hot"));</script>'));
+  const text = json.contrastFailures.map((f) => `${f.element} ${f.text}`);
+  assert.ok(!text.some((t) => t.startsWith('a.logo')), `the logo is measured at rest, not in its scripted hover: ${JSON.stringify(text)}`);
+  assert.ok(!text.some((t) => t.startsWith('div.dc')), `display: contents paints no background: ${JSON.stringify(text)}`);
+  assert.ok(text.includes('select.s Choose one'), `the closed select shows its value in its own colour: ${JSON.stringify(text)}`);
+  assert.ok(text.includes('text.a One') && text.includes('text.b Two'), `two SVG classes are two entries: ${JSON.stringify(text)}`);
+  assert.ok(json.stateFailures.some((f) => f.state === 'hover' && f.text === 'Home'), `the nav link's hover is not hidden by the footer link: ${JSON.stringify(json.stateFailures)}`);
   assert.strictEqual(code, 1);
 });
 
