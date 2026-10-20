@@ -301,6 +301,31 @@ test('per-element state keys, the shown select value, a JS hover at the origin, 
   assert.strictEqual(code, 1);
 });
 
+test('an exit-intent listener on <html>, select names and a select without a value', async () => {
+  const { code, json } = await run(fixture('round15',
+    'body{margin:0}header{height:40px;background:#fff}#pop{display:none}#pop.on{display:block;color:#ddd}'
+    + 'select.h{color:#000;background:#fff}select.h:hover{color:#bbb}' // hover 1.92:1, on the select
+    + 'select.n{color:#bbb;background:#fff}' // no option selected: the options themselves are measured
+    + 'a.t{color:#000}a.t:hover{color:#bbb}' // the link and its span tie under hover: the link keeps the report
+    + '#gone{display:none}#gone.on{display:block;color:#ddd}',
+    '<header>Header</header>'
+    + '<select class="h" aria-label="Hovered"><option>\n      Choose one\n    </option><option>Second</option></select>'
+    + '<select class="n" aria-label="Empty"><option>First</option></select><p id="pop">Exit popup</p>'
+    + '<a class="t" href="#t">Go <span>far</span></a><p id="gone">Removed listener ran</p>'
+    + '<script>document.querySelector("select.n").selectedIndex=-1;'
+    + 'const show=(e)=>{if(!e.relatedTarget)document.getElementById("pop").classList.add("on")};'
+    + 'document.documentElement.addEventListener("mouseout",show);document.body.addEventListener("pointerout",show);'
+    + 'document.documentElement.addEventListener("pointerout",show);document.documentElement.removeEventListener("pointerout",show);'
+    + 'const gone=()=>document.getElementById("gone").classList.add("on");'
+    + 'document.documentElement.addEventListener("mouseout",gone);document.documentElement.removeEventListener("mouseout",gone);'
+    + 'document.documentElement.dispatchEvent(new MouseEvent("mouseout",{relatedTarget:document.body}));</script>'));
+  assert.ok(!json.contrastFailures.some((f) => f.text === 'Exit popup'), `the exit-intent popup must stay closed: ${JSON.stringify(json.contrastFailures)}`);
+  assert.deepStrictEqual(json.stateFailures.filter((f) => f.state === 'hover').map((f) => `${f.element}|${f.text}`).sort(), ['a.t|Go', 'select.h|Choose one']);
+  assert.ok(!json.contrastFailures.some((f) => f.text === 'Removed listener ran'), `a removed listener must not run: ${JSON.stringify(json.contrastFailures)}`);
+  assert.deepStrictEqual(json.contrastFailures.map((f) => `${f.element}|${f.text}`), ['option|First']);
+  assert.strictEqual(code, 1);
+});
+
 test('only keyboard-reachable controls are judged as focus indicators', async () => {
   const { code, json } = await run(fixture('reach',
     'button{background:#fff;border:1px solid #000;color:#000}:focus-visible{outline:2px solid #ddd}', // 1.36:1

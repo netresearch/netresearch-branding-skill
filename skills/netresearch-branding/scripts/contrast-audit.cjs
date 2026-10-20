@@ -67,12 +67,12 @@
  * container inside the page; the scroll pass covers the window's own scroll. Before
  * anything is measured, the pointer is moved outside the viewport. mouseleave and
  * pointerleave on the document, <html> and <body>, and mouseout and pointerout that leave
- * the window, are held back, so an exit-intent popup does not open, while an element's
- * own leave events still release its hover. Not covered: an exit-intent listener on
- * <body> or a capture listener on window, and a hover delegated from the document for an
- * element at (0, 0), where the pointer starts. The page is scrolled
- * through once, instantly (content revealed on scroll, also content that hides again
- * when scrolled away), infinite animations are cancelled and finite ones finished,
+ * the window (also to a page's own listener on <html> or <body>), are held back, so an
+ * exit-intent popup does not open, while an element's own leave events still release its
+ * hover. Not covered: an exit-intent capture listener on window, and a hover delegated
+ * from the document for an element at (0, 0), where the pointer starts. The page is
+ * scrolled through once, instantly (content revealed on scroll, also content that hides
+ * again when scrolled away), infinite animations are cancelled and finite ones finished,
  * unless finishing leaves the element less visible (a toast fading out), so a fade-in
  * counts at its final opacity. An animation started later by a forced :hover or :focus
  * is measured at its start. An <a> without href is measured hovered, never focused; a
@@ -410,6 +410,27 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   // certificate failed verification.
   const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: insecure, colorScheme: scheme });
   const page = await ctx.newPage();
+  // A page's own mouseout or pointerout listener on <html> or <body> runs before anything
+  // the audit can add there, and an exit-intent popup opens from it when the pointer leaves
+  // the window. Such listeners are wrapped before the page runs, so they skip the one leave
+  // the audit causes (window.__auditLeaving); removeEventListener finds the wrapper.
+  await page.addInitScript(() => {
+    const add = EventTarget.prototype.addEventListener;
+    const remove = EventTarget.prototype.removeEventListener;
+    const wrapped = new WeakMap();
+    const guarded = (target, type, fn) => (target === document.documentElement || target === document.body)
+      && (type === 'mouseout' || type === 'pointerout') && typeof fn === 'function' && !fn.__audit;
+    EventTarget.prototype.addEventListener = function (type, fn, opts) {
+      if (guarded(this, type, fn)) {
+        if (!wrapped.has(fn)) { const orig = fn; wrapped.set(fn, function (e) { if (window.__auditLeaving && !e.relatedTarget) return undefined; return orig.call(this, e); }); }
+        return add.call(this, type, wrapped.get(fn), opts);
+      }
+      return add.call(this, type, fn, opts);
+    };
+    EventTarget.prototype.removeEventListener = function (type, fn, opts) {
+      return remove.call(this, type, guarded(this, type, fn) && wrapped.has(fn) ? wrapped.get(fn) : fn, opts);
+    };
+  });
   if (header) await sendHeaderToOriginOnly(page, originOf(url), header.split(':')[0].trim(), header.split(':').slice(1).join(':').trim());
   // A page whose stylesheet 404s renders unstyled and reports zero contrast failures —
   // it passes for the wrong reason. Collect every failed subresource and fail on it.
@@ -428,11 +449,13 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   await page.evaluate(() => {
     const top = (t) => t === document || t === document.documentElement || t === document.body;
     window.__stopLeave = (e) => { if (top(e.target)) e.stopImmediatePropagation(); };
-    window.__stopOut = (e) => { if (!e.relatedTarget) e.stopPropagation(); };
+    window.__stopOut = (e) => { if (!e.relatedTarget) e.stopPropagation(); }; window.__stopOut.__audit = true;
     for (const t of ['mouseleave', 'pointerleave']) window.addEventListener(t, window.__stopLeave, true);
     for (const t of ['mouseout', 'pointerout']) { window.addEventListener(t, window.__stopLeave, true); document.documentElement.addEventListener(t, window.__stopOut); }
   });
+  await page.evaluate(() => { window.__auditLeaving = true; });
   await page.mouse.move(-10, -10);
+  await page.evaluate(() => { window.__auditLeaving = false; });
   await page.evaluate(() => {
     for (const t of ['mouseleave', 'pointerleave', 'mouseout', 'pointerout']) window.removeEventListener(t, window.__stopLeave, true);
     for (const t of ['mouseout', 'pointerout']) document.documentElement.removeEventListener(t, window.__stopOut);
@@ -588,7 +611,18 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (!(getComputedStyle(el).display === 'contents' || el.closest('details:not([open]), select'))) return false;
       return window.__displayed(el);
     };
-    const ownText = (el) => (el.tagName === 'SELECT' && !el.multiple && el.size <= 1 && el.selectedOptions[0]?.textContent.trim()) || [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    // A closed single-line <select> paints its selected option's text in its own colour.
+    const singleSelect = (el) => el.tagName === 'SELECT' && !el.multiple && el.size <= 1;
+    const directText = (el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
+    const ownText = (el) => (singleSelect(el) ? (el.selectedOptions[0]?.textContent ?? '').trim() : directText(el));
+    // The text a report names: the shown value of a single-line select, else the content.
+    const shownText = (el) => (singleSelect(el) ? el.selectedOptions[0]?.textContent ?? '' : el.textContent).trim().slice(0, 40);
+    // An option of a single-line <select> that shows a value, in the select's own colours,
+    // is measured on the select; with no value shown, the options are measured themselves.
+    const isShownOption = (el, cs, bg) => {
+      const box = el.tagName === 'OPTION' && el.closest('select');
+      return !!box && singleSelect(box) && !!ownText(box) && getComputedStyle(box).color === cs.color && JSON.stringify(bgOf(box)) === JSON.stringify(bg);
+    };
     // The text pass over a set of elements, each with its own text in its own colour. Run
     // on the whole page here, and later on the subtree of each control measured at another
     // scroll position, into the same results.
@@ -603,14 +637,10 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (el.closest('[data-contrast-demo]')) { exempt++; continue; }
       const size = Number.parseFloat(cs.fontSize); smallest = Math.min(smallest, size);
       const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
-      // An option of a single-line <select> in the select's own colours is the shown value,
-      // already measured on the select.
       const weight = Number.parseInt(cs.fontWeight, 10) || 400;
       const bold = weight >= 700; const large = size >= 24 || (size >= 18.66 && bold);
       const need = large ? 3 : 4.5;
-      const box = el.tagName === 'OPTION' && el.closest('select');
-      if (box && !box.multiple && box.size <= 1 && getComputedStyle(box).color === cs.color
-        && JSON.stringify(bgOf(box)) === JSON.stringify(bg)) {
+      if (isShownOption(el, cs, bg)) {
         // Its failure is the select's; recorded so the state pass does not repeat it.
         if (r < need) { if (!restFail.has(el)) restFail.set(el, new Set()); restFail.get(el).add(`${cs.color}|${bg.r},${bg.g},${bg.b}`); }
         continue;
@@ -619,13 +649,13 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       const lcNeed = apcaRequired(size, weight);
       if (lcNeed !== null && Math.abs(lc) < lcNeed) {
         const akey = `apca|${el.tagName}.${cls(el)}|${cs.color}|${bg.r},${bg.g},${bg.b}|${size}`;
-        if (!apcaSeen.has(akey)) apcaSeen.set(akey, { element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, lc: +lc.toFixed(1), lcRequired: +lcNeed.toFixed(1), fontSize: size, fontWeight: cs.fontWeight });
+        if (!apcaSeen.has(akey)) apcaSeen.set(akey, { element: describe(el), text: shownText(el), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, lc: +lc.toFixed(1), lcRequired: +lcNeed.toFixed(1), fontSize: size, fontWeight: cs.fontWeight });
       }
       if (r < need) {
         const key = `${el.tagName}.${cls(el)}|${cs.color}|${bg.r},${bg.g},${bg.b}`;
         if (!restFail.has(el)) restFail.set(el, new Set());
         restFail.get(el).add(`${cs.color}|${bg.r},${bg.g},${bg.b}`);
-        if (!seen.has(key)) seen.set(key, { element: describe(el), text: (el.tagName === 'SELECT' ? el.selectedOptions[0]?.textContent : el.textContent).trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
+        if (!seen.has(key)) seen.set(key, { element: describe(el), text: shownText(el), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
       }
     } };
     window.__textIn(document.querySelectorAll('body *'));
@@ -647,6 +677,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       // the colour :hover changes may sit on the <a> (inherited) or on the <span>. The text of
       // an SVG <title> or <desc> is an accessible name, never painted, and is left out.
       let worst = null;
+      let worstRatio = Infinity;
       for (const t of [el, ...el.querySelectorAll('*')]) {
         if (NOT_PAINTED.has(t.tagName.toUpperCase()) || !ownText(t)) continue;
         if (!window.__painted(t)) continue;
@@ -658,9 +689,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
         // A text that fails the same way at rest is reported there already, not again here.
         if (r >= need || restFail.get(t)?.has(`${ts.color}|${bg.r},${bg.g},${bg.b}`)) continue;
-        if (!worst || r < worst.ratio) {
-          const own = t.tagName === 'SELECT' ? t.selectedOptions[0]?.textContent ?? '' : [...t.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
-          worst = { state, element: describe(el) + (t === el ? '' : ` ${describe(t)}`), text: own.slice(0, 40), fg: ts.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
+        // Compared unrounded, so on a tie the control keeps the report (a select over its
+        // shown option, which inherits the select's colours).
+        if (r < worstRatio) {
+          worstRatio = r;
+          worst = { state, element: describe(el) + (t === el ? '' : ` ${describe(t)}`), text: ownText(t).slice(0, 40), fg: ts.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
         }
       }
       return worst;
