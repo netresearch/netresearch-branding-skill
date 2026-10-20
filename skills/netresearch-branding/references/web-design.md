@@ -103,7 +103,8 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   an orange fill `#CC3D00` (accent, use sparingly, never as the dominant
   action); tonal is the quiet second action on light surfaces (white with a
   `#2F99A4` edge and `#15585E` label); ghost has no box until hover; outline is
-  a white border on transparent for the gradient only. Hover darkens the fill
+  a white border on transparent, made for the gradient (on a light surface it
+  draws in teal). Hover darkens the fill
   (`--nr-primary-fill-hover` `#15585E` / `--nr-accent-fill-hover` `#9A2E00`, a
   fill, not a text token: a text token is free to lift on a dark scheme, and
   white over the lifted value fails with nothing able to measure it). The brand
@@ -147,8 +148,8 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
 - **Chips on the gradient**: border-only (`1px solid rgba(255,255,255,.45)`)
   with white text. A translucent white fill lightens the stop under the text
   (white on `#257880` plus 15% white is 3.9:1), and the audit cannot measure a
-  composited fill. `.hero code`, `.page-band code` and `.on-gradient .chip`
-  are styled this way.
+  composited fill. Inline code, `kbd` and `.chip` on any gradient surface are
+  styled this way (`--nr-code-bg` / `--nr-code-border`).
 - **Tables** (`.table-wrap`, `.table`): hairline frame with 16px radius,
   14px uppercase header in `--nr-text` on `#F5F5F5`, row hover tint, `.num` for right-aligned
   tabular figures. The wrapper scrolls horizontally on small screens, so it is
@@ -181,11 +182,16 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
 - **Links** (`a`, `.link-standalone`): `#15585E` default (8.11:1), `#0A5057` on
   hover (9.14:1), underlined in running text. The brand `#2F99A4` is 3.38:1 and
   is not a link colour at body size. On the gradient (`.hero`, `.page-band`,
-  `.split-panel`, `.on-gradient`) headings, eyebrows, links, standalone links,
-  ghost buttons and the focus outline turn white (`#15585E` is 1.57:1 there,
-  anthracite 1.35:1), and the primary button turns white with a teal label. A
-  light container on the gradient (`.hero-panel`, `.card`, `.stat`, `.notice`,
-  `.table-wrap`, `.dialog`, `.tinted`) keeps the light-surface colours.
+  `.split-panel`, `.on-gradient`) text, headings, eyebrows, links, ghost and
+  outline buttons, the current step and the focus outline turn white
+  (`#15585E` is 1.57:1 there, anthracite 1.35:1), and the primary button turns
+  white with a teal label. A light container on the gradient (`.hero-panel`,
+  `.card`, `.stat`, `.notice`, `.table-wrap`, `.split-main`, `.dialog`,
+  `.tinted`) and a light control (`.segmented`, `.badge`, `.btn-tonal`, form
+  fields) keep the light-surface colours. This works through the colour
+  tokens, which the gradient overrides and a light container sets back, so the
+  nearest surface decides at any depth (section "Surfaces" in
+  `templates/styles.css`).
 
 **External and download links** get a marker so users know what a click
 does before they click it:
