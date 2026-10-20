@@ -212,7 +212,8 @@ font-family: Calibri, 'Open Sans', Arial, sans-serif;
 The sizes below are the reference scale. `templates/styles.css` sizes h1
 fluidly from 36px to 56px, h2 from 28px to 36px, h3 from 22px to 28px and h4
 from 20px to 22px, so each heading stays below the one above it at every width;
-h5 is 18px, h6 16px bold and `.lead` 18px. Headings keep anthracite
+h5 is 18px, h6 16px bold and `.lead` 18px. The app-page title (`.page-band h1`)
+runs from 32px to 40px, a step above h2 at every width. Headings keep anthracite
 `#585961`, and no text goes below 14px ("Minimum Font Sizes").
 
 ```css
