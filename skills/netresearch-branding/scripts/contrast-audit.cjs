@@ -46,14 +46,18 @@
  * Disabled controls (also in a disabled fieldset), controls in a hidden ancestor or a
  * closed dialog, controls at opacity 0 (their own or an ancestor's) at every position
  * the scroll pass reaches and 1px visually hidden form fields are skipped; the opacity-0
- * ones are counted in `transparentControlsSkipped`, with a note on stderr. A control
- * hidden at the top (opacity 0, display or visibility) that was visible further down is
- * measured at that position, and so is a control that exists only while the page is
- * scrolled. A scroll-driven animation (animation-timeline) is left to show the state
- * of each position. Animations are settled
- * again at each such position; a colour tween driven by requestAnimationFrame (not a CSS
- * or Web Animations API animation) is measured where it stands. The scroll pass covers
- * the window's own scroll, not a scrolling container inside it. Before anything is
+ * ones are counted in `transparentControlsSkipped`, with a note on stderr; one hidden by
+ * display or visibility everywhere (a closed menu) is skipped like any hidden element and
+ * not counted. A control hidden at the top (opacity 0, display or visibility) that was
+ * visible further down is measured at that position, and so is a control that exists
+ * only while the page is scrolled: its resting text, hover, focus and boundary. A
+ * scroll-driven animation (animation-timeline) is left to show the state of each
+ * position. Animations are settled again at each such position; a colour tween driven by
+ * requestAnimationFrame (not a CSS or Web Animations API animation) is measured where it
+ * stands. Not covered: text that is not a control and appears only on scroll (a banner),
+ * the scrolled look of a control already visible at the top (a sticky header's scrolled
+ * palette), a control with display: contents, and a scrolling container inside the
+ * page; the scroll pass covers the window's own scroll. Before anything is
  * measured, the page is scrolled through once, instantly (content revealed on scroll,
  * also content that hides again when scrolled away), infinite animations are cancelled
  * and finite ones finished, unless finishing leaves the element less visible (a toast
@@ -576,7 +580,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       // display or visibility) is queued and measured there, not here; this also covers a
       // control the focus passes never see (a link without href, a tabindex="-1" element).
       if (!el.hasAttribute('data-contrast-audit-at') && window.__seenAt?.has(el)
-        && !el.checkVisibility({ opacityProperty: true, checkOpacity: true })) { window.__deferred.add(el); return null; }
+        && !el.checkVisibility({ opacityProperty: true, checkOpacity: true, visibilityProperty: true })) { window.__deferred.add(el); return null; }
       const cs = getComputedStyle(el);
       if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) return null;
       // Unlike the main pass, a wrapped label counts here: in <a><span>Read more</span></a>
@@ -787,6 +791,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   // the scroll direction looks as it did then).
   const positions = await page.evaluate((sel) => {
     window.__topSet = new WeakSet(document.querySelectorAll(sel));
+    // Controls the text pass skipped at the top (hidden by display or visibility).
+    window.__textSkipped = new WeakSet([...document.querySelectorAll(sel)].filter((el) => {
+      const cs = getComputedStyle(el);
+      return cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]');
+    }));
     window.__mountedMeasured = new WeakSet();
     const ys = new Set([...window.__deferred].map((el) => window.__seenAt.get(el)));
     for (const y of window.__mountedAt) ys.add(y);
@@ -812,6 +821,14 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     await page.evaluate(settleAnimations);
     result.controlBoundaryFailures.push(...await page.evaluate(() => [...document.querySelectorAll('[data-contrast-audit-at]')]
       .filter((el) => el.matches('input, select, textarea')).map(window.__boundaryOf).filter(Boolean)));
+    // Resting text of a control the text pass could not see at the top, reported once per
+    // element, colour pair (a row a virtualised list renders anew at each position).
+    const rest = await page.evaluate(() => [...document.querySelectorAll('[data-contrast-audit-at]')]
+      .filter((el) => window.__textSkipped.has(el) || !window.__topSet.has(el))
+      .map((el) => window.__measureOne(el, 'rest')).filter(Boolean).map(({ state, ...f }) => f));
+    const textKey = (f) => `${f.element}|${f.fg}|${f.bg}`;
+    const known = new Set(result.contrastFailures.map(textKey));
+    for (const f of rest) if (!known.has(textKey(f))) { known.add(textKey(f)); result.contrastFailures.push(f); }
     const at = await measureInteractiveStates(page, '[data-contrast-audit-at]', reported);
     result.stateFailures.push(...at.failures);
     result.focusRingFailures.push(...at.focusFailures);

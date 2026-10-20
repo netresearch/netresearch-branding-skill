@@ -191,7 +191,7 @@ test('hidden-at-top, hover-only, scroll-driven and re-rendered controls are meas
     + '.reveal{opacity:0}.reveal.in{opacity:1}a.lnk:hover{color:#ddd}' // a link without href, hover 1.36:1
     + 'header{position:sticky;top:0;animation:tint linear both;animation-timeline:scroll();animation-range:0 300px}'
     + '@keyframes tint{from{background:#fff;color:#aaa}to{background:#15585E;color:#fff}}' // 2.32:1 at the top
-    + 'a.rl{position:absolute;left:16px}a.rl:hover{color:#ddd}' // a row rendered anew at each position
+    + 'a.rl{position:absolute;left:16px;color:#999}a.rl:hover{color:#ddd}' // a row rendered anew at each position, resting 2.85:1
     + 'section{height:900px}',
     '<header><p class="hd">Title</p></header><section></section><section></section>'
     + '<section class="reveal"><a class="lnk">Anchor</a></section><section></section>'
@@ -202,6 +202,23 @@ test('hidden-at-top, hover-only, scroll-driven and re-rendered controls are meas
   assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element), ['button.td.show']);
   assert.deepStrictEqual(json.stateFailures.filter((f) => f.state === 'hover').map((f) => f.element).sort(), ['a.lnk', 'a.rl']);
   assert.ok(json.contrastFailures.some((f) => f.element === 'p.hd'), `the scroll-driven header must be measured at the top: ${JSON.stringify(json.contrastFailures)}`);
+  assert.strictEqual(json.contrastFailures.filter((f) => f.element === 'a.rl').length, 1, `the re-rendered row is reported once: ${JSON.stringify(json.contrastFailures)}`);
+  assert.strictEqual(code, 1);
+});
+
+test('the resting text of a control shown on scroll and a control hidden by visibility are measured', async () => {
+  const { code, json } = await run(fixture('round11',
+    'button{background:#fff;border:1px solid #000;position:fixed;bottom:16px}'
+    + 'button.top{right:16px;color:#999;opacity:0;visibility:hidden}button.top.show{opacity:1;visibility:visible}' // resting 2.85:1
+    + 'button.top:hover,button.top:focus{color:#000}'
+    + 'button.vr{left:16px;color:#000;visibility:hidden}button.vr.show{visibility:visible}'
+    + 'button.vr:focus-visible{outline:2px solid #eee}' // 1.16:1, hidden by visibility only at the top
+    + 'section{height:900px}',
+    '<section></section><section></section><button type="button" class="top">Top</button><button type="button" class="vr">Back</button>'
+    + '<script>addEventListener("scroll",()=>document.querySelectorAll("button").forEach((b)=>b.classList.toggle("show",scrollY>300)));</script>'));
+  assert.deepStrictEqual(json.contrastFailures.map((f) => f.element), ['button.top.show']);
+  assert.deepStrictEqual(json.stateFailures, []);
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element), ['button.vr.show']);
   assert.strictEqual(code, 1);
 });
 
