@@ -44,11 +44,13 @@
  * an indicator. `controlBoundaryFailures`: the border (painted over the control's fill)
  * or the fill of each input, select and textarea against the surface around it.
  * Disabled controls (also in a disabled fieldset), controls in a hidden ancestor or a
- * closed dialog, controls at opacity 0 (their own or an ancestor's) and 1px visually
- * hidden form fields are skipped and counted in `transparentControlsSkipped`. Before
- * anything is measured, the page is scrolled through once (content revealed on scroll),
- * infinite animations are cancelled and finite ones finished, unless finishing leaves the
- * element less visible (a toast fading out), so a fade-in counts at its final opacity.
+ * closed dialog, controls at opacity 0 (their own or an ancestor's) at every scroll
+ * position and 1px visually hidden form fields are skipped; the opacity-0 ones are
+ * counted in `transparentControlsSkipped`, with a note on stderr. Before anything is
+ * measured, the page is scrolled through once, instantly (content revealed on scroll,
+ * also content that hides again when scrolled away), infinite animations are cancelled
+ * and finite ones finished, unless finishing leaves the element less visible (a toast
+ * fading out), so a fade-in counts at its final opacity.
  * An animation started later by a forced :hover or :focus is measured at its start. An
  * <a> without href is measured hovered, never focused; a tabindex="-1" element without a
  * widget role (a skip-link target), inert content and a tabindex="-1" element under
@@ -272,21 +274,33 @@ async function measureInteractiveStates(page) {
   return { failures, focusFailures };
 }
 
-// Scrolls through the page one viewport at a time, so content revealed on scroll (an
-// IntersectionObserver adding a class, a scroll-triggered animation) is in its revealed
-// state, then back to the top. At most 200 viewports. In the page.
-async function revealOnScroll() {
+// Scrolls through the page one viewport at a time, instantly (a smooth scroll-behavior
+// would only start an animation that the next step restarts), so content revealed on
+// scroll (an IntersectionObserver adding a class, a scroll-triggered animation) is
+// revealed, then back to the top. Covers the height as loaded, at most 200 viewports.
+// Every control seen at full visibility at some position is recorded: a reveal that
+// hides its content again when scrolled away (AOS with once:false) leaves it at opacity
+// 0 at the top, and it is measured all the same. In the page.
+async function revealOnScroll(selector) {
   const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  window.__seenVisible = new WeakSet();
+  const record = () => {
+    for (const el of document.querySelectorAll(selector)) {
+      if (el.checkVisibility({ opacityProperty: true, checkOpacity: true, visibilityProperty: true })) window.__seenVisible.add(el);
+    }
+  };
   const max = Math.min(document.documentElement.scrollHeight, innerHeight * 200);
-  for (let y = 0; y < max; y += innerHeight) { scrollTo(0, y); await frame(); }
-  scrollTo(0, 0);
+  for (let y = 0; y < max; y += innerHeight) { scrollTo({ top: y, behavior: 'instant' }); await frame(); record(); }
+  scrollTo({ top: 0, behavior: 'instant' });
   await frame();
 }
 
 // Every animation (CSS or Web Animations API) is put into the state a user sees once it
 // has run: an infinite one (a spinner, a blink) is cancelled, so its element shows its
-// rest style; a finite one is finished, unless that leaves its element less visible
-// (a toast that fades out after a delay), in which case it is cancelled too. In the page.
+// rest style (a control a CSS-only carousel shows was recorded by revealOnScroll and is
+// measured even at rest opacity 0); a finite one is finished, unless that leaves its
+// element less visible (a toast that fades out after a delay), in which case it is
+// cancelled. In the page.
 function settleAnimations() {
   const seen = (a) => {
     const t = a.effect?.target;
@@ -369,7 +383,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important}' });
   // Content revealed on scroll and every animation are put into the state a user sees:
   // `animation: none` would leave a fade-in at its starting opacity 0.
-  await page.evaluate(revealOnScroll);
+  await page.evaluate(revealOnScroll, INTERACTIVE);
   await page.evaluate(settleAnimations);
   // An element focused on load (autofocus) would be measured in its focused colours, and
   // the focus-indicator pass would record it focused: nothing may hold focus.
@@ -562,7 +576,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     const perceivable = (el) => {
       if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return false;
       if (!el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true })) return false;
-      if (!el.checkVisibility({ opacityProperty: true, checkOpacity: true })) { window.__transparent.add(el); return false; }
+      if (!el.checkVisibility({ opacityProperty: true, checkOpacity: true }) && !window.__seenVisible?.has(el)) { window.__transparent.add(el); return false; }
       if (!el.matches('input, select, textarea')) return true;
       const b = el.getBoundingClientRect();
       return b.width > 1 && b.height > 1;
@@ -732,6 +746,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   result.focusWithoutRing = await page.evaluate(() => window.__focusWithoutRing);
   result.focusUserAgentRing = await page.evaluate(() => window.__focusUserAgentRing);
   result.transparentControlsSkipped = await page.evaluate(() => window.__transparent.size);
+  if (result.transparentControlsSkipped) {
+    console.error(`note: ${result.transparentControlsSkipped} control(s) at opacity 0 at every scroll position were not measured`);
+  }
   result.darkSchemeBy = darkSchemeBy;
   result.darkScheme = darkSchemeBy.length > 0;
   result.dataThemeSet = dataThemeSet ? scheme : null;

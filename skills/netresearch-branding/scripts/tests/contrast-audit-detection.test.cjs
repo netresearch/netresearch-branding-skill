@@ -131,15 +131,16 @@ test('a control that fades in is measured at its end state; a tabindex="-1" targ
 test('content revealed on scroll and every animation are measured as a user sees them', async () => {
   const { code, json } = await run(fixture('settle',
     'input{background:#fff;border:1px solid #eee}' // 1.16:1 wherever it is measured
-    + '.spacer{height:2400px}.reveal{opacity:0}.reveal.in{opacity:1}'
+    + 'html{scroll-behavior:smooth}.spacer{height:2400px}.reveal{opacity:0}.reveal.in{opacity:1}' // hides again off screen
+    + 'input.cs{opacity:0;animation:slide 100s infinite}@keyframes slide{0%,90%{opacity:1}95%,100%{opacity:0}}' // carousel slide
     + 'p.toast{color:#aaa;animation:out .3s 6s forwards}@keyframes out{to{opacity:0;visibility:hidden}}'
     + 'input.bl{animation:blink 1s infinite alternate both}@keyframes blink{from{opacity:1}to{opacity:0}}'
     + 'input.pl{border-color:#000;animation:pulse 1s infinite}@keyframes pulse{from,to{border-color:#eee}}', // passes at rest
-    '<p class="toast">Saved</p><input class="bl" aria-label="Blinks"><input class="pl" aria-label="Pulses"><input class="w" aria-label="Animated by script">'
+    '<p class="toast">Saved</p><input class="bl" aria-label="Blinks"><input class="pl" aria-label="Pulses"><input class="cs" aria-label="Slide"><input class="w" aria-label="Animated by script">'
     + '<div class="spacer"></div><section class="reveal"><input class="r" aria-label="Revealed"></section>'
     + '<script>document.querySelector("input.w").animate([{opacity:0},{opacity:1}],{duration:300,delay:4000,fill:"both"});'
-    + 'new IntersectionObserver((es)=>es.forEach((e)=>{if(e.isIntersecting)e.target.classList.add("in")})).observe(document.querySelector(".reveal"));</script>'));
-  assert.deepStrictEqual(json.controlBoundaryFailures.map((f) => f.element).sort(), ['input.bl', 'input.r', 'input.w']);
+    + 'new IntersectionObserver((es)=>es.forEach((e)=>e.target.classList.toggle("in",e.isIntersecting))).observe(document.querySelector(".reveal"));</script>'));
+  assert.deepStrictEqual(json.controlBoundaryFailures.map((f) => f.element).sort(), ['input.bl', 'input.cs', 'input.r', 'input.w']);
   assert.ok(json.contrastFailures.some((f) => f.element === 'p.toast'), `the toast must be measured before it fades out: ${JSON.stringify(json.contrastFailures)}`);
   assert.strictEqual(json.transparentControlsSkipped, 0);
   assert.strictEqual(code, 1);
