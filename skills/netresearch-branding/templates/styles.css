@@ -122,6 +122,8 @@
      the gradient it turns white (see .hero :focus-visible). The soft ring
      is decoration on top of it. */
   --nr-focus: #2F99A4;
+  /* On a light tint #2F99A4 drops to 2.94:1; tinted containers use this. */
+  --nr-focus-on-tint: #257880;  /* 4.48:1 on the danger tint, 4.50:1 on the primary tint */
   --nr-ring: 0 0 0 4px rgba(47, 153, 164, 0.28);
   --nr-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --nr-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600' fill='none' stroke='%23FFFFFF' stroke-opacity='.14' stroke-width='3'%3E%3Crect x='70' y='70' width='460' height='460' rx='64'/%3E%3Crect x='150' y='150' width='300' height='300' rx='44'/%3E%3Crect x='230' y='230' width='140' height='140' rx='26'/%3E%3C/svg%3E");
@@ -165,6 +167,7 @@
     --nr-warning: #F2B92A;          /* marker, 8.77:1 */
     --nr-danger: #F0606C;           /* marker, 4.92:1 */
     --nr-focus: #5FC6D2;            /* 7.83:1 on the surface */
+    --nr-focus-on-tint: #5FC6D2;
     --nr-ring: 0 0 0 4px rgba(95, 198, 210, 0.35);
 
     --nr-hero-from: #1B6C74;        /* white on it: 6.10:1 */
@@ -213,6 +216,7 @@
   --nr-warning: #F2B92A;      /* marker, 8.77:1 */
   --nr-danger: #F0606C;       /* marker, 4.92:1 */
   --nr-focus: #5FC6D2;      /* 7.83:1 on the surface */
+  --nr-focus-on-tint: #5FC6D2;
   --nr-ring: 0 0 0 4px rgba(95, 198, 210, 0.35);
   --nr-hero-from: #1B6C74;
   --nr-hero-to: #0F4A50;
@@ -313,8 +317,10 @@ h2 {
   margin-bottom: var(--spacing-md);
 }
 
+/* Fluid like h2, so the two never meet: 22px on a phone (typography.md's
+   mobile scale), 28px from about 1220px. */
 h3 {
-  font-size: var(--font-size-3xl);
+  font-size: clamp(22px, 2.3vw, var(--font-size-3xl));
   font-weight: 600;
   margin-bottom: var(--spacing-md);
 }
@@ -890,20 +896,24 @@ small { font-size: var(--font-size-sm); }
 
 /* On dark, the lifted link and accent hues stay as verified against
    netresearch.de, but at 14px on their tint they reach only APCA Lc 60 / 53.
-   The label turns to body text (Lc 92 / 89); tint and dot keep the hue. */
+   The label turns to body text (Lc 92 / 89); tint and dot keep the hue.
+   An eyebrow on the gradient keeps its white (6.10:1 against 5.17:1). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .badge-info,
   :root:not([data-theme="light"]) .badge-accent,
-  :root:not([data-theme="light"]) .eyebrow,
+  :root:not([data-theme="light"]) .eyebrow:not(.hero *, .page-band *, .split-panel *, .on-gradient *),
   :root:not([data-theme="light"]) .navbar-link.active,
   :root:not([data-theme="light"]) .navbar-link[aria-current],
   :root:not([data-theme="light"]) .segmented [aria-pressed="true"],
   :root:not([data-theme="light"]) .segmented [aria-selected="true"],
   :root:not([data-theme="light"]) .segmented [aria-current="page"] { color: var(--nr-text); }
+  /* The fill hue is 2.36:1 on the dark tint; the link hue is 7.20:1. */
+  :root:not([data-theme="light"]) .feature-icon { color: var(--nr-primary-text); }
 }
+:root[data-theme="dark"] .feature-icon { color: var(--nr-primary-text); }
 :root[data-theme="dark"] .badge-info,
 :root[data-theme="dark"] .badge-accent,
-:root[data-theme="dark"] .eyebrow,
+:root[data-theme="dark"] .eyebrow:not(.hero *, .page-band *, .split-panel *, .on-gradient *),
 :root[data-theme="dark"] .navbar-link.active,
 :root[data-theme="dark"] .navbar-link[aria-current],
 :root[data-theme="dark"] .segmented [aria-pressed="true"],
@@ -912,11 +922,12 @@ small { font-size: var(--font-size-sm); }
 
 /* The logo's grey inner mark is 2.25:1 on the dark navbar; logo.md allows a dark
    background only with sufficient contrast and forbids recolouring, so the
-   logo gets a white plate instead. */
+   logo gets a white plate instead. No padding: the SVG's viewBox already holds
+   the 0.25x clear space, and padding would shrink the 40px logo to 32px. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .navbar-logo { background: #FFFFFF; border-radius: var(--radius-sm); padding: 4px; }
+  :root:not([data-theme="light"]) .navbar-logo { background: #FFFFFF; border-radius: var(--radius-sm); }
 }
-:root[data-theme="dark"] .navbar-logo { background: #FFFFFF; border-radius: var(--radius-sm); padding: 4px; }
+:root[data-theme="dark"] .navbar-logo { background: #FFFFFF; border-radius: var(--radius-sm); }
 
 .stat-grid {
   display: grid;
@@ -1002,13 +1013,15 @@ small { font-size: var(--font-size-sm); }
 /* Text on tints. --nr-text-secondary (#6E6F78) is 4.99:1 on white but only
    4.34-4.49:1 on the light tints, so every tinted container redefines it to
    --nr-text (6.05:1 or more). Meta lines, timestamps and captions inside a
-   tinted notice, badge or table row stay readable without a special class. */
+   tinted notice, badge or table row stay readable without a special class.
+   The focus outline sits on the tint too, so it switches to the darker fill. */
 .badge,
 .table tr.row-danger,
 .table tr.row-warning,
 .table tr.row-success,
 .tinted {
   --nr-text-secondary: var(--nr-text);
+  --nr-focus: var(--nr-focus-on-tint);
 }
 
 /* ============================================
@@ -1350,10 +1363,21 @@ a[download]::before { content: '\2B07  '; }
   font: 700 14px var(--font-headline);
 }
 
-.steps .is-current .step-num {
+/* The current step is marked with aria-current="step", so assistive
+   technology announces it; the filled number is the visual half. */
+.steps [aria-current="step"] .step-num {
   background: var(--nr-on-fill);
   border-color: var(--nr-on-fill);
   color: var(--nr-on-light);
+}
+
+@media (forced-colors: active) {
+  .steps [aria-current="step"] .step-num {
+    forced-color-adjust: none;
+    background: CanvasText;
+    border-color: CanvasText;
+    color: Canvas;
+  }
 }
 
 .step-body strong { display: block; font-family: var(--font-headline); }
@@ -1397,6 +1421,34 @@ a[download]::before { content: '\2B07  '; }
   border: 1px solid rgba(255, 255, 255, 0.45);
   color: var(--nr-on-fill);
 }
+
+/* A plain text link on the gradient: the teal link colour is 1.57:1 on #257880
+   (3.05:1 in dark), white is 5.15:1 or more on every stop. The underline stays,
+   so it is still told apart from the white body text. */
+.hero a:not([class]),
+.hero a:not([class]):hover,
+.page-band a:not([class]),
+.page-band a:not([class]):hover,
+.split-panel a:not([class]),
+.split-panel a:not([class]):hover,
+.on-gradient a:not([class]),
+.on-gradient a:not([class]):hover { color: var(--nr-on-fill); text-decoration-thickness: 2px; }
+.hero .hero-panel a:not([class]) { color: var(--nr-primary-text); text-decoration-thickness: 1px; }
+.hero .hero-panel a:not([class]):hover { color: var(--nr-primary-deep); }
+
+/* A #257880 button on a gradient that starts at #257880 has no visible fill,
+   and buttons are identified by their fill. On the gradient it turns white
+   with a teal label: 5.15:1 (6.10:1 in dark); hover 7.09:1. */
+.hero .btn-primary,
+.page-band .btn-primary,
+.split-panel .btn-primary,
+.on-gradient .btn-primary { background-color: #FFFFFF; color: var(--nr-primary-fill); }
+.hero .btn-primary:hover,
+.page-band .btn-primary:hover,
+.split-panel .btn-primary:hover,
+.on-gradient .btn-primary:hover { background-color: #E6F2F3; color: #15585E; }
+.hero .hero-panel .btn-primary { background-color: var(--nr-primary-fill); color: var(--nr-on-fill); }
+.hero .hero-panel .btn-primary:hover { background-color: var(--nr-primary-fill-hover); color: var(--nr-on-fill); }
 .page-band h1 { font-size: var(--font-size-4xl); margin-bottom: var(--spacing-xs); }
 .page-band-inner { max-width: 1152px; margin: 0 auto; }
 
