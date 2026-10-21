@@ -929,7 +929,13 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // keywords (or the color-scheme meta tag for `normal`) against the scheme the run emulates.
     const keys = (v) => (v || '').split(/[\s,]+/).filter((x) => x === 'light' || x === 'dark');
     const isUaRingColour = (el, c) => { let k = keys(getComputedStyle(el).colorScheme);
-      if (getComputedStyle(el).colorScheme === 'normal') k = keys(document.querySelector('meta[name="color-scheme"]')?.content);
+      // The meta content is parsed as CSS parses it, on a detached element: keywords
+      // case-insensitive, a comma list invalid (light).
+      if (getComputedStyle(el).colorScheme === 'normal') {
+        const st = document.createElement('span').style;
+        st.colorScheme = document.querySelector('meta[name="color-scheme" i]')?.content ?? '';
+        k = keys(st.colorScheme);
+      }
       const used = !k.length ? 'light' : k.includes(uaRings.scheme) ? uaRings.scheme : k[0];
       return c === uaRings[used]; };
     const ringBefore = new WeakMap();

@@ -533,13 +533,16 @@ test('the browser ring follows the used color-scheme: none declared, or a meta t
   const none = await run(fixture('noscheme', '', '<button type="button">Plain</button>'), '--scheme', 'dark');
   assert.deepStrictEqual(none.json.focusRingFailures, []);
   assert.strictEqual(none.json.focusUserAgentRing, 1, 'the light ring of a page without color-scheme');
-  // Declared only by <meta name="color-scheme">, which must sit in the head.
-  const page = path.join(dir, 'metascheme.html');
-  fs.writeFileSync(page, '<!doctype html><html lang="en"><head><meta name="color-scheme" content="dark"><title>metascheme</title>'
-    + '<style>body{background:#fff;color:#000}</style></head><body><main><button type="button">Meta</button></main></body></html>');
-  const meta = await run(page, '--scheme', 'light');
-  assert.deepStrictEqual(meta.json.focusRingFailures, []);
-  assert.strictEqual(meta.json.focusUserAgentRing, 1, 'the dark ring the meta tag selects');
+  // Declared only by <meta name="color-scheme">, read as Chromium reads it: name and
+  // keywords case-insensitive, a comma list invalid (light).
+  for (const [i, [name, content, scheme]] of [['color-scheme', 'dark', 'light'], ['Color-Scheme', 'Dark', 'light'], ['color-scheme', 'light, dark', 'dark']].entries()) {
+    const page = path.join(dir, `metascheme${i}.html`);
+    fs.writeFileSync(page, `<!doctype html><html lang="en"><head><meta name="${name}" content="${content}"><title>metascheme</title>`
+      + '<style>body{background:#fff;color:#000}</style></head><body><main><button type="button">Meta</button></main></body></html>');
+    const meta = await run(page, '--scheme', scheme);
+    assert.deepStrictEqual(meta.json.focusRingFailures, [], content);
+    assert.strictEqual(meta.json.focusUserAgentRing, 1, `the browser ring the meta tag "${content}" selects`);
+  }
 });
 
 test('a blurred ring is judged by the darkest pixel the page paints', async () => {
