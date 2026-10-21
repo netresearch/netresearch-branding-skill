@@ -1175,3 +1175,26 @@ test('a card lifted by a fraction of a pixel on focus leaves its control unverif
     + '<main><div class="card"><button type="button" class="w">Card</button></div></main>');
   assert.deepStrictEqual({ failures: json.focusRingFailures, unverified: json.focusRingUnverified, code }, { failures: [], unverified: 1, code: 0 });
 });
+
+// Pins that the all-hidden rule goes through the completion test: a ring that paints nothing
+// (a blend mode that hides it; an inset ring under an opaque framed image) next to an 8 px
+// dot recoloured each frame fails at 1:1. The dot cannot hide a ring that long, so taking it
+// for one that cannot be read would turn both failures into unverified controls.
+test('a ring that paints nothing next to a small animation still fails at 1:1', async () => {
+  for (const [name, html, el] of [['blenddot', "<style>body{margin:0;background:#fff;color:#000}button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif}.w{position:relative;margin:80px 100px;display:inline-block}.b{mix-blend-mode:difference;display:inline-block}button:focus-visible{outline:2px solid #000}.sp{position:absolute;left:124px;top:11px;width:8px;height:8px;background:#888}</style><main><div class=\"w\"><div class=\"b\"><button type=\"button\">Go</button></div><span class=\"sp\"></span></div></main><script>const s=document.querySelector(\".sp\");let n=0;(function f(){n+=37;const g=n%256;s.style.background=\"rgb(\"+g+\",\"+g+\",\"+g+\")\";requestAnimationFrame(f)})();</script>", 'button'], ['imgdot', "<style>body{margin:0;background:#fff}.w{position:relative;display:inline-block;margin:40px}a{display:inline-block;background:#fff}a img{display:block}a:focus-visible{outline:none;box-shadow:inset 0 0 0 4px #000}.sp{position:absolute;left:204px;top:56px;width:8px;height:8px;background:#888}</style><main><div class=\"w\"><a href=\"#a\"><img alt=\"Framed\" width=\"200\" height=\"120\" src=\"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22120%22%3E%3Crect width=%22200%22 height=%22120%22 fill=%22%23fff%22/%3E%3Crect x=%221%22 y=%221%22 width=%22198%22 height=%22118%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%222%22/%3E%3C/svg%3E\"></a><span class=\"sp\"></span></div></main><script>const s=document.querySelector(\".sp\");let n=0;(function f(){n+=37;const g=n%256;s.style.background=\"rgb(\"+g+\",\"+g+\",\"+g+\")\";requestAnimationFrame(f)})();</script>", 'a']]) {
+    const { code, json } = await page(name, html);
+    assert.deepStrictEqual({ failures: json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy} ${f.ratio}`), unverified: json.focusRingUnverified, code },
+      { failures: [`${el} pixels 1`], unverified: 0, code: 1 }, name);
+  }
+});
+
+// Pins how the strip a lifted control vacates is scored: against the pixel it moved from
+// and the surface behind the control, read from a shot with the control hidden. Sampled
+// beside the control instead, a weak ring in a dark group above a black bar passed, and a
+// strong underline next to one dark neighbour failed at 1.32.
+test('the vacated strip is scored against the surface behind the control', async () => {
+  const weak = await page('darkgroup', "<style>body{margin:0;background:#fff;color:#000}button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif;margin:0}.t{margin:60px;width:360px}.g{display:flex}.g .d{background:#222;color:#fff;border-color:#222}.bar{height:4px;background:#000}button.f:focus-visible{outline:none;box-shadow:0 0 2px 0.25px #000;position:relative;top:-2px}</style><main><div class=\"t\"><div class=\"g\"><button type=\"button\" class=\"d\" tabindex=\"-1\">L</button><button type=\"button\" class=\"f\">F</button><button type=\"button\" class=\"d\" tabindex=\"-1\">R</button></div><div class=\"bar\"></div></div></main>");
+  assert.deepStrictEqual(weak.json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy} ${f.ratio}`), ['button.f pixels 2.07']);
+  const strong = await page('darkleft', "<style>body{margin:0;background:#fff;color:#000}button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif}.g{display:flex;margin:60px}.g button{margin:0;width:160px}.g .d{background:#222;color:#fff;border-color:#222}button.f:focus-visible{outline:none;position:relative;top:-2px;box-shadow:0 1px 0 1px #000}</style><main><div class=\"g\"><button type=\"button\" class=\"d\" tabindex=\"-1\">L</button><button type=\"button\" class=\"f\">F</button></div></main>");
+  assert.deepStrictEqual({ failures: strong.json.focusRingFailures, unverified: strong.json.focusRingUnverified, code: strong.code }, { failures: [], unverified: 0, code: 0 });
+});
