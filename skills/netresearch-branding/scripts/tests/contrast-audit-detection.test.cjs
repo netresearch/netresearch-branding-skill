@@ -1265,3 +1265,23 @@ test('a visible child and an animated surface behind the vacated strip', async (
   }
   assert.deepStrictEqual(got, { fixedchild2: { failures: [], unverified: 0, code: 0 }, anim4: { failures: [], unverified: 1, code: 0 } });
 });
+
+// A fill that focus tints all over has no unchanged pixel inside: it is read against its old
+// fill, not against the control's own border across the box, so a weak halo still fails.
+test('a fill tinted on focus is read against its old fill, not the control border', async () => {
+  const got = {};
+  for (const [name, html] of [
+    ['filltint', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px}button{display:block;margin:0;color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}button:focus-visible{background:#eef;outline:none;box-shadow:0 0 2px 0.25px #000}</style><main><div class=\"t\"><button type=\"button\">Go</button></div></main>"],
+    ['fillplain', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px}button{display:block;margin:0;color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}button:focus-visible{outline:none;box-shadow:0 0 2px 0.25px #000}</style><main><div class=\"t\"><button type=\"button\">Go</button></div></main>"],
+    // the same through a transparent fill, with the section around it shaded on :focus-within
+    ['sectiontint', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.s{padding:50px}.s:focus-within{background:#eef}button{display:block;margin:0;color:#000;background:transparent;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}button:focus-visible{outline:none;box-shadow:0 0 2px 0.25px #000}</style><main><div class=\"s\"><button type=\"button\">Go</button></div></main>"],
+  ]) {
+    const { code, json } = await page(name, html);
+    got[name] = { failures: json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy} ${f.ratio}`), code };
+  }
+  assert.deepStrictEqual(got, {
+    filltint: { failures: ['button pixels 2.07'], code: 1 },
+    fillplain: { failures: ['button pixels 2.07'], code: 1 },
+    sectiontint: { failures: ['button pixels 2.35'], code: 1 },
+  });
+});
