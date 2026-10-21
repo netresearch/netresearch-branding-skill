@@ -238,7 +238,8 @@ failure). A pixel inside the focused box over a surface the control moved onto i
 scored, because the screenshots cannot tell whether that surface shows through the
 control (a translucent fill, a blend mode, an ancestor's `filter`); where the ring would
 pass with those pixels, the control is unverified. A surface that moves with the control
-(a card that lifts it) is read as before. Pixels that change between the
+and keeps its colour (a card that lifts it) is read as before; a card that also changes
+its background on `:focus-within` counts as another surface. Pixels that change between the
 three unfocused screenshots (an animated neighbour; for a skip link, looked for where
 the focused link shows) are never part of a ring. A control the model
 passed is counted in `focusRingUnverified` or `controlBoundaryUnverified` and does not

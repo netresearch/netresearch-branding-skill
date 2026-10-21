@@ -70,8 +70,10 @@
  * moved from and the surface behind the control, read from four shots with the control
  * at opacity 0, one before the focused shot and three after (a pixel that changes between
  * them is taken as hidden by an animation). A pixel of the focused box outside the
- * unfocused one keeps its score where the surface behind moved with the control (an
- * ancestor's lift, read from one more shot of the unfocused control at opacity 0), and is
+ * unfocused one keeps its score where the surface behind moved with the control and kept
+ * its colour (an ancestor's lift, read from one more shot of the unfocused control at
+ * opacity 0; a card that also changes its background on :focus-within counts as another
+ * surface), and is
  * taken as hidden where the control moved onto another surface: whether that surface shows
  * through the control (a translucent fill, a blend mode, an ancestor's filter) is not known
  * from the pixels. The lower of the two is conservative: a ring that covers
@@ -126,7 +128,7 @@
  * long as the ring must be (a stripe moving along the control; a small spinner does not
  * count), or whose ring fails only where such a neighbour hides it: the hidden pixels,
  * taken at 21:1, would complete it. That check samples the animation in the three
- * unfocused shots (and, over the strip a lifted control vacates, in three shots with the
+ * unfocused shots (and, for a lifted control outside its box, in four shots with the
  * control hidden), so an animation that happens to show the
  * same frame in all three can still pass. Not judged
  * on pixels: the browser's own ring, an element counted in focusWithoutRing (a shadow
@@ -555,9 +557,9 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
     // known from the pixels: hidden.
     if (reg && !(cx > gb.box[0] - clip.vx && cx < gb.box[2] - clip.vx && cy > gb.box[1] - clip.vy && cy < gb.box[3] - clip.vy)) {
       if (inBox) {
-        if (src[i] < 0 || dif(under[0].data, i, underB.data, src[i])) { hidden.push(i); continue; }
+        if (src[i] < 0 || dif(under[0].data, i, underB.data, src[i])) { score[i] = 0; hidden.push(i); continue; }
       } else {
-        if (under.some((u, k) => k > 0 && dif(under[k - 1].data, i, u.data, i))) { hidden.push(i); continue; }
+        if (under.some((u, k) => k > 0 && dif(under[k - 1].data, i, u.data, i))) { score[i] = 0; hidden.push(i); continue; }
         const ru = ratioL(la, lumAt(under[0].data, i * 4));
         if (ru < score[i]) { score[i] = ru; behind[i] = 1; adjOf[i] = -1; }
       }
