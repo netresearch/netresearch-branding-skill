@@ -1273,6 +1273,8 @@ test('a fill tinted on focus is read against its old fill, not the control borde
   for (const [name, html] of [
     ['filltint', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px}button{display:block;margin:0;color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}button:focus-visible{background:#eef;outline:none;box-shadow:0 0 2px 0.25px #000}</style><main><div class=\"t\"><button type=\"button\">Go</button></div></main>"],
     ['fillplain', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px}button{display:block;margin:0;color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}button:focus-visible{outline:none;box-shadow:0 0 2px 0.25px #000}</style><main><div class=\"t\"><button type=\"button\">Go</button></div></main>"],
+    // a pill: its centre rows lie within half the short side of the far border
+    ['filltintpill', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px}button{display:block;margin:0;color:#000;font:14px sans-serif;background:#fff;border:1px solid #000;width:160px;height:30px;padding:0;border-radius:15px;}button:focus-visible{background:#eef;outline:none;box-shadow:0 0 2px 0.25px #000}</style><main><div class=\"t\"><button type=\"button\" aria-label=\"Go\"></button></div></main>"],
     // the same through a transparent fill, with the section around it shaded on :focus-within
     ['sectiontint', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.s{padding:50px}.s:focus-within{background:#eef}button{display:block;margin:0;color:#000;background:transparent;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}button:focus-visible{outline:none;box-shadow:0 0 2px 0.25px #000}</style><main><div class=\"s\"><button type=\"button\">Go</button></div></main>"],
   ]) {
@@ -1282,6 +1284,7 @@ test('a fill tinted on focus is read against its old fill, not the control borde
   assert.deepStrictEqual(got, {
     filltint: { failures: ['button pixels 2.07'], code: 1 },
     fillplain: { failures: ['button pixels 2.07'], code: 1 },
+    filltintpill: { failures: ['button pixels 2.68'], code: 1 },
     sectiontint: { failures: ['button pixels 2.35'], code: 1 },
   });
 });

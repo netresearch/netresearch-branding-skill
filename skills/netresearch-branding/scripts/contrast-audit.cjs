@@ -420,8 +420,8 @@ function covered(g, clip) {
 // Each such pixel is scored against the colour beside it (SC 1.4.11): outside the border
 // box, its own unfocused value, the surface the ring is painted on; inside it (a
 // recoloured border, an inset ring), the nearest unchanged pixel within half the shorter
-// side, outward (then inward) for a pixel on the border, inward only for one inside the
-// padding box, and with none, again its own unfocused value: a fill tinted all over is
+// side, outward (then inward) for a pixel on the border, inward only and no further than
+// the box's centre line for one inside the padding box, and with none, again its own unfocused value: a fill tinted all over is
 // read against its old fill, never against the control's own border. The indicator's ratio is the highest score t at which the pixels
 // scoring t or more hold one piece (pixels up to 2 px apart are joined, across the
 // anti-aliased corners of a rounded ring) at least as large as the straight part of the
@@ -503,8 +503,11 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
   // A pixel scored against the surface behind the control (`under`), for `against`.
   const behind = new Uint8Array(N);
   const cand = []; const hidden = [];
-  const march = (x, y, sx, sy) => {
-    for (let k = 1; k <= Math.ceil(short / 2); k++) {
+  // half: an inward march from a padding-box pixel stops at the box's centre line, so a tinted
+  // fill never reaches the opposite border (on a pill, the centre rows would carry the ring).
+  const march = (x, y, sx, sy, half = false) => {
+    const lim = half ? Math.floor(sx ? Math.abs((bx0 + bx1) / 2 - (x + 0.5)) : Math.abs((by0 + by1) / 2 - (y + 0.5))) : Math.ceil(short / 2);
+    for (let k = 1; k <= lim; k++) {
       const qx = x + k * sx; const qy = y + k * sy;
       if (qx < 0 || qy < 0 || qx >= W || qy >= H) return -1;
       if (!own(qx, qy)) return -1;
@@ -543,7 +546,7 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
     const inPad = cx >= px0 + 0.5 && cx <= px1 - 0.5 && cy >= py0 + 0.5 && cy <= py1 - 0.5;
     const s0 = inPad ? -1 : 1;
     let q = -1;
-    if (inBox) { q = march(x, y, s0 * dx, s0 * dy); if (q < 0 && !inPad) q = march(x, y, -s0 * dx, -s0 * dy); }
+    if (inBox) { q = march(x, y, s0 * dx, s0 * dy, inPad); if (q < 0 && !inPad) q = march(x, y, -s0 * dx, -s0 * dy); }
     const la = lumAt(Ad, i * 4);
     score[i] = ratioL(la, lumAt(q < 0 ? Bd : Ad, (q < 0 ? src[i] : q) * 4));
     adjOf[i] = q;
