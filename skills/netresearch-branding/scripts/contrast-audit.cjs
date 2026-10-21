@@ -66,8 +66,9 @@
  * moved from, and counts as changed only when it differs from that one and from the one
  * in place, so neither the moved border nor a neighbour that stayed is taken for a ring;
  * a pixel outside the focused box over the strip the control vacated is scored against
- * the lower of the pixel it moved from and the surface behind the control, read from one
- * more unfocused shot with the control hidden. A sub-pixel move or a resize is compared in place, except
+ * the lower of the pixel it moved from and the surface behind the control, read from
+ * three focused shots with the control at opacity 0 (a pixel that changes between them is
+ * taken as hidden by an animation). A sub-pixel move or a resize is compared in place, except
  * one by an ancestor's transform (a card that scales on :focus-within), which leaves the
  * control unverified. A pixel counts as changed when a channel moves by more than 2
  * between two shots with the control's icons and images hidden, and a select's shown
@@ -115,8 +116,9 @@
  * an animated neighbour whose changing pixels, joined up to 4 px apart, form one piece as
  * long as the ring must be (a stripe moving along the control; a small spinner does not
  * count), or whose ring fails only where such a neighbour hides it: the hidden pixels,
- * taken at 21:1, would complete it, or they are all that changed. That last check samples
- * the animation in the three unfocused shots, so an animation that happens to show the
+ * taken at 21:1, would complete it. That check samples the animation in the three
+ * unfocused shots (and, over the strip a lifted control vacates, in three shots with the
+ * control hidden), so an animation that happens to show the
  * same frame in all three can still pass. Not judged
  * on pixels: the browser's own ring, an element counted in focusWithoutRing (a glow
  * without spread, a fill change, a ring drawn by a pseudo-element), a control that is not
@@ -398,7 +400,8 @@ function covered(g, clip) {
 // also with them shown (before, after); where focus moved the box by whole pixels at the
 // same size (liftOf), against the unfocused pixel it moved from and the one in place; a
 // pixel outside the focused box over the strip the control vacated is then scored against
-// the pixel it moved from and the surface behind the control (`under`, a shot with it hidden).
+// the pixel it moved from and the surface behind the control (`under`, three focused shots
+// with it at opacity 0).
 // Each such pixel is scored against the colour beside it (SC 1.4.11): outside the border
 // box, its own unfocused value, the surface the ring is painted on; inside it (a
 // recoloured border, an inset ring), the nearest unchanged pixel, outward for a pixel on
@@ -414,7 +417,7 @@ function covered(g, clip) {
 // focus form one piece (joined up to 4 px apart) at least that large, counted over the
 // pixels that show the element unfocused, or focused where the boxes overlap by less than
 // half (a skip link); and when the ring would fail but the changed pixels left out under
-// an animated neighbour, taken at 21:1, complete it, or are the only ones that changed.
+// an animated neighbour, taken at 21:1, complete it (also when they are all that changed).
 function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again = null, under = null) {
   // again: further unfocused shots (icons hidden), taken after the focused one.
   const W = clip.width; const H = clip.height; const N = W * H;
@@ -509,11 +512,12 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
     // Registered, an outside pixel over the strip the control vacated has no known surface:
     // neither the unfocused pixel there (the control) nor the one it moved from is under it.
     // Scored instead against the lower of the pixel it moved from and the surface behind the
-    // control (`under`, a shot with it hidden, taken whenever a lift is registered).
+    // control (`under`, focused shots with it at opacity 0, taken whenever a lift is
+    // registered); a pixel that changes between those shots is hidden.
     if (reg && !inBox && cx > gb.box[0] - clip.vx && cx < gb.box[2] - clip.vx && cy > gb.box[1] - clip.vy && cy < gb.box[3] - clip.vy) {
-      const at = [src[i]].filter((k) => k >= 0);
+      if (under.some((u, k) => k > 0 && dif(under[k - 1].data, i, u.data, i))) { hidden.push(i); continue; }
       const la = lumAt(Ad, i * 4);
-      score[i] = Math.min(...at.map((k) => ratioL(la, lumAt(Bd, k * 4))), ratioL(la, lumAt(under.data, i * 4)));
+      score[i] = Math.min(ratioL(la, lumAt(Bd, src[i] * 4)), ratioL(la, lumAt(under[0].data, i * 4)));
       cand.push(i);
       continue;
     }
@@ -651,13 +655,14 @@ async function judgeFocus(page, cdp, nodeId, force, unforce, pin) {
     // is more likely to be caught moving (the focused state is not sampled again: an
     // animation that focus starts on the ring itself would read as a neighbour).
     const before3 = await capture(cdp, clip);
-    // A registered lift: what lies behind the control, for the strip it vacates.
+    await force();
+    // A registered lift: what lies behind the focused control (moved with an ancestor that
+    // lifted it, or left in place by its own move), for the strip it vacates.
     let under = null;
     if (liftOf(gb.box, ga.box).some(Boolean)) {
       const hv = await measureOneNode(cdp, nodeId, null, '__hideSelf');
-      try { under = await capture(cdp, clip); } finally { await measureOneNode(cdp, nodeId, hv, '__showSelf'); }
+      try { under = [await capture(cdp, clip), await capture(cdp, clip), await capture(cdp, clip)]; } finally { await measureOneNode(cdp, nodeId, hv, '__showSelf'); }
     }
-    await force();
     // The page moved between the shots (a debounced scroll handler): a stray anti-aliased pixel is not a move.
     const inGb = (x, y) => x + 0.5 > gb.box[0] - clip.vx && x + 0.5 < gb.box[2] - clip.vx && y + 0.5 > gb.box[1] - clip.vy && y + 0.5 < gb.box[3] - clip.vy;
     let moved = 0; for (let i = 0; i < before.data.length; i += 4) if (inGb((i / 4) % clip.width, Math.floor(i / 4 / clip.width)) && ownBit(gb.own, clip.width, (i / 4) % clip.width, Math.floor(i / 4 / clip.width)) && (Math.abs(before.data[i] - before2.data[i]) > PX_DIFF || Math.abs(before.data[i + 1] - before2.data[i + 1]) > PX_DIFF || Math.abs(before.data[i + 2] - before2.data[i + 2]) > PX_DIFF)) moved++;
@@ -1638,8 +1643,8 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     window.__unpinTf = (el, prev) => { TFP.forEach((q, k) => { if (prev[k][0]) el.style.setProperty(q, prev[k][0], prev[k][1]); else el.style.removeProperty(q); }); return null; };
     window.__pinOffset = (el, v) => { const prev = [el.style.getPropertyValue('outline-offset'), el.style.getPropertyPriority('outline-offset')];
       el.style.setProperty('outline-offset', v, 'important'); return prev; };
-    window.__hideSelf = (el) => { const prev = [el.style.getPropertyValue('visibility'), el.style.getPropertyPriority('visibility')]; el.style.setProperty('visibility', 'hidden', 'important'); return prev; };
-    window.__showSelf = (el, prev) => { if (prev[0]) el.style.setProperty('visibility', prev[0], prev[1]); else el.style.removeProperty('visibility'); return null; };
+    window.__hideSelf = (el) => { const prev = [el.style.getPropertyValue('opacity'), el.style.getPropertyPriority('opacity')]; el.style.setProperty('opacity', '0', 'important'); return prev; };
+    window.__showSelf = (el, prev) => { if (prev[0]) el.style.setProperty('opacity', prev[0], prev[1]); else el.style.removeProperty('opacity'); return null; };
     window.__unpinOffset = (el, prev) => { if (prev[0]) el.style.setProperty('outline-offset', prev[0], prev[1]); else el.style.removeProperty('outline-offset'); };
     window.__bringIntoView = async (el) => {
       const at = [scrollX, scrollY]; const inner = [];

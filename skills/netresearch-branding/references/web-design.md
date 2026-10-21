@@ -230,7 +230,8 @@ moves the box by whole pixels at the same size and the two boxes overlap by half
 focused pixel is compared with the unfocused pixel it moved from and with the one in
 place, so neither the moved border nor a neighbour that stayed counts as a ring, and a
 pixel over the strip the control vacated is scored against the surface behind the
-control, read from a shot with the control hidden. Pixels that change between the
+control, read from focused shots with the control made transparent. Pixels that change
+between the
 three unfocused screenshots (an animated neighbour; for a skip link, looked for where
 the focused link shows) are never part of a ring. A control the model
 passed is counted in `focusRingUnverified` or `controlBoundaryUnverified` and does not

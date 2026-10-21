@@ -561,25 +561,25 @@ test('a blurred ring is judged by the darkest pixel the page paints', async () =
 // Shapes a page author meets: each of these must fail, and the class names which.
 test('weak indicators in their common shapes fail', async () => {
   const { code, json } = await run(fixture('weakshapes',
-    'button{color:#000;background:#fff;border:1px solid #000}'
-    + 'a.fo:focus{outline:2px solid #eee}' // written under :focus, not :focus-visible
-    + 'button.tf:focus-visible{outline:none;box-shadow:rgba(0,0,0,0) 0 0 0 0,#eee 0 0 0 3px}' // transparent first layer
-    + 'button.ot:focus-visible{outline:2px solid transparent;box-shadow:0 0 0 3px #eee}' // transparent outline, shadow ring
-    + 'a.tr:focus-visible{outline:3px solid rgba(0,0,0,.2);outline-offset:2px}' // translucent: renders #ccc, 1.6:1
-    + 'a.ok:focus-visible{outline:3px solid oklch(0.95 0 0)}' // a non-rgb colour
-    + '.grey{background:#ccc;padding:8px}input.tb{border:2px solid rgba(0,0,0,.5);background:#fff}' // border over the white fill: 2.5:1 on #ccc
-    + 'input.af{border:1px solid #000}input.af:focus-visible{outline:2px solid #eee}' // focused on load (autofocus)
-    + 'a.fl{display:inline}a.fl:focus-visible{outline:2px solid #eee}' // only floated content: a 0x0 box
-    + 'button.bc:focus-visible{outline:none;border-color:#eee}' // focus shown by the border alone
-    + 'button.tb2{border:2px solid #000}button.tb2:focus-visible{outline:none;border-color:rgba(0,0,0,.5)}' // over the white fill: 2.5:1 on #ccc
-    + 'a.off{outline:2px solid #e8e8e8}a.off:focus-visible{outline-offset:4px}' // a weak outline that only moves out
-    + 'button.boff{outline:2px solid #eee;outline-offset:-8px}button.boff:focus-visible{outline-offset:2px}', // moved from inside to outside
-    '<p><a class="fo" href="#a">One</a> <a class="tr" href="#b">Two</a> <a class="ok" href="#c">Three</a></p>'
-    + '<button type="button" class="tf">Go</button> <button type="button" class="ot">Go</button>'
-    + '<div class="grey"><label>Name <input class="tb"></label> <button type="button" class="tb2">Go</button></div>'
-    + '<label>Search <input class="af" autofocus></label> <button type="button" class="bc">Go</button>'
-    + '<p><a class="fl" href="#f"><span style="float:left">Floated</span></a></p>'
-    + '<p><a class="off" href="#o">Moves</a> <button type="button" class="boff">Moves</button></p>'));
+    `button{color:#000;background:#fff;border:1px solid #000}
+    a.fo:focus{outline:2px solid #eee}/* written under :focus, not :focus-visible */
+    button.tf:focus-visible{outline:none;box-shadow:rgba(0,0,0,0) 0 0 0 0,#eee 0 0 0 3px}/* transparent first layer */
+    button.ot:focus-visible{outline:2px solid transparent;box-shadow:0 0 0 3px #eee}/* transparent outline, shadow ring */
+    a.tr:focus-visible{outline:3px solid rgba(0,0,0,.2);outline-offset:2px}/* translucent: renders #ccc, 1.6:1 */
+    a.ok:focus-visible{outline:3px solid oklch(0.95 0 0)}/* a non-rgb colour */
+    .grey{background:#ccc;padding:8px}input.tb{border:2px solid rgba(0,0,0,.5);background:#fff}/* border over the white fill: 2.5:1 on #ccc */
+    input.af{border:1px solid #000}input.af:focus-visible{outline:2px solid #eee}/* focused on load (autofocus) */
+    a.fl{display:inline}a.fl:focus-visible{outline:2px solid #eee}/* only floated content: a 0x0 box */
+    button.bc:focus-visible{outline:none;border-color:#eee}/* focus shown by the border alone */
+    button.tb2{border:2px solid #000}button.tb2:focus-visible{outline:none;border-color:rgba(0,0,0,.5)}/* over the white fill: 2.5:1 on #ccc */
+    a.off{outline:2px solid #e8e8e8}a.off:focus-visible{outline-offset:4px}/* a weak outline that only moves out */
+    button.boff{outline:2px solid #eee;outline-offset:-8px}button.boff:focus-visible{outline-offset:2px}/* moved from inside to outside */`,
+    `<p><a class="fo" href="#a">One</a> <a class="tr" href="#b">Two</a> <a class="ok" href="#c">Three</a></p>\
+<button type="button" class="tf">Go</button> <button type="button" class="ot">Go</button>\
+<div class="grey"><label>Name <input class="tb"></label> <button type="button" class="tb2">Go</button></div>\
+<label>Search <input class="af" autofocus></label> <button type="button" class="bc">Go</button>\
+<p><a class="fl" href="#f"><span style="float:left">Floated</span></a></p>\
+<p><a class="off" href="#o">Moves</a> <button type="button" class="boff">Moves</button></p>`));
   assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element).sort(),
     ['a.fl', 'a.fo', 'a.off', 'a.ok', 'a.tr', 'button.bc', 'button.boff', 'button.ot', 'button.tb2', 'button.tf', 'input.af']);
   assert.deepStrictEqual(json.controlBoundaryFailures.map((f) => f.element), ['input.tb']);
@@ -589,34 +589,34 @@ test('weak indicators in their common shapes fail', async () => {
 // Each of these passes, or is not a focus state a user can reach.
 test('strong, unchanged, unreachable and hidden indicators do not fail', async () => {
   const { code, json } = await run(fixture('fineshapes',
-    'button{color:#fff;background:#444;border:0}'
-    + 'a.tw:focus-visible{outline:none;box-shadow:0 0 0 2px #fff,0 0 0 4px #1d4ed8}' // ring offset: white, then a blue ring
-    + '.dark{background:#222;padding:8px}'
-    + 'button.inset{box-shadow:inset 0 1px 2px rgba(0,0,0,.1)}button.inset:focus-visible{box-shadow:inset 0 1px 2px rgba(0,0,0,.1),0 0 0 3px #fff}'
-    + 'a.decor{box-shadow:0 1px 2px rgba(0,0,0,.08)}a.decor:focus-visible{outline:none;text-decoration-thickness:3px}' // permanent shadow is no ring
-    + 'button.ir{background:#222}button.ir:focus-visible{outline:2px solid #fff;outline-offset:-4px}' // inset outline: white on #222
-    + 'button.dis:focus-visible{outline:2px solid #eee}'
-    + '.mid{background:#595959;padding:8px}input.fill{border:0;background:#fff}' // no border, the fill carries the boundary
-    + 'input.faint{border:1px solid #eee;background:#fff}'
-    + 'a.perm{outline:1px solid #eee}' // a permanent outline is not a focus indicator
-    + 'a.pr{box-shadow:0 0 0 3px #eee}a.pr:focus-visible{outline:none;text-decoration-thickness:3px}' // nor a permanent ring
-    + 'button.ins{background:#222}button.ins:focus-visible{outline:none;box-shadow:inset 0 0 0 3px #fff}' // inset ring: white on #222
-    + 'button.gl:focus-visible{outline:none;box-shadow:0 0 8px #eee}' // a blur glow without spread is no ring
-    // a custom switch: a transparent input over a track its parent draws
-    + '.sw{position:relative;display:inline-block;width:40px;height:20px;background:#15585E;border-radius:10px}'
-    // (transparent and borderless, its "fill" is the track itself: 1.00:1 if it were judged)
-    + '.sw input{appearance:none;position:absolute;inset:0;margin:0;opacity:0;background:transparent;border:0}'
-    // the usual visually hidden input: its white fill alone is 1.00:1 on white
-    + 'input.sr{position:absolute;width:1px;height:1px;padding:0;border:0;background:#fff;overflow:hidden;clip-path:inset(50%)}',
-    '<p><a class="tw" href="#a">Ring</a> <a class="decor" href="#b">Card link</a></p>'
-    + '<div class="dark"><button type="button" class="inset">Go</button></div>'
-    + '<button type="button" class="ir">Inset</button> <button type="button" class="dis" disabled>Off</button>'
-    + '<div class="mid"><label style="color:#fff">Name <input class="fill"></label></div>'
-    + '<div style="display:none"><input class="faint"></div><dialog><input class="faint"></dialog>'
-    + '<div style="visibility:hidden"><input class="faint"></div><fieldset disabled><input class="faint"></fieldset>'
-    + '<p><a class="perm" href="#p">Outlined</a> <a class="pr" href="#q">Ringed</a> <button type="button" class="ins">Inset</button></p>'
-    + '<label>Hidden <input class="sr"></label>'
-    + '<p><button type="button" class="gl">Glow</button> <label>Notify <span class="sw"><input type="checkbox"></span></label></p>'));
+    `button{color:#fff;background:#444;border:0}
+    a.tw:focus-visible{outline:none;box-shadow:0 0 0 2px #fff,0 0 0 4px #1d4ed8}/* ring offset: white, then a blue ring */
+    .dark{background:#222;padding:8px}
+    button.inset{box-shadow:inset 0 1px 2px rgba(0,0,0,.1)}button.inset:focus-visible{box-shadow:inset 0 1px 2px rgba(0,0,0,.1),0 0 0 3px #fff}
+    a.decor{box-shadow:0 1px 2px rgba(0,0,0,.08)}a.decor:focus-visible{outline:none;text-decoration-thickness:3px}/* permanent shadow is no ring */
+    button.ir{background:#222}button.ir:focus-visible{outline:2px solid #fff;outline-offset:-4px}/* inset outline: white on #222 */
+    button.dis:focus-visible{outline:2px solid #eee}
+    .mid{background:#595959;padding:8px}input.fill{border:0;background:#fff}/* no border, the fill carries the boundary */
+    input.faint{border:1px solid #eee;background:#fff}
+    a.perm{outline:1px solid #eee}/* a permanent outline is not a focus indicator */
+    a.pr{box-shadow:0 0 0 3px #eee}a.pr:focus-visible{outline:none;text-decoration-thickness:3px}/* nor a permanent ring */
+    button.ins{background:#222}button.ins:focus-visible{outline:none;box-shadow:inset 0 0 0 3px #fff}/* inset ring: white on #222 */
+    button.gl:focus-visible{outline:none;box-shadow:0 0 8px #eee}/* a blur glow without spread is no ring */
+    /* a custom switch: a transparent input over a track its parent draws */
+    .sw{position:relative;display:inline-block;width:40px;height:20px;background:#15585E;border-radius:10px}
+    /* (transparent and borderless, its "fill" is the track itself: 1.00:1 if it were judged) */
+    .sw input{appearance:none;position:absolute;inset:0;margin:0;opacity:0;background:transparent;border:0}
+    /* the usual visually hidden input: its white fill alone is 1.00:1 on white */
+    input.sr{position:absolute;width:1px;height:1px;padding:0;border:0;background:#fff;overflow:hidden;clip-path:inset(50%)}`,
+    `<p><a class="tw" href="#a">Ring</a> <a class="decor" href="#b">Card link</a></p>\
+<div class="dark"><button type="button" class="inset">Go</button></div>\
+<button type="button" class="ir">Inset</button> <button type="button" class="dis" disabled>Off</button>\
+<div class="mid"><label style="color:#fff">Name <input class="fill"></label></div>\
+<div style="display:none"><input class="faint"></div><dialog><input class="faint"></dialog>\
+<div style="visibility:hidden"><input class="faint"></div><fieldset disabled><input class="faint"></fieldset>\
+<p><a class="perm" href="#p">Outlined</a> <a class="pr" href="#q">Ringed</a> <button type="button" class="ins">Inset</button></p>\
+<label>Hidden <input class="sr"></label>\
+<p><button type="button" class="gl">Glow</button> <label>Notify <span class="sw"><input type="checkbox"></span></label></p>`));
   assert.deepStrictEqual(json.focusRingFailures, []);
   assert.deepStrictEqual(json.controlBoundaryFailures, []);
   assert.ok(json.focusWithoutRing >= 1, `the card link shows focus without a ring and must be counted, got ${json.focusWithoutRing}`);
@@ -680,18 +680,18 @@ test('a control another element covers is counted as unverified, not failed', as
 
 test('strong rings and boundaries still pass on their pixels', async () => {
   const { code, json } = await run(fixture('pxstrong',
-    'button{color:#000;background:#fff;border:1px solid #000;margin:16px}'
-    + 'button.ol:focus-visible{outline:2px solid #000;outline-offset:2px}'
-    + 'button.sr:focus-visible{outline:none;box-shadow:0 0 0 3px #585961}'
-    + 'button.bc{border:2px solid #000}button.bc:focus-visible{outline:none;border-color:#767676}'
-    + 'input.bd{border:1px solid #767676;background:#fff}'
-    + 'input[type=checkbox]:focus-visible{outline:2px solid #000;outline-offset:2px}'
-    + '.col{width:150px}a.wr{color:#000}a.wr:focus-visible{outline:2px solid #000;outline-offset:1px}',
-    '<button type="button" class="ol">Outline</button><button type="button" class="sr">Ring</button><button type="button" class="bc">Border</button>'
-    + '<label>Name <input class="bd"></label> <input type="checkbox" aria-label="Box">'
-    + '<p class="col">Read the <a href="#x" class="wr">longer link text that wraps</a> here.</p>'
-    // below the fold: scrolled into view for the screenshots, so neither is unverified
-    + '<div style="height:2400px"></div><button type="button" class="ol">Below</button><input class="bd" aria-label="Below">'));
+    `button{color:#000;background:#fff;border:1px solid #000;margin:16px}
+    button.ol:focus-visible{outline:2px solid #000;outline-offset:2px}
+    button.sr:focus-visible{outline:none;box-shadow:0 0 0 3px #585961}
+    button.bc{border:2px solid #000}button.bc:focus-visible{outline:none;border-color:#767676}
+    input.bd{border:1px solid #767676;background:#fff}
+    input[type=checkbox]:focus-visible{outline:2px solid #000;outline-offset:2px}
+    .col{width:150px}a.wr{color:#000}a.wr:focus-visible{outline:2px solid #000;outline-offset:1px}`,
+    `<button type="button" class="ol">Outline</button><button type="button" class="sr">Ring</button><button type="button" class="bc">Border</button>\
+<label>Name <input class="bd"></label> <input type="checkbox" aria-label="Box">\
+<p class="col">Read the <a href="#x" class="wr">longer link text that wraps</a> here.</p>\
+<!-- below the fold: scrolled into view for the screenshots, so neither is unverified -->\
+<div style="height:2400px"></div><button type="button" class="ol">Below</button><input class="bd" aria-label="Below">`));
   assert.deepStrictEqual(json.focusRingFailures, []);
   assert.deepStrictEqual(json.controlBoundaryFailures, []);
   assert.strictEqual(json.focusRingUnverified, 0);
@@ -1197,4 +1197,26 @@ test('the vacated strip is scored against the surface behind the control', async
   assert.deepStrictEqual(weak.json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy} ${f.ratio}`), ['button.f pixels 2.07']);
   const strong = await page('darkleft', "<style>body{margin:0;background:#fff;color:#000}button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif}.g{display:flex;margin:60px}.g button{margin:0;width:160px}.g .d{background:#222;color:#fff;border-color:#222}button.f:focus-visible{outline:none;position:relative;top:-2px;box-shadow:0 1px 0 1px #000}</style><main><div class=\"g\"><button type=\"button\" class=\"d\" tabindex=\"-1\">L</button><button type=\"button\" class=\"f\">F</button></div></main>");
   assert.deepStrictEqual({ failures: strong.json.focusRingFailures, unverified: strong.json.focusRingUnverified, code: strong.code }, { failures: [], unverified: 0, code: 0 });
+});
+
+// Pins round 34's rules for the strip a lifted control vacates and the all-hidden threshold.
+test('the strip behind a lifted control is read in its focused state, and only a ring-long animation hides a ring', async () => {
+  const got = {}; const want = {};
+  for (const [name, html, failures] of [
+    // a card that lifts on focus-within carries a plate behind the button: the strip is read behind the focused control, a pass
+    ["ancestorlift", "<style>body{background:#fff;color:#000;margin:0}.card{position:relative;display:inline-block;margin:60px}.card:focus-within{transform:translateY(-2px)}.sh{position:absolute;left:0;top:0;right:0;bottom:0;background:#222}button{position:relative;color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif;margin:0;display:block}button:focus-visible{outline:none;box-shadow:0 1px 0 1px #000}</style><main><div class=\"card\"><div class=\"sh\"></div><button type=\"button\">Bar</button></div></main>", []],
+    // a child with visibility: visible stays painted under visibility: hidden; at opacity 0 the strip is read behind it, a pass
+    ["visiblechild", "<style>body{background:#fff;color:#000;margin:0}button{color:#fff;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif;padding:0}.t{margin:60px}.in{visibility:visible;display:block;height:100%;background:#222;color:#fff}button:focus-visible{outline:none;position:relative;top:-2px;box-shadow:0 1px 0 1px #000}</style><main><div class=\"t\"><button type=\"button\"><span class=\"in\">Bar</span></button></div></main>", []],
+    // B lies over the lifted A: A must be shown again after its hidden shots, or B reads over white and passes
+    ["showself", "<style>body{background:#fff;color:#000;margin:0;font:14px sans-serif}.c{display:flex;flex-direction:column-reverse;margin:60px;width:160px}button{color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;margin:0;font:14px sans-serif}.a{background:#222;color:#fff;border-color:#222}.a:focus-visible{outline:2px solid #000;outline-offset:2px;position:relative;top:-2px}.b:focus-visible{outline:none;box-shadow:0 1px 0 1px #000}</style><main><div class=\"c\"><button type=\"button\" class=\"a\">A</button><button type=\"button\" class=\"b\">B</button></div></main>", ["button.b pixels 21"]],
+    // a dark bar directly below a lifted button: the pixel the ring moved from still counts
+    ["srcbar", "<style>body{background:#fff;color:#000;margin:0;font:14px sans-serif}.t{margin:60px;width:160px}button{display:block;margin:0;color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}.bar{height:6px;background:#111}button:focus-visible{outline:none;position:relative;top:-2px;box-shadow:0 1px 0 1px #000}</style><main><div class=\"t\"><button type=\"button\">Go</button><div class=\"bar\"></div></div></main>", ["button pixels 1.11"]],
+    // an 80 px animated bar beside a ring that paints nothing: shorter than a ring must be, so a failure, not unverified
+    ["bar80", "<style>body{margin:0;background:#fff;color:#000}button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif}.w{position:relative;margin:80px 100px;display:inline-block}.b{mix-blend-mode:difference;display:inline-block}button:focus-visible{outline:2px solid #000}.sp{position:absolute;left:20px;top:-10px;width:80px;height:6px;background:#888}</style><main><div class=\"w\"><div class=\"b\"><button type=\"button\">Go</button></div><span class=\"sp\"></span></div></main><script>const s=document.querySelector(\".sp\");let n=0;(function f(){n+=37;const g=n%256;s.style.background=\"rgb(\"+g+\",\"+g+\",\"+g+\")\";requestAnimationFrame(f)})();</script>", ["button pixels 1"]],
+  ]) {
+    const { code, json } = await page(name, html);
+    got[name] = { failures: json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy} ${f.ratio}`), unverified: json.focusRingUnverified, code };
+    want[name] = { failures, unverified: 0, code: failures.length ? 1 : 0 };
+  }
+  assert.deepStrictEqual(got, want);
 });
