@@ -1215,7 +1215,7 @@ const ruleAbove = (fill, focus) => `<style>body{margin:0;background:#fff;color:#
 // Pins round 34's rules for the strip a lifted control vacates and the all-hidden threshold.
 test('the strip behind a lifted control is read in its focused state, and only a ring-long animation hides a ring', async () => {
   const got = {}; const want = {};
-  for (const [name, html, failures] of [
+  for (const [name, html, failures, unverified = 0] of [
     // a card that lifts on focus-within carries a plate behind the button: the strip is read behind the focused control, a pass
     ["ancestorlift", "<style>body{background:#fff;color:#000;margin:0}.card{position:relative;display:inline-block;margin:60px}.card:focus-within{transform:translateY(-2px)}.sh{position:absolute;left:0;top:0;right:0;bottom:0;background:#222}button{position:relative;color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif;margin:0;display:block}button:focus-visible{outline:none;box-shadow:0 1px 0 1px #000}</style><main><div class=\"card\"><div class=\"sh\"></div><button type=\"button\">Bar</button></div></main>", []],
     // a child with visibility: visible stays painted under visibility: hidden; at opacity 0 the strip is read behind it, a pass
@@ -1229,17 +1229,24 @@ test('the strip behind a lifted control is read in its focused state, and only a
     // the documented false failure: a light plate behind a white ring on a dark page; the
     // failure names the plate, the colour its ratio comes from
     ["lightplate", "<style>body{background:#111;color:#fff;margin:0;font:14px sans-serif}button{color:#fff;background:#111;border:1px solid #fff;width:160px;height:30px;font:14px sans-serif;margin:0;padding:0}.t{position:relative;display:inline-block;margin:60px}.pl{position:absolute;left:0;top:0;right:0;bottom:0;background:#eee}button{position:relative;display:block}button:focus-visible{outline:none;top:-2px;box-shadow:0 1px 0 1px #fff}</style><main><div class=\"t\"><div class=\"pl\"></div><button type=\"button\">Go</button></div></main>", ["button pixels 1.16"]],
-    // a faint halo on a button lifted onto a rule: the rule that stayed carries no ring, and
-    // through a translucent fill it changes nothing focus painted; a strong outline passes
+    // a faint halo on a button lifted onto a rule: the rule that stayed carries no ring; seen
+    // through a translucent fill, the rule leaves the pixels inside the box unknown, so
+    // unverified; a strong outline passes
     ["ruleopaque", ruleAbove('#fff', 'outline:none;box-shadow:0 0 2px 0.25px #000'), ["button pixels 2.07"]],
-    ["ruleghost", ruleAbove('rgba(255,255,255,.1)', 'outline:none;box-shadow:0 0 2px 0.25px #000'), ["button pixels 2.07"]],
+    ["ruleghost", ruleAbove('rgba(255,255,255,.1)', 'outline:none;box-shadow:0 0 2px 0.25px #000'), [], 1],
     ["rulestrong", ruleAbove('rgba(255,255,255,.1)', 'outline:2px solid #000;outline-offset:2px'), []],
-    // an opaque fill hides the rule it moved onto: a black top bar there is read against the fill, a pass
+    // an opaque button lifted onto the rule: its top bar over the rule is not read against
+    // the rule (unknown behind a fill), and its 1px inset line on the other sides passes
     ["rulebar", "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{position:relative;margin:60px;width:160px}.rule{position:absolute;left:0;right:0;top:-3px;height:3px;background:#222}button{display:block;margin:0;padding:0;color:#000;background:#fff;border:0;width:160px;height:30px;font:14px sans-serif;position:relative}button:focus-visible{outline:none;top:-3px;box-shadow:inset 0 2px 0 1px #000}</style><main><div class=\"t\"><div class=\"rule\"></div><button type=\"button\">Go</button></div></main>", []],
+    // the same with the fill drawn by a gradient
+    ["rulegrad", "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{position:relative;margin:60px;width:160px}.rule{position:absolute;left:0;right:0;top:-3px;height:3px;background:#222}button{display:block;margin:0;padding:0;color:#000;background:linear-gradient(#fff,#fff);border:0;width:160px;height:30px;font:14px sans-serif;position:relative}button:focus-visible{outline:none;top:-3px;box-shadow:inset 0 2px 0 1px #000}</style><main><div class=\"t\"><div class=\"rule\"></div><button type=\"button\">Go</button></div></main>", []],
+    // a translucent button lifted with a black plate behind it by its card: the plate moved
+    // along, so the black bar over it is read against it and fails
+    ["plateblack", "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px;width:180px}.card{background:#fff;padding:10px;position:relative}.card:focus-within{transform:translateY(-3px)}.pl{position:absolute;left:10px;top:10px;width:160px;height:30px}button{display:block;margin:0;padding:0;color:#000;background:rgba(255,255,255,.1);border:0;width:160px;height:30px;font:14px sans-serif;position:relative}button:focus-visible{outline:none;box-shadow:inset 0 2px 0 1px #000}</style><main><div class=\"t\"><div class=\"card\"><div class=\"pl\"></div><button type=\"button\">Go</button></div></div></main><script>document.querySelector(\".pl\").style.background=\"#000\"</script>", ["button pixels 1.21"]],
   ]) {
     const { code, json } = await page(name, html);
     got[name] = { failures: json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy} ${f.ratio}`), unverified: json.focusRingUnverified, code };
-    want[name] = { failures, unverified: 0, code: failures.length ? 1 : 0 };
+    want[name] = { failures, unverified, code: failures.length ? 1 : 0 };
     for (const f of json.focusRingFailures) assert.ok(Math.abs(contrastOf(f.color, f.against) - f.ratio) < 0.06, `${name}: ${JSON.stringify(f)}`);
   }
   assert.deepStrictEqual(got, want);

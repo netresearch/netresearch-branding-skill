@@ -230,12 +230,15 @@ moves the box by whole pixels at the same size and the two boxes overlap by half
 focused pixel is compared with the unfocused pixel it moved from and with the one in
 place, so neither the moved border nor a neighbour that stayed counts as a ring. A pixel
 outside the focused box (over the strip the control vacated, or over a rule it moved onto)
-and, where the control's fill, opacity or filter lets the surface show, a pixel of the
-focused box outside the unfocused one (a rule seen through a translucent fill) are scored against the lower of the pixel it moved from and the surface behind the
-control, read from focused shots with the control made transparent (a ring over a
-surface behind the strip close to its own colour, a dark plate under a black ring or a
-light one under a white ring, never visible, fails: a known false failure). Pixels
-that change between the
+is scored against the lower of the pixel it moved from and the surface behind the control,
+read from shots with the control made transparent, one before the focused shot and three
+after (a ring over a surface behind the strip close to its own colour, a dark plate under
+a black ring or a light one under a white ring, never visible, fails: a known false
+failure). A pixel inside the focused box over a surface the control moved onto is not
+scored, because the screenshots cannot tell whether that surface shows through the
+control (a translucent fill, a blend mode, an ancestor's `filter`); where the ring would
+pass with those pixels, the control is unverified. A surface that moves with the control
+(a card that lifts it) is read as before. Pixels that change between the
 three unfocused screenshots (an animated neighbour; for a skip link, looked for where
 the focused link shows) are never part of a ring. A control the model
 passed is counted in `focusRingUnverified` or `controlBoundaryUnverified` and does not
