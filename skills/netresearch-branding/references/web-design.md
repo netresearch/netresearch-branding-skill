@@ -229,7 +229,8 @@ pin cannot undo (an ancestor's `transform`, `top`, a margin) is registered: wher
 moves the box by whole pixels at the same size and the two boxes overlap by half, each
 focused pixel is compared with the unfocused pixel it moved from and with the one in
 place, so neither the moved border nor a neighbour that stayed counts as a ring, and a
-pixel over the strip the control vacated is scored against the surface behind the
+pixel over the strip the control vacated is scored against the lower of the pixel it moved
+from and the surface behind the
 control, read from focused shots with the control made transparent (a ring over a
 surface behind the strip close to its own colour, a dark plate under a black ring or a
 light one under a white ring, never visible, fails: a known false failure). Pixels

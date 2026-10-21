@@ -488,6 +488,8 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
   const changed = new Uint8Array(N);
   for (let i = 0; i < N; i++) if (moved(Mb, Ma, i) && (mb === before || moved(Bd, Ad, i))) changed[i] = 1;
   const score = new Float32Array(N); const adjOf = new Int32Array(N).fill(-1);
+  // A strip pixel scored against the surface behind the control (`under`), for `against`.
+  const behind = new Uint8Array(N);
   const cand = []; const hidden = [];
   const march = (x, y, sx, sy) => {
     for (let k = 1; k < W + H; k++) {
@@ -521,7 +523,8 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
     if (reg && !inBox && cx > gb.box[0] - clip.vx && cx < gb.box[2] - clip.vx && cy > gb.box[1] - clip.vy && cy < gb.box[3] - clip.vy) {
       if (under.some((u, k) => k > 0 && dif(under[k - 1].data, i, u.data, i))) { hidden.push(i); continue; }
       const la = lumAt(Ad, i * 4);
-      score[i] = Math.min(ratioL(la, lumAt(Bd, src[i] * 4)), ratioL(la, lumAt(under[0].data, i * 4)));
+      const rs = ratioL(la, lumAt(Bd, src[i] * 4)); const ru = ratioL(la, lumAt(under[0].data, i * 4));
+      score[i] = Math.min(rs, ru); behind[i] = ru < rs ? 1 : 0;
       cand.push(i);
       continue;
     }
@@ -534,17 +537,18 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
     adjOf[i] = q;
     cand.push(i);
   }
-  // Largest piece of the candidates scoring t or more, and its best pixel.
+  // Largest piece of the candidates scoring t or more, and its weakest pixel (the one at t,
+  // whose colours the failure names).
   const seen = new Int32Array(N);
   let stamp = 0;
   const piece = (t) => {
     stamp++; let bestSize = 0; let bestPx = -1;
     for (const i of cand) {
       if (seen[i] === stamp || score[i] < t) continue;
-      let top = i; const stack = [i]; seen[i] = stamp;
+      let low = i; const stack = [i]; seen[i] = stamp;
       let x0 = W; let x1 = -1; let y0 = H; let y1 = -1;
       while (stack.length) {
-        const p = stack.pop(); if (score[p] > score[top]) top = p;
+        const p = stack.pop(); if (score[p] < score[low]) low = p;
         const x = p % W; const y = (p - x) / W;
         if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
         for (let ey = -2; ey <= 2; ey++) for (let ex = -2; ex <= 2; ex++) {
@@ -556,7 +560,7 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
         }
       }
       const size = Math.max(x1 - x0 + 1, y1 - y0 + 1);
-      if (size > bestSize) { bestSize = size; bestPx = top; }
+      if (size > bestSize) { bestSize = size; bestPx = low; }
     }
     return { size: bestSize, px: bestPx };
   };
@@ -591,7 +595,7 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
   const adj = adjOf[best.px];
   return {
     changed: true, pass: found >= 0 && t >= 3, ratio: t, pixels: best.size, minPixels: minSize,
-    color: rgbAt(Ad, best.px * 4), against: adj >= 0 ? rgbAt(Ad, adj * 4) : rgbAt(Bd, src[best.px] * 4),
+    color: rgbAt(Ad, best.px * 4), against: adj >= 0 ? rgbAt(Ad, adj * 4) : behind[best.px] ? rgbAt(under[0].data, best.px * 4) : rgbAt(Bd, src[best.px] * 4),
   };
 }
 

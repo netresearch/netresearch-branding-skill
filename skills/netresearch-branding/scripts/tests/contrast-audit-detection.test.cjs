@@ -39,6 +39,14 @@ function fixture(name, css, body) {
   return path.join(dir, `${name}.html`);
 }
 
+// WCAG contrast of two rgb() strings, for checking that a failure's colours give its ratio.
+function contrastOf(a, b) {
+  const lum = (c) => { const [r, g, bl] = c.match(/\d+/g).slice(0, 3).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl; };
+  const [l1, l2] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (l1 + 0.05) / (l2 + 0.05);
+}
+
 async function run(page, ...args) {
   const r = await audit(page, ...args);
   let json;
@@ -657,6 +665,8 @@ test('rings and boundaries the colour model passes fail on their painted pixels'
     assert.ok(typeof f.color === 'string' || typeof f.border === 'string', `a colour is named: ${JSON.stringify(f)}`);
     assert.strictEqual(typeof f.against, 'string', JSON.stringify(f));
   }
+  // A ring failure names the pixel its ratio comes from: the two colours give that ratio.
+  for (const f of json.focusRingFailures) assert.ok(Math.abs(contrastOf(f.color, f.against) - f.ratio) < 0.06, JSON.stringify(f));
   assert.strictEqual(json.focusRingUnverified, 0);
   assert.strictEqual(code, 1);
 });
@@ -1213,10 +1223,14 @@ test('the strip behind a lifted control is read in its focused state, and only a
     ["srcbar", "<style>body{background:#fff;color:#000;margin:0;font:14px sans-serif}.t{margin:60px;width:160px}button{display:block;margin:0;color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}.bar{height:6px;background:#111}button:focus-visible{outline:none;position:relative;top:-2px;box-shadow:0 1px 0 1px #000}</style><main><div class=\"t\"><button type=\"button\">Go</button><div class=\"bar\"></div></div></main>", ["button pixels 1.11"]],
     // an 80 px animated bar beside a ring that paints nothing: shorter than a ring must be, so a failure, not unverified
     ["bar80", "<style>body{margin:0;background:#fff;color:#000}button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif}.w{position:relative;margin:80px 100px;display:inline-block}.b{mix-blend-mode:difference;display:inline-block}button:focus-visible{outline:2px solid #000}.sp{position:absolute;left:20px;top:-10px;width:80px;height:6px;background:#888}</style><main><div class=\"w\"><div class=\"b\"><button type=\"button\">Go</button></div><span class=\"sp\"></span></div></main><script>const s=document.querySelector(\".sp\");let n=0;(function f(){n+=37;const g=n%256;s.style.background=\"rgb(\"+g+\",\"+g+\",\"+g+\")\";requestAnimationFrame(f)})();</script>", ["button pixels 1"]],
+    // the documented false failure: a light plate behind a white ring on a dark page; the
+    // failure names the plate, the colour its ratio comes from
+    ["lightplate", "<style>body{background:#111;color:#fff;margin:0;font:14px sans-serif}button{color:#fff;background:#111;border:1px solid #fff;width:160px;height:30px;font:14px sans-serif;margin:0;padding:0}.t{position:relative;display:inline-block;margin:60px}.pl{position:absolute;left:0;top:0;right:0;bottom:0;background:#eee}button{position:relative;display:block}button:focus-visible{outline:none;top:-2px;box-shadow:0 1px 0 1px #fff}</style><main><div class=\"t\"><div class=\"pl\"></div><button type=\"button\">Go</button></div></main>", ["button pixels 1.16"]],
   ]) {
     const { code, json } = await page(name, html);
     got[name] = { failures: json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy} ${f.ratio}`), unverified: json.focusRingUnverified, code };
     want[name] = { failures, unverified: 0, code: failures.length ? 1 : 0 };
+    for (const f of json.focusRingFailures) assert.ok(Math.abs(contrastOf(f.color, f.against) - f.ratio) < 0.06, `${name}: ${JSON.stringify(f)}`);
   }
   assert.deepStrictEqual(got, want);
 });
