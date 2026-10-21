@@ -698,3 +698,91 @@ test('strong rings and boundaries still pass on their pixels', async () => {
   assert.strictEqual(json.controlBoundaryUnverified, 0);
   assert.strictEqual(code, 0, `expected a pass, got exit ${code}`);
 });
+
+const WEAK = 'box-shadow:0 0 2px 0.25px #000'; // a fractional-spread ring the model passes, about 2.1:1 painted
+
+test('a recoloured CSS icon or a transparent overlay does not hide a weak ring', async () => {
+  // A 20x20 square that turns black on focus is compact: it holds many changed pixels but no
+  // length along the control, so it cannot carry the ring.
+  const icon = await run(fixture('cssicon',
+    'body{margin:0}div.b{margin:80px 100px}button{color:#000;background:#fff;border:1px solid #000;padding:0;width:120px;height:30px;box-sizing:border-box;position:relative}'
+    + 'button.ci::before{content:"";position:absolute;left:4px;top:4px;width:20px;height:20px;background:#ddd}button.ci:focus-visible::before{background:#000}'
+    + 'button .sq{display:inline-block;width:20px;height:20px;background:#ddd;vertical-align:middle}button.sp:focus-visible .sq{background:#000}'
+    + `button:focus-visible{outline:none;${WEAK}}`,
+    '<div class="b"><button type="button" class="ci">Go</button></div><div class="b"><button type="button" class="sp"><span class="sq"></span> Go</button></div>'));
+  assert.deepStrictEqual(icon.json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy}`), ['button.ci pixels', 'button.sp pixels']);
+  // An element over the control that paints nothing (a stretched-link overlay) covers nothing.
+  const overlay = await run(fixture('overlay',
+    'body{margin:0}.card{position:relative;margin:80px 100px;width:300px;padding:20px;border:1px solid #000}.card .ov{position:absolute;inset:0;background:transparent}'
+    + `button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px}button:focus-visible{outline:none;${WEAK}}`,
+    '<div class="card"><button type="button" class="ub">Go</button><div class="ov"></div></div>'));
+  assert.deepStrictEqual(overlay.json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy}`), ['button.ub pixels']);
+  assert.strictEqual(overlay.json.focusRingUnverified, 0);
+});
+
+test('a control inside a scroll container is measured where focus scrolls it into view', async () => {
+  const { code, json } = await run(fixture('scrollbox',
+    // Away from the window's edges, so only the panel's clip can bring them into view.
+    '.sc{height:120px;overflow:auto;border:1px solid #000;width:300px;margin:40px 100px}.pad{height:400px}button{color:#000;background:#fff;border:1px solid #000}'
+    + 'button:focus-visible,.tr a:focus-visible{outline:2px solid #000;outline-offset:2px}input{border:1px solid #000;background:#fff}'
+    + '.tr{display:flex;gap:16px;overflow-x:auto;width:400px;padding:8px;margin:40px 100px}.tr a{flex:0 0 150px;color:#000;padding:4px}',
+    '<div class="sc"><p>Panel</p><div class="pad"></div><button type="button" class="in">Inside</button> <input aria-label="Inside"></div>'
+    + '<div class="tr">' + [1, 2, 3, 4, 5, 6].map((i) => `<a href="#s${i}" class="s${i}">Slide ${i}</a>`).join('') + '</div>'));
+  assert.deepStrictEqual(json.focusRingFailures, []);
+  assert.deepStrictEqual(json.controlBoundaryFailures, []);
+  assert.strictEqual(json.focusRingUnverified, 0);
+  assert.strictEqual(json.controlBoundaryUnverified, 0);
+  assert.strictEqual(code, 0);
+});
+
+test('a ring around an icon or an image is measured with the icon hidden, not cut out, and a recoloured image carries no ring', async () => {
+  const img = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2260%22%3E%3Crect width=%22120%22 height=%2260%22 fill=%22%23ccc%22/%3E%3C/svg%3E';
+  const { code, json } = await run(fixture('iconring',
+    'button{border:0;padding:0;background:#fff;color:#000;margin:20px;width:24px;height:24px;display:inline-flex}button svg{display:block}'
+    + 'button:focus-visible{outline:2px solid #000;outline-offset:-2px}a{display:inline-block;margin:30px}a img{display:block}'
+    + 'a.in:focus-visible{outline:3px solid #000;outline-offset:-3px}a.s1:focus-visible{outline:none;box-shadow:0 0 0 1px #000}'
+    // an image that turns black on focus spans the link: hidden, it cannot carry the weak ring
+    + 'a.big:focus-visible{outline:none;box-shadow:0 0 2px 0.25px #000}a.big:focus-visible img{filter:brightness(0)}',
+    '<button type="button" class="ic" aria-label="Close"><svg width="24" height="24" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2"/></svg></button>'
+    + `<a class="in" href="#in"><img alt="Inset" width="120" height="60" src="${img}"></a><a class="s1" href="#s1"><img alt="Ring" width="120" height="60" src="${img}"></a>`
+    + `<a class="big" href="#big"><img alt="Banner" width="200" height="40" src="${img}"></a>`));
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy}`), ['a.big pixels']);
+  assert.strictEqual(code, 1);
+});
+
+test('a rotated, skewed or 3D-transformed control is unverified (its box fails the cover test); a scaled one is measured', async () => {
+  const { code, json } = await run(fixture('transformed',
+    'div.t{margin:60px}button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px}button:focus-visible{outline:2px solid #000;outline-offset:2px}'
+    + 'input{border:1px solid #000;background:#fff}.sc{transform:scale(1.5);transform-origin:0 0}.rot{transform:rotate(12deg)}.sk{transform:skewX(20deg)}'
+    + '.p3{perspective:300px}.p3 > div{transform:rotateY(30deg)}',
+    ['sc', 'rot', 'sk'].map((c) => `<div class="t ${c}"><button type="button" class="${c}">Go</button> <input aria-label="${c}" class="${c}"></div>`).join('')
+    + '<div class="t p3"><div><button type="button" class="p3b">Go</button><input aria-label="p3" class="p3i"></div></div>'));
+  assert.deepStrictEqual(json.focusRingFailures, []);
+  assert.deepStrictEqual(json.controlBoundaryFailures, []);
+  assert.strictEqual(json.focusRingUnverified, 3, 'rot, sk and p3b');
+  assert.strictEqual(json.controlBoundaryUnverified, 3, 'rot, sk and p3i');
+  assert.strictEqual(code, 0);
+});
+
+test('a page whose debounced scroll handler moves the layout between the shots is unverified, not failed', async () => {
+  const page = path.join(dir, 'scrollshift.html');
+  fs.writeFileSync(page, '<!doctype html><html lang="en"><title>scrollshift</title><style>body{margin:0;background:#fff;color:#000}'
+    + '.long{height:2500px}button{color:#000;background:#fff;border:1px solid #000}button:focus-visible{outline:2px solid #000;outline-offset:2px}'
+    + 'body.s .sp{margin-top:40px}</style><main><p class="sp">Spacer</p><div class="long"></div><button type="button" class="low">Low</button></main>'
+    + '<script>let t;addEventListener("scroll",()=>{clearTimeout(t);t=setTimeout(()=>document.body.classList.toggle("s",scrollY>50),50)});</script></html>');
+  const { code, json } = await run(page);
+  assert.deepStrictEqual(json.focusRingFailures, []);
+  assert.strictEqual(json.focusRingUnverified, 1);
+  assert.strictEqual(code, 0);
+});
+
+test('of two color-scheme meta tags the first that parses decides', async () => {
+  for (const [i, metas] of [['light, dark', 'dark'], ['', 'dark']].entries()) {
+    const page = path.join(dir, `twometa${i}.html`);
+    fs.writeFileSync(page, `<!doctype html><html lang="en"><head>${metas.map((c) => `<meta name="color-scheme" content="${c}">`).join('')}<title>m</title>`
+      + '<style>body{background:#fff;color:#000}</style></head><body><main><button type="button">Meta</button></main></body></html>');
+    const { json } = await run(page);
+    assert.deepStrictEqual(json.focusRingFailures, [], metas.join(' | '));
+    assert.strictEqual(json.focusUserAgentRing, 1, metas.join(' | '));
+  }
+});

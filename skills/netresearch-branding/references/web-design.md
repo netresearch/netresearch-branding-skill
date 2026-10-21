@@ -219,12 +219,16 @@ opacity of the control and its ancestors. Where that model passes a ring or a bo
 the control is judged again on screenshots, unfocused and focused for a ring, so a blur,
 a fractional spread, a ring layer hidden under another, an ancestor's `overflow` clip, a
 gradient fill, `filter`, `mix-blend-mode` and a ring on a fully rounded pill are
-measured as painted. The pixels only add failures (`measuredBy: "pixels"`); a model failure stands
-(`measuredBy: "model"`). A control the model passed but another element covers, or one
-outside the viewport even after scrolling, is counted in `focusRingUnverified` or
-`controlBoundaryUnverified` and does not fail. The browser's own ring, a focus change
-without outline, ring or border (counted in `focusWithoutRing`) and hidden controls are
-not judged on pixels. Icons and other graphics are not measured.
+measured as painted. The pixels only add failures (`measuredBy: "pixels"`); a model failure
+stands (`measuredBy: "model"`). A control inside a scroll container is scrolled into view
+for the screenshots, like one outside the window, and scrolled back. A control the model
+passed that another element covers, that a scroll container still clips, that is rotated,
+skewed or transformed in 3D, or whose page moves between the screenshots (a debounced
+scroll handler) is counted in `focusRingUnverified` or `controlBoundaryUnverified` and
+does not fail. Icons and images inside a control are hidden for its screenshots. The
+browser's own ring, a focus change without outline, ring or border (counted in
+`focusWithoutRing`) and hidden controls are not judged on pixels. Icons and other
+graphics are not measured.
 
 TLS certificates are verified for the page and every request it makes; an invalid
 certificate aborts that connection before any request, and with it any `--header` value, is

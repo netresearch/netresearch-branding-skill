@@ -55,12 +55,15 @@
  * input, select and textarea against the surface around it.
  * Where the model passes a ring or a boundary, the control is judged again on a
  * screenshot of a clip around it (device pixel ratio 1; a control whose clip leaves the
- * viewport is scrolled to its centre and back). A ring is judged on two shots, unfocused
+ * viewport, or that a scroll container clips, is scrolled to its centre and back, the
+ * container too). A ring is judged on two shots, unfocused
  * and focused, with the text of the whole page and the caret hidden; a pixel counts as
- * changed when a channel moves by more than 2, icons, images and a select's shown value
- * are left out, and the ring passes when one piece of changed pixels (pixels up to 2 px
- * apart joined) reaches 3:1 and the length of the control's longer side less, at each
- * end, its corner radius or a shadow's blur plus spread, less 2 px (at least 8 px). A
+ * changed when a channel moves by more than 2; the control's icons and images are hidden
+ * for both shots and a select's shown value is left out; and the ring passes when one
+ * piece of changed pixels (pixels up to 2 px apart joined) reaches 3:1 and spans the
+ * length of the control's longer side less, at each end, its corner radius or a shadow's
+ * blur plus spread, less 2 px and its border or inset outline (at least 8 px). A piece is
+ * measured by its extent, so a compact block (a CSS icon that recolours) cannot carry it. A
  * changed pixel outside the border box is scored against its own unfocused value, one
  * inside against the nearest unchanged pixel; a ring that changes no pixel fails at 1:1.
  * A boundary is judged on one shot at rest: the median of the lines across each side,
@@ -74,8 +77,12 @@
  * pixels cannot be read is counted and not failed, in `focusRingUnverified` or
  * `controlBoundaryUnverified`: when another element covers most of the 3 px around its
  * border box (a hit test at its edge, repeated with pointer-events forced on for a ring
- * that changed no pixel, so a cover with pointer-events: none is found), or when it lies
- * outside the viewport even after the scroll. Not judged on pixels: the browser's own
+ * that changed no pixel, so a cover with pointer-events: none is found; an element that
+ * paints nothing, a transparent overlay, covers nothing); when a scroll container still
+ * clips it or it lies outside the viewport after the scroll; when it or an ancestor is
+ * rotated, skewed or transformed in 3D; or when the page moved between the shots (an
+ * unfocused shot taken again after the focused one differs, as with a debounced scroll
+ * handler). Not judged on pixels: the browser's own
  * ring, an element counted in focusWithoutRing (a glow without spread, a fill change, a
  * ring drawn by a pseudo-element), a control that is not perceivable, and any ring or
  * boundary the model already fails. A boundary judged on its best side passes a field
@@ -168,7 +175,7 @@ const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || 'playwright-core');
 // The PNG decoder playwright-core bundles (pngjs), for the screenshots of the pixel checks.
 // lib/utilsBundle is listed in its package exports but is not part of its documented API.
-const { PNG } = require(process.env.PLAYWRIGHT_CORE ? path.join(process.env.PLAYWRIGHT_CORE, 'lib', 'utilsBundle') : 'playwright-core/lib/utilsBundle');
+const { PNG } = require(`${process.env.PLAYWRIGHT_CORE || 'playwright-core'}/lib/utilsBundle`);
 // CLI arguments are only parsed when this file IS the entry point; required as a
 // module (the error-path tests) it exposes its internals instead and parses nothing.
 const CLI = require.main === module;
@@ -285,7 +292,7 @@ const PX_DIFF = 2; // a pixel has changed when one of its channels moved by more
 // Hidden page-wide while focus screenshots are taken, so a text colour, underline or text
 // shadow that changes on focus is not taken for an indicator. `color` (and with it
 // currentColor in a border or outline) is left as it is.
-const TEXT_OFF = '*,*::before,*::after,*::placeholder,*::marker{-webkit-text-fill-color:transparent !important;-webkit-text-stroke-color:transparent !important;'
+const TEXT_OFF = '[data-contrast-audit-icon]{visibility:hidden !important}*,*::before,*::after,*::placeholder,*::marker{-webkit-text-fill-color:transparent !important;-webkit-text-stroke-color:transparent !important;'
   + 'text-decoration-color:transparent !important;text-emphasis-color:transparent !important;text-shadow:none !important}';
 const linC = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
 const lumAt = (d, i) => 0.2126 * linC(d[i]) + 0.7152 * linC(d[i + 1]) + 0.0722 * linC(d[i + 2]);
@@ -300,7 +307,7 @@ function clipAround(g, m) {
   if (x1 - x0 < 1 || y1 - y0 < 1) return null;
   return { x: x0 + Math.round(g.sx), y: y0 + Math.round(g.sy), width: x1 - x0, height: y1 - y0, vx: x0, vy: y0 };
 }
-const inView = (g, m) => g.box[0] - m >= 0 && g.box[1] - m >= 0 && g.box[2] + m <= g.vw && g.box[3] + m <= g.vh;
+const inView = (g, m) => !g.clipped && g.box[0] - m >= 0 && g.box[1] - m >= 0 && g.box[2] + m <= g.vw && g.box[3] + m <= g.vh;
 
 async function capture(cdp, clip) {
   const { data } = await cdp.send('Page.captureScreenshot', {
@@ -404,7 +411,7 @@ function focusPixels(before, after, clip, gb, ga) {
   }
   const long = Math.max(bx1 - bx0, by1 - by0); const short = Math.min(bx1 - bx0, by1 - by0);
   const fade = Math.max(Math.min(Math.max(gb.radius, ga.radius), short / 2), gb.soft, ga.soft);
-  const minSize = Math.max(8, Math.round(long - 2 * fade) - 2);
+  const minSize = Math.max(8, Math.round(long - 2 * fade) - 2 - 2 * Math.max(gb.inset, ga.inset));
   // Largest piece of the candidates scoring t or more, and its best pixel.
   const seen = new Int32Array(N);
   let stamp = 0;
@@ -412,10 +419,12 @@ function focusPixels(before, after, clip, gb, ga) {
     stamp++; let bestSize = 0; let bestPx = -1;
     for (const i of cand) {
       if (seen[i] === stamp || score[i] < t) continue;
-      let size = 0; let top = i; const stack = [i]; seen[i] = stamp;
+      let top = i; const stack = [i]; seen[i] = stamp;
+      let x0 = W; let x1 = -1; let y0 = H; let y1 = -1;
       while (stack.length) {
-        const p = stack.pop(); size++; if (score[p] > score[top]) top = p;
+        const p = stack.pop(); if (score[p] > score[top]) top = p;
         const x = p % W; const y = (p - x) / W;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
         for (let ey = -2; ey <= 2; ey++) for (let ex = -2; ex <= 2; ex++) {
           const nx = x + ex; const ny = y + ey;
           if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
@@ -424,6 +433,7 @@ function focusPixels(before, after, clip, gb, ga) {
           seen[n] = stamp; stack.push(n);
         }
       }
+      const size = Math.max(x1 - x0 + 1, y1 - y0 + 1);
       if (size > bestSize) { bestSize = size; bestPx = top; }
     }
     return { size: bestSize, px: bestPx };
@@ -450,7 +460,8 @@ function focusPixels(before, after, clip, gb, ga) {
 // offset where focus only applies Chromium's own offset move (see outlineChanged): it is
 // kept for the focused screenshot, so that move is not taken for an indicator. Returns
 // { unverified: true } for an element whose edge another element covers (a fixed header),
-// or that lies outside the viewport after the scroll.
+// that a scroll container still clips or that lies outside the viewport after the scroll,
+// that is rotated, skewed or transformed in 3D, or whose page moved between the shots.
 async function judgeFocus(page, cdp, nodeId, force, unforce, pin) {
   const geometry = (arg, fn = '__geometry') => measureOneNode(cdp, nodeId, arg, fn);
   let ga0 = await geometry(null);
@@ -460,6 +471,7 @@ async function judgeFocus(page, cdp, nodeId, force, unforce, pin) {
   // Both states' boxes: focus may move the element (a skip link) or grow it.
   const both = () => ({ ...gb, box: [Math.min(gb.box[0], ga0.box[0]), Math.min(gb.box[1], ga0.box[1]), Math.max(gb.box[2], ga0.box[2]), Math.max(gb.box[3], ga0.box[3])] });
   let back = null;
+  await measureOneNode(cdp, nodeId, null, '__iconsOff');
   try {
     if (!inView(both(), m)) {
       back = await geometry(null, '__bringIntoView');
@@ -469,7 +481,7 @@ async function judgeFocus(page, cdp, nodeId, force, unforce, pin) {
     }
     // A few pixels of slack: focus may grow the box (a thicker content-box border).
     const clip = clipAround(both(), m + 4);
-    if (!clip) { await force(); return { unverified: true }; }
+    if (!clip || gb.clipped) { await force(); return { unverified: true }; }
     gb = await geometry(clip);
     const before = await capture(cdp, clip);
     await force();
@@ -481,6 +493,12 @@ async function judgeFocus(page, cdp, nodeId, force, unforce, pin) {
     } finally {
       if (pin) await measureOneNode(cdp, nodeId, prev, '__unpinOffset');
     }
+    await unforce();
+    const before2 = await capture(cdp, clip);
+    await force();
+    // The page moved between the shots (a debounced scroll handler): a stray anti-aliased pixel is not a move.
+    let moved = 0; for (let i = 0; i < before.data.length; i += 4) if (Math.abs(before.data[i] - before2.data[i]) > PX_DIFF || Math.abs(before.data[i + 1] - before2.data[i + 1]) > PX_DIFF || Math.abs(before.data[i + 2] - before2.data[i + 2]) > PX_DIFF) moved++;
+    if (moved > Math.max(4, before.data.length / 400)) return { unverified: true };
     const px = focusPixels(before, after, clip, gb, ga);
     if (px.covered) return { unverified: true };
     // Nothing changed: a cover with pointer-events: none is invisible to the hit test, so
@@ -491,6 +509,7 @@ async function judgeFocus(page, cdp, nodeId, force, unforce, pin) {
     return px;
   } finally {
     if (back) { await page.evaluate((at) => window.__scrollBack(at), back); await page.evaluate(settleAnimations); }
+    await measureOneNode(cdp, nodeId, null, '__iconsOn');
   }
 }
 
@@ -551,7 +570,8 @@ function boundaryPixels(img, clip, g) {
 
 // The pixel check of the boundaries the model passed (window.__bndPass, filled by
 // window.__boundaries): the failures, and how many could not be measured because another
-// element covers the control's edge or it lies outside the viewport after the scroll.
+// element covers the control's edge, a scroll container still clips it, it lies outside
+// the viewport after the scroll, or it is rotated, skewed or transformed in 3D.
 async function verifyBoundaries(page) {
   const n = await page.evaluate(() => window.__bndPass.length);
   const failures = []; let unverified = 0;
@@ -570,7 +590,7 @@ async function verifyBoundaries(page) {
           g = await geo(null);
         }
         clip = clipAround(g, m);
-        if (clip) { g = await geo(clip); if (!covered(g, clip)) img = await capture(cdp, clip); }
+        if (clip && !g.clipped) { g = await geo(clip); if (!covered(g, clip)) img = await capture(cdp, clip); }
       } finally {
         if (back) { await page.evaluate((at) => window.__scrollBack(at), back); await page.evaluate(settleAnimations); }
       }
@@ -1293,9 +1313,10 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       // The meta content is parsed as CSS parses it, on a detached element: keywords
       // case-insensitive, a comma list invalid (light).
       if (getComputedStyle(el).colorScheme === 'normal') {
-        const st = document.createElement('span').style;
-        st.colorScheme = document.querySelector('meta[name="color-scheme" i]')?.content ?? '';
-        k = keys(st.colorScheme);
+        for (const m of document.querySelectorAll('meta[name="color-scheme" i][content]')) {
+          const st = document.createElement('span').style; st.colorScheme = m.content;
+          if (st.colorScheme) { k = keys(st.colorScheme); break; }
+        }
       }
       const used = !k.length ? 'light' : k.includes(uaRings.scheme) ? uaRings.scheme : k[0];
       return c === uaRings[used]; };
@@ -1360,10 +1381,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         out.push([r.left + n('borderLeftWidth') + n('paddingLeft'), r.top + n('borderTopWidth') + n('paddingTop'),
           r.right - n('borderRightWidth') - n('paddingRight'), r.bottom - n('borderBottomWidth') - n('paddingBottom')]);
       }
-      for (const d of el.querySelectorAll('svg, img, video, canvas, picture, iframe')) {
-        const q = d.getBoundingClientRect();
-        if (q.width && q.height) out.push([q.left - 1, q.top - 1, q.right + 1, q.bottom + 1]);
-      }
+
       return out;
     };
     // Whether the pixel at (x, y) shows el. An outline or a shadow is not hit-testable, and a
@@ -1373,7 +1391,10 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // ancestor of it (a fixed header). A cover over the ring only is not seen.
     const ownsPixel = (el, box, x, y) => {
       const cx = Math.min(Math.max(x, box[0] + 1), box[2] - 1); const cy = Math.min(Math.max(y, box[1] + 1), box[3] - 1);
-      const h = document.elementFromPoint(cx, cy); return !!h && (el.contains(h) || h.contains(el)); };
+      const h = document.elementFromPoint(cx, cy); if (!h) return false; if (el.contains(h) || h.contains(el)) return true;
+      const hc = getComputedStyle(h);
+      return /rgba\([^)]*,\s*0\)|transparent/.test(hc.backgroundColor) && hc.backgroundImage === 'none' && hc.boxShadow === 'none'
+        && SIDES.every((sd) => hc['border' + sd + 'Style'] === 'none' || Number.parseFloat(hc['border' + sd + 'Width']) === 0) && !h.childElementCount && !h.textContent.trim(); };
     window.__geometry = (el, clip) => {
       const cs = getComputedStyle(el);
       const n = (p) => Number.parseFloat(cs[p]) || 0;
@@ -1381,9 +1402,20 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         box: boxOf(el), bw: SIDES.map((sd) => (cs['border' + sd + 'Style'] === 'none' ? 0 : n('border' + sd + 'Width'))), pad: SIDES.map((sd) => n('padding' + sd)),
         reach: reach(cs), sx: scrollX, sy: scrollY, vw: document.documentElement.clientWidth, vh: document.documentElement.clientHeight,
       };
+      // Whether a scrolling or clipping ancestor (not the window) hides part of the border box.
+      g.clipped = false;
+      for (let a = el.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) {
+        const ac = getComputedStyle(a); if (ac.overflowX === 'visible' && ac.overflowY === 'visible') continue;
+        const q = a.getBoundingClientRect();
+        if (g.box[0] < q.left - 0.5 || g.box[1] < q.top - 0.5 || g.box[2] > q.right + 0.5 || g.box[3] > q.bottom + 0.5) { g.clipped = true; break; }
+      }
       const rr = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map((c) => { const v = cs[`border${c}Radius`].split(' ')[0];
         return v.endsWith('%') ? Number.parseFloat(v) / 100 * Math.min(g.box[2] - g.box[0], g.box[3] - g.box[1]) : Number.parseFloat(v) || 0; });
       g.radius = Math.max(...rr);
+      // A rotated, skewed or 3D-transformed control is not sampled on axis-aligned lines.
+      for (let a = el; a; a = a.parentElement) { const t = getComputedStyle(a).transform; if (t && t !== 'none') { const mx = new DOMMatrix(t); if (Math.abs(mx.b) > 1e-6 || Math.abs(mx.c) > 1e-6 || !mx.is2D) { g.clipped = true; break; } } }
+      // How far inside the border edge a ring may lie: a border, an inset outline.
+      g.inset = Math.max(...g.bw, cs.outlineStyle === 'none' ? 0 : Math.max(0, -((Number.parseFloat(cs.outlineOffset) || 0) + (Number.parseFloat(cs.outlineWidth) || 0))));
       // How far a shadow's blur and spread reach along a side from a corner, where two sides' shadows overlap.
       g.soft = Math.max(0, ...shadowLayers(cs.boxShadow).map((l) => l.blur + Math.abs(l.spread)));
       if (clip) {
@@ -1408,16 +1440,23 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       window.__auditStyle('contrast-audit-hit-all', '*,*::before,*::after{pointer-events:auto !important}');
       try { return window.__geometry(el, clip); } finally { document.getElementById('contrast-audit-hit-all')?.remove(); }
     };
+    window.__iconsOff = (el) => { for (const d of el.querySelectorAll('svg, img, video, canvas, picture, iframe')) d.setAttribute('data-contrast-audit-icon', ''); return null; };
+    window.__iconsOn = (el) => { for (const d of el.querySelectorAll('[data-contrast-audit-icon]')) d.removeAttribute('data-contrast-audit-icon'); return null; };
     window.__pinOffset = (el, v) => { const prev = [el.style.getPropertyValue('outline-offset'), el.style.getPropertyPriority('outline-offset')];
       el.style.setProperty('outline-offset', v, 'important'); return prev; };
     window.__unpinOffset = (el, prev) => { if (prev[0]) el.style.setProperty('outline-offset', prev[0], prev[1]); else el.style.removeProperty('outline-offset'); };
     window.__bringIntoView = async (el) => {
-      const at = [scrollX, scrollY];
+      const at = [scrollX, scrollY]; const inner = [];
+      for (let a = el.parentElement; a; a = a.parentElement) inner.push([a, a.scrollLeft, a.scrollTop]);
       el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
       await window.__auditFrame();
+      window.__auditScrolled = inner.filter(([a, l, t]) => a.scrollLeft !== l || a.scrollTop !== t);
       return at;
     };
-    window.__scrollBack = async (at) => { scrollTo({ left: at[0], top: at[1], behavior: 'instant' }); await window.__auditFrame(); };
+    window.__scrollBack = async (at) => {
+      for (const [a, l, t] of window.__auditScrolled || []) a.scrollTo({ left: l, top: t, behavior: 'instant' });
+      window.__auditScrolled = [];
+      scrollTo({ left: at[0], top: at[1], behavior: 'instant' }); await window.__auditFrame(); };
 
     // The visible boundary of a form control: its border, a box-shadow ring with a spread,
     // or its own fill where that differs enough from the surface around it. Disabled
