@@ -214,8 +214,17 @@ labelled `nav`, `main`, table captions, the smallest font, decorative SVGs witho
 `aria-hidden` and whether the page switches colours under `prefers-color-scheme` or
 `data-theme`; exit 1 on any text failure (at rest or under forced `:hover` and
 `:focus-visible`), focus-indicator failure or control-boundary failure. Focus indicators
-and boundaries are measured as painted: a blurred ring at the pixel next to the border, under the
-opacity of the control and its ancestors. Icons and other graphics are not measured.
+and boundaries are judged first by a colour model of the computed styles, under the
+opacity of the control and its ancestors. Where that model passes a ring or a boundary,
+the control is judged again on screenshots, unfocused and focused for a ring, so a blur,
+a fractional spread, a ring layer hidden under another, an ancestor's `overflow` clip, a
+gradient fill, `filter`, `mix-blend-mode` and a ring on a fully rounded pill are
+measured as painted. The pixels only add failures (`measuredBy: "pixels"`); a model failure stands
+(`measuredBy: "model"`). A control the model passed but another element covers, or one
+outside the viewport even after scrolling, is counted in `focusRingUnverified` or
+`controlBoundaryUnverified` and does not fail. The browser's own ring, a focus change
+without outline, ring or border (counted in `focusWithoutRing`) and hidden controls are
+not judged on pixels. Icons and other graphics are not measured.
 
 TLS certificates are verified for the page and every request it makes; an invalid
 certificate aborts that connection before any request, and with it any `--header` value, is

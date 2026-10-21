@@ -11,6 +11,9 @@
  *   browser's own `outline: auto` ring is counted and not judged.
  * - controlBoundaryFailures: an enabled input whose border and fill are below 3:1
  *   against the surface fails the run; a disabled one is exempt.
+ * - Where the colour model passes a ring or a boundary, its painted pixels are judged
+ *   again (measuredBy 'pixels'); a control another element covers is counted in
+ *   focusRingUnverified or controlBoundaryUnverified instead.
  * - What a user sees is what is measured: text in its own colour (also of a closed
  *   <select>, a closed <details> and display: contents), hover and focus states, content
  *   revealed on scroll or by an animation, and the page at rest once the pointer has
@@ -617,5 +620,81 @@ test('strong, unchanged, unreachable and hidden indicators do not fail', async (
   assert.deepStrictEqual(json.focusRingFailures, []);
   assert.deepStrictEqual(json.controlBoundaryFailures, []);
   assert.ok(json.focusWithoutRing >= 1, `the card link shows focus without a ring and must be counted, got ${json.focusWithoutRing}`);
+  assert.strictEqual(code, 0, `expected a pass, got exit ${code}`);
+});
+
+// Each of these passes the colour model and fails as Chromium paints it; one block each,
+// far apart, so no clip around one control reaches another one's ring.
+test('rings and boundaries the colour model passes fail on their painted pixels', async () => {
+  const { code, json } = await run(fixture('pixels',
+    'body{margin:0}div.b{margin:80px 100px}'
+    + 'button{color:#000;background:#fff;border:1px solid #000;font:16px sans-serif;padding:0;width:120px;height:30px;box-sizing:border-box}'
+    + 'button.fs:focus-visible{outline:none;box-shadow:0 0 2px 0.25px #000}' // fractional spread: about 2.1:1 painted
+    + 'button.wb{width:40px;height:24px}button.wb:focus-visible{outline:none;box-shadow:0 0 32px 2px #282828}' // blur wide against the control
+    + 'button.hl:focus-visible{outline:none;box-shadow:0 0 0 3px #eee,0 0 0 2px #000}' // the black layer lies under the #eee one
+    + 'button.ho:focus-visible{outline:3px solid #eee;box-shadow:0 0 0 2px #000}' // the black ring lies under the outline
+    + '.card{overflow:hidden;width:120px;height:30px}button.cl{display:block}button.cl:focus-visible{outline:3px solid #000}' // clipped
+    // clipped too; its icon recolours and its label gains an underline: text and icons are no indicator
+    + 'button.tx{display:block}button.tx:focus-visible{outline:3px solid #000;color:#15585E;text-decoration:underline 3px}'
+    + 'button.tx svg{vertical-align:middle}'
+    + '.fo{filter:opacity(.15)}button.fo:focus-visible{outline:2px solid #000}' // filter
+    + '.mb{mix-blend-mode:difference}button.mb:focus-visible{outline:2px solid #000}' // difference on white: white
+    + 'button.pill{width:140px;height:32px;border-radius:999px}button.pill:focus-visible{outline:none;box-shadow:0 0 4px 1px #4c4c4c}' // the same ring passes on a rectangle
+    + 'input.gr{border:0;width:200px;height:30px;background:#000 linear-gradient(#fff,#fff)}' // the model reads the #000 under the white gradient
+    // a permanent outline Chromium's focus style moves by 1px; the new ring is clipped under it.
+    // The move is pinned for the screenshots, so it does not pass as the indicator.
+    + '.pclip{display:inline-block;overflow:hidden;padding:2px}a.p{display:inline-block;outline:2px solid #000;color:#000}a.p:focus-visible{box-shadow:0 0 0 3px #767676}',
+    ['fs', 'wb', 'hl', 'ho'].map((c) => `<div class="b"><button type="button" class="${c}">Go</button></div>`).join('')
+    + '<div class="b"><div class="card"><button type="button" class="cl">Go</button></div></div>'
+    + '<div class="b"><div class="card"><button type="button" class="tx"><svg width="18" height="18" aria-hidden="true"><rect width="18" height="18" fill="currentColor"/></svg> Clipped ring</button></div></div>'
+    + '<div class="b fo"><button type="button" class="fo">Go</button></div><div class="b mb"><button type="button" class="mb">Go</button></div>'
+    + '<div class="b"><button type="button" class="pill">Go</button></div><div class="b"><input class="gr" aria-label="Name"></div>'
+    + '<div class="b"><div class="pclip"><a class="p" href="#x">Link</a></div></div>'));
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy}`).sort(),
+    ['a.p', 'button.cl', 'button.fo', 'button.fs', 'button.hl', 'button.ho', 'button.mb', 'button.pill', 'button.tx', 'button.wb'].map((e) => `${e} pixels`));
+  assert.deepStrictEqual(json.controlBoundaryFailures.map((f) => `${f.element} ${f.measuredBy}`), ['input.gr pixels']);
+  for (const f of [...json.focusRingFailures, ...json.controlBoundaryFailures]) {
+    assert.ok(typeof f.color === 'string' || typeof f.border === 'string', `a colour is named: ${JSON.stringify(f)}`);
+    assert.strictEqual(typeof f.against, 'string', JSON.stringify(f));
+  }
+  assert.strictEqual(json.focusRingUnverified, 0);
+  assert.strictEqual(code, 1);
+});
+
+test('a control another element covers is counted as unverified, not failed', async () => {
+  const { code, json } = await run(fixture('covered',
+    'body{margin:0}.cover{position:fixed;top:0;height:200px;width:300px;background:#15585E;z-index:10}.c1{left:0}.c2{left:400px;pointer-events:none}'
+    + '.c3{left:800px;background:rgba(21,88,94,.9)}' // translucent: the ring still changes pixels under it
+    + 'button{position:absolute;top:100px;color:#000;background:#fff;border:1px solid #000;width:120px;height:30px}'
+    + 'button:focus-visible{outline:2px solid #000;outline-offset:2px}button.u1{left:100px}button.u2{left:500px}button.u3{left:900px}' // 21:1 on the page, hidden as painted
+    + 'input{position:absolute;top:150px;left:100px;border:1px solid #000;background:#fff}',
+    '<div class="cover c1"></div><div class="cover c2"></div><div class="cover c3"></div>'
+    + '<button type="button" class="u1">Under</button><button type="button" class="u2">Under pointer-events: none</button>'
+    + '<button type="button" class="u3">Under a translucent cover</button><input aria-label="Under">'));
+  assert.deepStrictEqual(json.focusRingFailures, []);
+  assert.deepStrictEqual(json.controlBoundaryFailures, []);
+  assert.strictEqual(json.focusRingUnverified, 3, 'the headers cover all three buttons; the hit test sees the second only with pointer-events forced on');
+  assert.strictEqual(json.controlBoundaryUnverified, 1);
+  assert.strictEqual(code, 0);
+});
+
+test('strong rings and boundaries still pass on their pixels', async () => {
+  const { code, json } = await run(fixture('pxstrong',
+    'button{color:#000;background:#fff;border:1px solid #000;margin:16px}'
+    + 'button.ol:focus-visible{outline:2px solid #000;outline-offset:2px}'
+    + 'button.sr:focus-visible{outline:none;box-shadow:0 0 0 3px #585961}'
+    + 'button.bc{border:2px solid #000}button.bc:focus-visible{outline:none;border-color:#767676}'
+    + 'input.bd{border:1px solid #767676;background:#fff}'
+    + 'input[type=checkbox]:focus-visible{outline:2px solid #000;outline-offset:2px}'
+    + '.col{width:150px}a.wr{color:#000}a.wr:focus-visible{outline:2px solid #000;outline-offset:1px}',
+    '<button type="button" class="ol">Outline</button><button type="button" class="sr">Ring</button><button type="button" class="bc">Border</button>'
+    + '<label>Name <input class="bd"></label> <input type="checkbox" aria-label="Box">'
+    + '<p class="col">Read the <a href="#x" class="wr">longer link text that wraps</a> here.</p>'
+    // below the fold: scrolled into view for the screenshots, so neither is unverified
+    + '<div style="height:2400px"></div><button type="button" class="ol">Below</button><input class="bd" aria-label="Below">'));
+  assert.deepStrictEqual(json.focusRingFailures, []);
+  assert.deepStrictEqual(json.controlBoundaryFailures, []);
+  assert.strictEqual(json.focusRingUnverified, 0);
+  assert.strictEqual(json.controlBoundaryUnverified, 0);
   assert.strictEqual(code, 0, `expected a pass, got exit ${code}`);
 });
