@@ -65,8 +65,10 @@
  * half (not a skip link), each focused pixel is compared with the unfocused pixel it
  * moved from, and counts as changed only when it differs from that one and from the one
  * in place, so neither the moved border nor a neighbour that stayed is taken for a ring;
- * a pixel outside the focused box over the strip the control vacated is scored against
- * the lower of the pixel it moved from and the surface behind the control, read from
+ * a pixel outside the focused box (over the strip the control vacated, or a neighbour
+ * that stayed on the side it moved into) and a pixel of the focused box outside the
+ * unfocused one (a rule seen through a translucent fill) are scored against the lower of
+ * the pixel it moved from and the surface behind the control, read from
  * three focused shots with the control at opacity 0 (a pixel that changes between them is
  * taken as hidden by an animation). The lower of the two is conservative: a ring that covers
  * the strip in front of a surface behind it close to the ring's own colour (a dark plate or
@@ -403,9 +405,10 @@ function covered(g, clip) {
 // neighbour). Changed means: with icons hidden (mb, ma) and, for a control with icons,
 // also with them shown (before, after); where focus moved the box by whole pixels at the
 // same size (liftOf), against the unfocused pixel it moved from and the one in place; a
-// pixel outside the focused box over the strip the control vacated is then scored against
-// the pixel it moved from and the surface behind the control (`under`, three focused shots
-// with it at opacity 0).
+// pixel over the strip the control vacated, or outside the unfocused box, is then scored
+// against the lower of the pixel it moved from (or, inside the focused box, the colour
+// beside it) and the surface behind the control (`under`, three focused shots with it at
+// opacity 0).
 // Each such pixel is scored against the colour beside it (SC 1.4.11): outside the border
 // box, its own unfocused value, the surface the ring is painted on; inside it (a
 // recoloured border, an inset ring), the nearest unchanged pixel, outward for a pixel on
@@ -488,7 +491,7 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
   const changed = new Uint8Array(N);
   for (let i = 0; i < N; i++) if (moved(Mb, Ma, i) && (mb === before || moved(Bd, Ad, i))) changed[i] = 1;
   const score = new Float32Array(N); const adjOf = new Int32Array(N).fill(-1);
-  // A strip pixel scored against the surface behind the control (`under`), for `against`.
+  // A pixel scored against the surface behind the control (`under`), for `against`.
   const behind = new Uint8Array(N);
   const cand = []; const hidden = [];
   const march = (x, y, sx, sy) => {
@@ -535,6 +538,14 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
     const la = lumAt(Ad, i * 4);
     score[i] = ratioL(la, lumAt(q < 0 ? Bd : Ad, (q < 0 ? src[i] : q) * 4));
     adjOf[i] = q;
+    // Registered, the pixel it moved from need not be under a pixel outside the unfocused
+    // box: a neighbour that stayed there (a rule above a lifted button) is not, and through a
+    // translucent fill that rule changes a pixel of the focused box without focus painting
+    // anything. Also scored against the surface behind the control (`under`).
+    if (reg && !(cx > gb.box[0] - clip.vx && cx < gb.box[2] - clip.vx && cy > gb.box[1] - clip.vy && cy < gb.box[3] - clip.vy)) {
+      const ru = ratioL(la, lumAt(under[0].data, i * 4));
+      if (ru < score[i]) { score[i] = ru; behind[i] = 1; adjOf[i] = -1; }
+    }
     cand.push(i);
   }
   // Largest piece of the candidates scoring t or more, and its weakest pixel (the one at t,

@@ -1209,6 +1209,9 @@ test('the vacated strip is scored against the surface behind the control', async
   assert.deepStrictEqual({ failures: strong.json.focusRingFailures, unverified: strong.json.focusRingUnverified, code: strong.code }, { failures: [], unverified: 0, code: 0 });
 });
 
+// A button lifted by 2px onto a #222 rule right above it, with its fill and focus style.
+const ruleAbove = (fill, focus) => `<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{position:relative;margin:60px;width:160px}.rule{position:absolute;left:0;right:0;top:-2px;height:2px;background:#222}button{display:block;margin:0;color:#000;background:${fill};border:1px solid #000;width:160px;height:30px;font:14px sans-serif;position:relative}button:focus-visible{top:-2px;${focus}}</style><main><div class="t"><div class="rule"></div><button type="button">Go</button></div></main>`;
+
 // Pins round 34's rules for the strip a lifted control vacates and the all-hidden threshold.
 test('the strip behind a lifted control is read in its focused state, and only a ring-long animation hides a ring', async () => {
   const got = {}; const want = {};
@@ -1226,6 +1229,11 @@ test('the strip behind a lifted control is read in its focused state, and only a
     // the documented false failure: a light plate behind a white ring on a dark page; the
     // failure names the plate, the colour its ratio comes from
     ["lightplate", "<style>body{background:#111;color:#fff;margin:0;font:14px sans-serif}button{color:#fff;background:#111;border:1px solid #fff;width:160px;height:30px;font:14px sans-serif;margin:0;padding:0}.t{position:relative;display:inline-block;margin:60px}.pl{position:absolute;left:0;top:0;right:0;bottom:0;background:#eee}button{position:relative;display:block}button:focus-visible{outline:none;top:-2px;box-shadow:0 1px 0 1px #fff}</style><main><div class=\"t\"><div class=\"pl\"></div><button type=\"button\">Go</button></div></main>", ["button pixels 1.16"]],
+    // a faint halo on a button lifted onto a rule: the rule that stayed carries no ring, and
+    // through a translucent fill it changes nothing focus painted; a strong outline passes
+    ["ruleopaque", ruleAbove('#fff', 'outline:none;box-shadow:0 0 2px 0.25px #000'), ["button pixels 2.07"]],
+    ["ruleghost", ruleAbove('rgba(255,255,255,.1)', 'outline:none;box-shadow:0 0 2px 0.25px #000'), ["button pixels 2.07"]],
+    ["rulestrong", ruleAbove('rgba(255,255,255,.1)', 'outline:2px solid #000;outline-offset:2px'), []],
   ]) {
     const { code, json } = await page(name, html);
     got[name] = { failures: json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy} ${f.ratio}`), unverified: json.focusRingUnverified, code };
