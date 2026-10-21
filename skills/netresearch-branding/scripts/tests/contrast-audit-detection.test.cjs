@@ -873,7 +873,7 @@ test('a form field only partly inside the viewport is unverified, not measured',
 // Pins two transform cases. The rotate property (not transform) makes a control unverified
 // like a rotated transform; unread, the controls are sampled on axis-aligned lines and the
 // input's border fails at 1:1. And a transform applied only on focus is pinned to its
-// unfocused value for the focused shots, also for the shot with the icons shown: unpinned,
+// unfocused value for the focused shots (the two boxes overlap by at least half), also for the shot with the icons shown: unpinned,
 // the 1 px lift or the scale moves the black border onto the ring and the weak ring passes.
 test('the rotate property makes a control unverified; a transform on focus does not hide a weak ring', async () => {
   const rot = await run(fixture('rotp', `${BTN}.t{margin:60px}.r{rotate:8deg}input{border:1px solid #000;background:#fff;margin:20px}`,
@@ -1017,6 +1017,105 @@ test('a badge animated over a control does not make it unverified', async () => 
     '<div class="t"><button type="button" class="s">Badge</button><span class="bd"></span></div>'
     + '<script>const b=document.querySelector(".bd");let n=0;(function f(){n+=7;b.style.background="rgb("+(n%256)+",0,80)";requestAnimationFrame(f)})();</script>']]);
   assert.deepStrictEqual(got, { badge: { failures: [], unverified: 0, code: 0 } });
+});
+
+// Pins the noise mask of a skip link. Unfocused, a skip link shows none of itself, so its
+// focused pixels decide where an animated neighbour hides the ring; counted over the
+// unfocused ones, no pixel counts and the long-neighbour rule never fires. A hero
+// recoloured each frame (by a step of 41) behind the whole link: unverified; without this
+// fix the strong ring fails at 1:1. A band of 6 px across the top of the ring: unverified;
+// without this fix the control passes. The same skip link over a hero at rest passes.
+test('a skip link over an animated hero or band is unverified; over a hero at rest it passes', async () => {
+  const base = 'body{margin:0;font:14px sans-serif}.hero{position:absolute;left:0;top:0;width:100%;height:300px}';
+  const skipL = 'a.skip{position:absolute;left:-9999px;top:8px;z-index:10;padding:8px 16px;background:#fff;color:#000;border:1px solid #000}a.skip:focus{left:8px;outline:3px solid #000;outline-offset:2px}';
+  const skipT = 'a.skip{position:absolute;left:8px;top:8px;z-index:10;padding:8px 16px;background:#fff;color:#000;border:1px solid #000;transform:translateY(-200%)}a.skip:focus{transform:none;outline:3px solid #000;outline-offset:2px}';
+  const anim = '<script>const h=document.querySelector(".hero");let n=0;(function f(){n+=41;const g=n%256;h.style.background="rgb("+g+","+(255-g)+",120)";requestAnimationFrame(f)})();</script>';
+  const body = '<a class="skip" href="#m">Skip to content</a><div class="hero"></div><p id="m" style="margin-top:320px">Main</p>';
+  const band = '.hero{height:6px}';
+  const got = await ringsAt([
+    ['heroleftstill', `${base}${skipL}.hero{background:#357}`, body],
+    ['heroleft', `${base}${skipL}`, body + anim],
+    ['herotf', `${base}${skipT}`, body + anim],
+    ['bandleft', `${base}${band}${skipL}`, body + anim],
+    ['bandtf', `${base}${band}${skipT}`, body + anim],
+  ]);
+  const unv = { failures: [], unverified: 1, code: 0 };
+  assert.deepStrictEqual(got, { heroleftstill: { failures: [], unverified: 0, code: 0 }, heroleft: unv, herotf: unv, bandleft: unv, bandtf: unv });
+});
+
+// Pins the hidden-pixel rule. A narrow bar behind the button, recoloured each frame (a grey
+// stepping by 37), cuts the strong ring at the top and at the bottom. Its pixels are left
+// out of the ring, so the ring splits into two halves of 61 px where 116 are needed and
+// failed at 21:1. Taken at 21:1, the hidden pixels complete it: unverified. The weak ring
+// is not completed by them and still fails.
+test('a strong ring cut twice by an animated bar is unverified; a weak one still fails', async () => {
+  const BTNZ = 'body{margin:0}button{position:relative;z-index:1;color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif}'
+    + `button.w:focus-visible{outline:none;${WEAK}}button.s:focus-visible{outline:2px solid #000;outline-offset:2px}`;
+  const css = `${BTNZ}.t{position:relative;margin:60px;display:inline-block}.v{position:absolute;left:57px;top:-15px;width:6px;height:60px;background:#888}`;
+  const anim = '<script>const v=document.querySelector(".v");let n=0;(function f(){n+=37;const g=n%256;v.style.background="rgb("+g+","+g+","+g+")";requestAnimationFrame(f)})();</script>';
+  const got = await ringsAt([
+    ['cut2s', css, `<div class="t"><button type="button" class="s">Cut</button><span class="v"></span></div>${anim}`],
+    ['cut2w', css, `<div class="t"><button type="button" class="w">Cut</button><span class="v"></span></div>${anim}`],
+  ]);
+  assert.deepStrictEqual(got, { cut2s: { failures: [], unverified: 1, code: 0 }, cut2w: { failures: ['button.w pixels 2.2'], unverified: 0, code: 1 } });
+});
+
+// Pins the noise exclusion at the candidate filter: a pixel that changes between the
+// unfocused shots is no ring pixel. The bar of the test above, stepping through dark greys
+// only (0 to 59): scored like ring pixels, against the grey the bar showed unfocused, its
+// pixels cut the strong ring at below 3:1 and it fails below 2:1. Left out, the ring is
+// unverified.
+test('pixels of an animated bar are not scored as ring pixels', async () => {
+  const BTNZ = 'body{margin:0}button{position:relative;z-index:1;color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif}'
+    + 'button.s:focus-visible{outline:2px solid #000;outline-offset:2px}';
+  const css = `${BTNZ}.t{position:relative;margin:60px;display:inline-block}.v{position:absolute;left:57px;top:-15px;width:6px;height:60px;background:#888}`;
+  const anim = '<script>const v=document.querySelector(".v");let n=0;(function f(){n+=37;const g=n%60;v.style.background="rgb("+g+","+g+","+g+")";requestAnimationFrame(f)})();</script>';
+  const got = await ringsAt([['cut2dark', css, `<div class="t"><button type="button" class="s">Cut</button><span class="v"></span></div>${anim}`]]);
+  assert.deepStrictEqual(got, { cut2dark: { failures: [], unverified: 1, code: 0 } });
+});
+
+// Pins the vacated strip of a registered lift. Focus lifts the button by 2 px (top: -2px,
+// or an ancestor's :focus-within transform) off a black bar directly below it. Registered,
+// an outside pixel over the strip the button left was scored against the pixel it moved
+// from, the black bar, and the weak ring passed at about 18:1 there; it paints 2.07:1 and
+// fails.
+// Strong rings with the same lifts still pass, and a weak ring lifted 1 px without a bar
+// fails.
+test('a weak ring lifted off a dark neighbour fails; strong rings with the same lift pass', async () => {
+  const BTN2 = 'body{margin:0}button{color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif;display:block}'
+    + `button.w:focus-visible{outline:none;${WEAK}}button.s:focus-visible{outline:2px solid #000;outline-offset:2px}`;
+  const bar = '.bar{width:200px;height:4px;background:#000}';
+  const BTNZ = 'body{margin:0}button{position:relative;z-index:1;color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif}'
+    + `button.w:focus-visible{outline:none;${WEAK}}button.s:focus-visible{outline:2px solid #000;outline-offset:2px}`;
+  const ring1 = 'button.r:focus-visible{outline:1px solid #000;outline-offset:0}';
+  const got = await ringsAt([
+    ['adjtop2w', `${BTN2}${bar}.t{margin:60px}button:focus-visible{position:relative;top:-2px}`, '<div class="t"><button type="button" class="w">Lift</button><div class="bar"></div></div>'],
+    ['adjtop2s', `${BTN2}${bar}.t{margin:60px}button:focus-visible{position:relative;top:-2px}`, '<div class="t"><button type="button" class="s">Lift</button><div class="bar"></div></div>'],
+    ['adjcardw', `${BTN2}${bar}.t{margin:60px}.wrap:focus-within{transform:translateY(-2px)}`, '<div class="t"><div class="wrap"><button type="button" class="w">Lift</button></div><div class="bar"></div></div>'],
+    ['lift1weak', `${BTNZ}.card{margin:60px;padding:12px;width:200px}.card:focus-within{transform:translateY(-1px)}`, '<div class="card"><button type="button" class="w">Card</button></div>'],
+    ['lift1ring2', `${BTNZ}${ring1}.card{margin:60px;padding:12px;width:200px}.card:focus-within{transform:translateY(-1px)}`, '<div class="card"><button type="button" class="r">Card</button></div>'],
+  ]);
+  const weak = { failures: ['button.w pixels 2.1'], unverified: 0, code: 1 };
+  const ok = { failures: [], unverified: 0, code: 0 };
+  assert.deepStrictEqual(got, { adjtop2w: weak, adjtop2s: ok, adjcardw: weak, lift1weak: weak, lift1ring2: ok });
+});
+
+// Pins the ancestor-transform rule: a card that scales on :focus-within (by transform or by
+// the scale property) resizes the box, so the move cannot be registered, and compared in
+// place its moved border carried the weak ring. Unverified, the strong ring too.
+test('a control in a card that scales on focus is unverified', async () => {
+  const BTN1 = 'body{margin:0}button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif}'
+    + `button.w:focus-visible{outline:none;${WEAK}}button.s:focus-visible{outline:2px solid #000;outline-offset:2px}`;
+  const card = `${BTN1}.card{margin:60px;padding:12px;width:200px;background:#fff}.card:focus-within{transform:scale(1.05)}`;
+  const tw = 'body{margin:0;font:14px sans-serif}.card{margin:60px;padding:16px;width:240px;background:#fff;border:1px solid #e5e7eb;border-radius:8px}.card:focus-within{scale:1.05}'
+    + `a{display:inline-block;padding:4px;color:#000;border:1px solid #000}a:focus-visible{outline:none;${WEAK}}`;
+  const got = await ringsAt([
+    ['scalew', card, '<div class="card"><button type="button" class="w">Card</button></div>'],
+    ['scales', card, '<div class="card"><button type="button" class="s">Card</button></div>'],
+    ['twcardscale', tw, '<div class="card"><a href="#x">Read more</a></div>'],
+  ]);
+  const unv = { failures: [], unverified: 1, code: 0 };
+  assert.deepStrictEqual(got, { scalew: unv, scales: unv, twcardscale: unv });
 });
 
 test('of two color-scheme meta tags the first that parses decides', async () => {

@@ -61,24 +61,28 @@
  * focus applies (a lift by 1px) pinned to its unfocused value where the focused box still
  * overlaps the unfocused one by half (a skip link that a transform brings into view is
  * shot where focus shows it). Where focus otherwise moves the box by whole pixels at the
- * same size (an ancestor's transform, top or a margin; not a skip link, which moves by
- * more than half), each focused pixel is compared with the unfocused pixel it moved from,
- * and counts as changed only when it differs from that one and from the one in place, so
- * neither the moved border nor a neighbour that stayed is taken for a ring; a sub-pixel
- * move or a resize is compared in place. A pixel counts as changed when a channel moves
- * by more than 2 between two shots with the control's icons and images hidden, and a
- * select's shown value is left out; a control that has icons or images is shot again with
- * them shown, a pixel counts only when it changed in that pair too, and it is scored on
- * that pair, so an inset ring drawn over a photo is scored against the photo and one
- * painted under an opaque image fails at 1:1. The unfocused state is shot three times: a
- * pixel that differs between those shots (an animated neighbour) is never part of the
- * ring. The ring passes when one piece of changed pixels (pixels up to 2 px apart joined)
- * reaches 3:1 and spans the length of the control's longer side less, at each end, its
- * corner radius or a shadow's blur plus spread, less 2 px and its border or inset outline
- * (at least 8 px). A piece is measured by its extent, so a compact block (a CSS icon that
- * recolours) cannot carry it. A changed pixel outside the border box is scored against
- * its own unfocused value, one inside against the nearest unchanged pixel; a ring that
- * changes no pixel fails at 1:1.
+ * same size (an ancestor's transform, top or a margin) and the two boxes still overlap by
+ * half (not a skip link), each focused pixel is compared with the unfocused pixel it
+ * moved from, and counts as changed only when it differs from that one and from the one
+ * in place, so neither the moved border nor a neighbour that stayed is taken for a ring;
+ * a pixel outside the focused box over the strip the control vacated is not scored, as
+ * no surface under it is known. A sub-pixel move or a resize is compared in place, except
+ * one by an ancestor's transform (a card that scales on :focus-within), which leaves the
+ * control unverified. A pixel counts as changed when a channel moves by more than 2
+ * between two shots with the control's icons and images hidden, and a select's shown
+ * value is left out; a control that has icons or images is shot again with them shown, a
+ * pixel counts only when it changed in that pair too, and it is scored on that pair, so
+ * an inset ring drawn over a photo is scored against the photo and one painted under an
+ * opaque image fails at 1:1. The unfocused state is shot three times: a pixel that
+ * differs between those shots (an animated neighbour) is never part of the ring; for a
+ * skip link, which shows nothing of itself unfocused, that neighbour is looked for where
+ * the focused link shows. The ring passes when one piece of changed pixels (pixels up to
+ * 2 px apart joined) reaches 3:1 and spans the length of the control's longer side less,
+ * at each end, its corner radius or a shadow's blur plus spread, less 2 px and its border
+ * or inset outline (at least 8 px). A piece is measured by its extent, so a compact block
+ * (a CSS icon that recolours) cannot carry it. A changed pixel outside the border box is
+ * scored against its own unfocused value, one inside against the nearest unchanged pixel;
+ * a ring that changes no pixel fails at 1:1.
  * A boundary is judged on one shot at rest: the median of the lines across each side,
  * corners left out, against the surface a few pixels outside, on its best side. So these
  * are measured as painted, where the model passes: a blurred ring (also a fractional
@@ -102,13 +106,17 @@
  * focused box lies even partly outside the viewport after the scroll (one pushed past the
  * page edge; a skip link that waits outside it unfocused is measured where focus shows
  * it); one rotated (by transform or the rotate property), skewed or transformed in 3D,
- * itself or by an ancestor; one whose page moved between the shots (its own pixels inside
- * its box differ in an unfocused shot taken again after the focused one, as with a
- * debounced scroll handler; an element animated beside it does not count); and one beside
+ * itself or by an ancestor; one whose box an ancestor's focus transform resizes or moves
+ * by a fraction of a pixel (also with a strong ring); one whose page moved between the
+ * shots (its own pixels inside its box differ in an unfocused shot taken again after the
+ * focused one, as with a debounced scroll handler; an element animated beside it does not
+ * count); and one beside
  * an animated neighbour whose changing pixels, joined up to 4 px apart, form one piece as
  * long as the ring must be (a stripe moving along the control; a small spinner does not
- * count). That last check samples the animation in the three unfocused shots, so an
- * animation that happens to show the same frame in all three can still pass. Not judged
+ * count), or whose ring fails only where such a neighbour hides it: the hidden pixels,
+ * taken at 21:1, would complete it, or they are all that changed. That last check samples
+ * the animation in the three unfocused shots, so an animation that happens to show the
+ * same frame in all three can still pass. Not judged
  * on pixels: the browser's own ring, an element counted in focusWithoutRing (a glow
  * without spread, a fill change, a ring drawn by a pseudo-element), a control that is not
  * perceivable, and any ring or boundary the model already fails. A boundary judged on its
@@ -387,7 +395,8 @@ function covered(g, clip) {
 // fixed header over it) and did not change between the unfocused shots (an animated
 // neighbour). Changed means: with icons hidden (mb, ma) and, for a control with icons,
 // also with them shown (before, after); where focus moved the box by whole pixels at the
-// same size (liftOf), against the unfocused pixel it moved from and the one in place.
+// same size (liftOf), against the unfocused pixel it moved from and the one in place; a
+// pixel outside the focused box over the strip the control vacated is then not scored.
 // Each such pixel is scored against the colour beside it (SC 1.4.11): outside the border
 // box, its own unfocused value, the surface the ring is painted on; inside it (a
 // recoloured border, an inset ring), the nearest unchanged pixel, outward for a pixel on
@@ -399,8 +408,11 @@ function covered(g, clip) {
 // blur plus spread (over which a ring fades towards the corner), less 2 px, and at least
 // 8 px. So a 1 px ring along one side or a bottom bar passes, a stray anti-aliased pixel
 // does not. No changed pixel at all: the computed ring paints nothing, 1:1. Returns {
-// covered: true } when another element covers the edge, or when the pixels changing
-// without focus form one piece (joined up to 4 px apart) at least that large.
+// covered: true } when another element covers the edge; when the pixels changing without
+// focus form one piece (joined up to 4 px apart) at least that large, counted over the
+// pixels that show the element unfocused, or focused where the boxes overlap by less than
+// half (a skip link); and when the ring would fail but the changed pixels left out under
+// an animated neighbour, taken at 21:1, complete it, or are the only ones that changed.
 function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again = null) {
   // again: further unfocused shots (icons hidden), taken after the focused one.
   const W = clip.width; const H = clip.height; const N = W * H;
@@ -443,7 +455,9 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
     }
     return m;
   };
-  const noise = noiseOf(again ? [mb, ...again] : [], gb.own);
+  // A control that focus moves far (a skip link) shows nothing of itself unfocused: its
+  // focused pixels decide where an animated neighbour would hide the ring.
+  const noise = noiseOf(again ? [mb, ...again] : [], overlapHalf(gb.box, ga.box) ? gb.own : ga.own);
   if (!noise) return { covered: true };
   // Registration: where focus moves the box by whole pixels without resizing it (a lift by
   // an ancestor's transform, top or a margin), each focused pixel is compared with the
@@ -465,7 +479,7 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
   const changed = new Uint8Array(N);
   for (let i = 0; i < N; i++) if (moved(Mb, Ma, i) && (mb === before || moved(Bd, Ad, i))) changed[i] = 1;
   const score = new Float32Array(N); const adjOf = new Int32Array(N).fill(-1);
-  const cand = [];
+  const cand = []; const hidden = [];
   const march = (x, y, sx, sy) => {
     for (let k = 1; k < W + H; k++) {
       const qx = x + k * sx; const qy = y + k * sy;
@@ -479,7 +493,8 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
   };
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x;
-    if (!changed[i] || noise[i] || noise[src[i]] || hole[i] || !own(x, y)) continue;
+    if (!changed[i] || hole[i] || !own(x, y)) continue;
+    if (noise[i] || noise[src[i]]) { hidden.push(i); continue; }
     const cx = x + 0.5; const cy = y + 0.5;
     let dx = 0; let dy = 0;
     // Half a pixel of tolerance on each side: at a fractional edge, the pixel that carries
@@ -489,6 +504,9 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
       const dl = cx - bx0; const dr = bx1 - cx; const dt = cy - by0; const db = by1 - cy; const m = Math.min(dl, dr, dt, db);
       if (m === dl) dx = -1; else if (m === dr) dx = 1; else if (m === dt) dy = -1; else dy = 1;
     }
+    // Registered, an outside pixel over the strip the control vacated has no known surface:
+    // neither the unfocused pixel there (the control) nor the one it moved from is under it.
+    if (reg && !inBox && cx > gb.box[0] - clip.vx && cx < gb.box[2] - clip.vx && cy > gb.box[1] - clip.vy && cy < gb.box[3] - clip.vy) continue;
     const inPad = cx >= px0 + 0.5 && cx <= px1 - 0.5 && cy >= py0 + 0.5 && cy <= py1 - 0.5;
     const s0 = inPad ? -1 : 1;
     let q = -1;
@@ -536,6 +554,14 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
     while (lo <= hi) { const mid = (lo + hi) >> 1; if (piece(ts[mid]).size >= minSize) { found = mid; hi = mid - 1; } else lo = mid + 1; }
   }
   const t = found >= 0 ? ts[found] : ts[0];
+  // A ring that fails only where an animated neighbour hid part of it: unverified, when the
+  // hidden pixels, taken at full contrast, would complete it.
+  if (!(found >= 0 && t >= 3) && hidden.length) {
+    for (const i of hidden) { score[i] = 21; cand.push(i); }
+    if (piece(3).size >= minSize) return { covered: true };
+    for (const i of hidden) score[i] = 0;
+    cand.length -= hidden.length;
+  }
   const best = piece(t);
   const adj = adjOf[best.px];
   return {
@@ -557,8 +583,10 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
 // icons hidden, to find an animated neighbour. Returns { unverified: true } for an element whose edge
 // another element covers (a fixed header), that an ancestor on its containing-block chain
 // still clips, whose focused box lies even partly outside the viewport after the scroll,
-// that is rotated, skewed or transformed in 3D, whose own pixels inside its box moved
-// between the shots, or beside which an animated neighbour moves along a ring's length.
+// that is rotated, skewed or transformed in 3D, whose box an ancestor's focus transform
+// resizes or moves by a fraction of a pixel, whose own pixels inside its box moved between
+// the shots, or beside which an animated neighbour moves along a ring's length or hides the
+// part of it that would decide.
 async function judgeFocus(page, cdp, nodeId, force, unforce, pin) {
   const geometry = (arg, fn = '__geometry') => measureOneNode(cdp, nodeId, arg, fn);
   let ga0 = await geometry(null);
@@ -596,6 +624,10 @@ async function judgeFocus(page, cdp, nodeId, force, unforce, pin) {
       if (tfPrev) await measureOneNode(cdp, nodeId, tfPrev, '__unpinTf');
       if (pin) await measureOneNode(cdp, nodeId, prev, '__unpinOffset');
     }
+    // An ancestor's focus transform that resizes the box or moves it by a fraction of a pixel
+    // (a card that scales on :focus-within) cannot be registered: its moved border would be
+    // taken for a ring.
+    if (ga.atf !== gb.atf && !liftOf(gb.box, ga.box).some(Boolean) && ga.box.some((v, k) => Math.abs(v - gb.box[k]) > 0.01)) return { unverified: true };
     await unforce();
     const before2 = await capture(cdp, clip);
     // Unfocused a third time, so an animated neighbour that shows the same frame in two shots
@@ -1553,6 +1585,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       // How far a shadow's blur and spread reach along a side from a corner, where two sides' shadows overlap.
       g.soft = Math.max(0, ...shadowLayers(cs.boxShadow).map((l) => l.blur + Math.abs(l.spread)));
       g.tf = [cs.transform, cs.translate, cs.scale, cs.rotate].join('|');
+      g.atf = ''; for (let a = el.parentElement; a; a = a.parentElement) { const ac = getComputedStyle(a); g.atf += [ac.transform, ac.translate, ac.scale, ac.rotate].join('|') + ';'; }
       if (clip) {
         g.holes = holesOf(el, cs);
         // One bit per 2x2 block of the clip (a pixel-exact grid costs four times the hit tests).
