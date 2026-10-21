@@ -46,7 +46,7 @@
  * Scope: text contrast (SC 1.4.3) and two parts of SC 1.4.11 non-text contrast, each at
  * 3:1 and each failing the run. `focusRingFailures`: what changes on each interactive
  * element between unfocused and forced :focus plus :focus-visible — its outline, each
- * box-shadow ring layer (a blurred one at its darkest point), its border — each against
+ * box-shadow ring layer (a blurred one at the pixel next to the border), its border — each against
  * the colour next to it; the indicator passes when any changed part reaches 3:1, and a
  * shadow present in both states is not an indicator. `controlBoundaryFailures`: the
  * border (painted over the control's fill), a box-shadow ring (Tailwind's `ring-1
@@ -96,9 +96,11 @@
  * An outline that only moves on focus counts as changed, except the moves Chromium's own
  * focus styles apply (1px on a link, 2px on a checkbox or radio). Elements whose focus
  * changes no outline, ring or border are counted in `focusWithoutRing`, and the
- * browser's own `outline: auto` ring, in the browser's focus-ring colour, in
- * `focusUserAgentRing`; neither is judged (an `auto` ring in an author's colour is). A ring
- * drawn on another element (a sibling label, a :focus-within ancestor) is not seen.
+ * browser's own `outline: auto` ring, in the browser's focus-ring colour for the control's
+ * used color-scheme, in `focusUserAgentRing`; neither is judged (an `auto` ring in an
+ * author's colour is). A ring drawn on another element (a sibling label, a :focus-within
+ * ancestor) is not seen, nor is the effect of `filter` or `mix-blend-mode` on a ring or a
+ * boundary. Content inside an iframe is not measured.
  * Icons, charts and other graphics are not evaluated, so a green run is still not a
  * full AA verdict. rgb() and rgba() are read numerically; other notations (oklch(),
  * color()) go through a canvas. An element focused on load is blurred before any
@@ -554,7 +556,14 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   const ownTheme = await page.evaluate(() => document.documentElement.dataset.theme ?? null);
   const dataThemeSet = darkSchemeBy.includes('data-theme') && [null, 'light', 'dark'].includes(ownTheme);
   if (dataThemeSet) await page.evaluate((t) => { document.documentElement.dataset.theme = t; }, scheme);
-  const result = await page.evaluate(() => {
+  // The browser's focus-ring colours, read in a page of their own so the audited page
+  // sees no probe: one per color-scheme.
+  const probePage = await browser.newPage();
+  await probePage.setContent('<span style="color-scheme:light;outline-color:-webkit-focus-ring-color"></span><span style="color-scheme:dark;outline-color:-webkit-focus-ring-color"></span>');
+  const [light, dark] = await probePage.evaluate(() => [...document.querySelectorAll('span')].map((e) => getComputedStyle(e).outlineColor));
+  const uaRings = { light, dark, scheme };
+  await probePage.close();
+  const result = await page.evaluate((uaRings) => {
     // Colours: rgb()/rgba() are read numerically, exactly; any other notation the browser
     // computes (oklch(), color()) goes through a 1x1 canvas, which returns sRGB bytes with
     // 8-bit alpha. Filling over two different colours tells an unparseable value (it leaves
@@ -852,12 +861,14 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         return { text: layer, colour, inset: rest.includes('inset'), blur: lengths[2] || 0, spread: lengths[3] || 0 };
       });
     };
-    // A ring layer's colour at its darkest point, next to the border: a blur is a Gaussian
-    // with a standard deviation of half the blur radius (CSS Backgrounds 3), so there the
-    // layer reaches Phi(spread / sigma) of its alpha.
+    // A ring layer's colour at the pixel next to the border: a blur is a Gaussian with a
+    // standard deviation of half the blur radius (CSS Backgrounds 3). At the border edge the
+    // layer reaches Phi(spread / sigma) of its alpha; that pixel's centre lies half a pixel
+    // further out, and an inset ring paints lighter still, so one pixel is taken off the
+    // spread of an outer ring and two off an inset one (matched to Chromium screenshots).
     const erf = (x) => { const t = 1 / (1 + 0.3275911 * x);
       return 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); };
-    const ringColour = (layer, c) => (layer.blur > 0 ? { ...c, a: c.a * 0.5 * (1 + erf((2 * layer.spread / layer.blur) / Math.SQRT2)) } : c);
+    const ringColour = (layer, c) => (layer.blur > 0 ? { ...c, a: c.a * 0.5 * (1 + erf(Math.max(0, (2 * layer.spread - (layer.inset ? 2 : 1)) / layer.blur) / Math.SQRT2)) } : c);
     const SIDES = ['Top', 'Right', 'Bottom', 'Left'];
     const ringState = (el) => {
       const cs = getComputedStyle(el);
@@ -913,16 +924,14 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (Number.isNaN(w) || w <= 0 || !c || c.a === 0) return [];
       return [{ indicator: 'border', shown: paint(el, c, cs.backgroundClip === 'border-box'), against: paint(el.parentElement) }];
     });
-    // The browser's focus-ring colour where el sits (it follows color-scheme), read from a
-    // probe: an `outline: auto` ring in it is the browser's own.
-    const uaRingColour = (el) => {
-      const probe = document.createElement('span');
-      probe.style.outlineColor = '-webkit-focus-ring-color';
-      (el.parentElement || document.documentElement).append(probe);
-      const c = getComputedStyle(probe).outlineColor;
-      probe.remove();
-      return c;
-    };
+    // An `outline: auto` ring is the browser's own when it has the browser's focus-ring
+    // colour (uaRings, read in a separate page) for el's used color-scheme: its computed
+    // keywords (or the color-scheme meta tag for `normal`) against the scheme the run emulates.
+    const keys = (v) => (v || '').split(/[\s,]+/).filter((x) => x === 'light' || x === 'dark');
+    const isUaRingColour = (el, c) => { let k = keys(getComputedStyle(el).colorScheme);
+      if (getComputedStyle(el).colorScheme === 'normal') k = keys(document.querySelector('meta[name="color-scheme"]')?.content);
+      const used = !k.length ? 'light' : k.includes(uaRings.scheme) ? uaRings.scheme : k[0];
+      return c === uaRings[used]; };
     const ringBefore = new WeakMap();
     window.__focusWithoutRing = 0;
     window.__focusUserAgentRing = 0;
@@ -936,7 +945,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (!before) return null;
       const cs = getComputedStyle(el);
       const after = ringState(el);
-      if (outlineChanged(el, before, after) && cs.outlineStyle === 'auto' && cs.outlineColor === uaRingColour(el)) { window.__focusUserAgentRing++; return null; }
+      if (outlineChanged(el, before, after) && cs.outlineStyle === 'auto' && isUaRingColour(el, cs.outlineColor)) { window.__focusUserAgentRing++; return null; }
       const parts = [
         ...outlinePart(el, cs, before, after),
         ...shadowParts(el, cs, before),
@@ -996,7 +1005,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       // from computed colours and does not depend on them.
       unreadableStylesheets: [...document.styleSheets].filter((ss) => { try { return !ss.cssRules; } catch (e) { return true; } }).length,
     };
-  });
+  }, uaRings);
   const reported = new Set();
   const states = await measureInteractiveStates(page, '', reported);
   result.stateFailures = states.failures;

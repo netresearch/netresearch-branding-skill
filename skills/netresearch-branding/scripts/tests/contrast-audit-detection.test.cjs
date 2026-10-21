@@ -483,7 +483,7 @@ test('rings and boundaries are measured as painted: an author auto ring, a blur,
   const { code, json } = await run(fixture('painted',
     'button{color:#000;background:#fff;border:1px solid #000}'
     + 'button.au:focus-visible{outline:4px auto #eee}' // an auto ring in the author's colour, 1.16:1
-    + 'button.bl:focus-visible{outline:none;box-shadow:0 0 8px 1px #767676}' // 4.54:1 solid, about 2.2:1 at its darkest
+    + 'button.bl:focus-visible{outline:none;box-shadow:0 0 8px 1px #767676}' // 4.54:1 solid, about 2.1:1 as painted
     + 'button.sh:focus-visible{outline:none;box-shadow:0 0 0 2px #767676}' // the same ring unblurred passes
     + 'button.tr{background:#000;color:#fff}button.tr:focus-visible{outline:2px solid rgba(255,255,255,.5)}' // over the page, not the button: 1:1
     + '.faded{opacity:.15}button.ob:focus-visible{outline:2px solid #000}input.op{border:1px solid #000;background:#fff}'
@@ -506,6 +506,49 @@ test('a page that stubs requestAnimationFrame is still measured, also at a scrol
     + 'window.requestAnimationFrame=()=>0;</script>'));
   assert.deepStrictEqual(json.contrastFailures.map((f) => f.element), ['p.weak']);
   assert.strictEqual(json.transparentControlsSkipped, 0, 'button.top is measured where it was visible');
+  assert.strictEqual(code, 1);
+});
+
+test('a page that re-renders its list on a child mutation still has every ring measured', async () => {
+  const { code, json } = await run(fixture('rerender', 'button{color:#000;background:#fff;border:1px solid #000}button.weak:focus-visible{outline:2px solid #eee}',
+    '<div id="list"><button type="button" class="ua">Default</button><button type="button" class="weak">Weak</button></div>'
+    + '<script>const l=document.getElementById("list");const mo=new MutationObserver(()=>{mo.disconnect();'
+    + 'l.replaceChildren(...[...l.children].map((c)=>c.cloneNode(true)));mo.observe(l,{childList:true});});mo.observe(l,{childList:true});</script>'));
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element), ['button.weak']);
+  assert.strictEqual(code, 1);
+});
+
+test('the browser ring of a control with its own color-scheme is the browser ring', async () => {
+  for (const scheme of ['light', 'dark']) {
+    const { json } = await run(fixture(`ownscheme${scheme}`, ':root{color-scheme:light dark}@media (prefers-color-scheme:dark){body{background:#111;color:#eee}}'
+      + 'button{color:inherit;background:transparent;border:1px solid currentColor}.d{color-scheme:dark}.l{color-scheme:light}',
+      '<button type="button" class="d">Dark</button><button type="button" class="l">Light</button>'), '--scheme', scheme);
+    assert.deepStrictEqual(json.focusRingFailures, [], scheme);
+    assert.strictEqual(json.focusUserAgentRing, 2, scheme);
+  }
+});
+
+test('the browser ring follows the used color-scheme: none declared, or a meta tag only', async () => {
+  // No color-scheme anywhere: the used scheme is light, also when the run emulates dark.
+  const none = await run(fixture('noscheme', '', '<button type="button">Plain</button>'), '--scheme', 'dark');
+  assert.deepStrictEqual(none.json.focusRingFailures, []);
+  assert.strictEqual(none.json.focusUserAgentRing, 1, 'the light ring of a page without color-scheme');
+  // Declared only by <meta name="color-scheme">, which must sit in the head.
+  const page = path.join(dir, 'metascheme.html');
+  fs.writeFileSync(page, '<!doctype html><html lang="en"><head><meta name="color-scheme" content="dark"><title>metascheme</title>'
+    + '<style>body{background:#fff;color:#000}</style></head><body><main><button type="button">Meta</button></main></body></html>');
+  const meta = await run(page, '--scheme', 'light');
+  assert.deepStrictEqual(meta.json.focusRingFailures, []);
+  assert.strictEqual(meta.json.focusUserAgentRing, 1, 'the dark ring the meta tag selects');
+});
+
+test('a blurred ring is judged by the darkest pixel the page paints', async () => {
+  const { code, json } = await run(fixture('blurpx', 'button{color:#000;background:#fff;border:1px solid #000}'
+    + 'button.bl:focus-visible{outline:none;box-shadow:0 0 4px 1px #646464}' // 3.04 at the edge, 2.55 painted
+    + 'input.rg{border:0;background:#fff;box-shadow:inset 0 0 4px 1px #4c4c4c}', // 2.92 painted
+    '<button type="button" class="bl">Blur</button><label>Ring <input class="rg"></label>'));
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => f.element), ['button.bl']);
+  assert.deepStrictEqual(json.controlBoundaryFailures.map((f) => f.element), ['input.rg']);
   assert.strictEqual(code, 1);
 });
 

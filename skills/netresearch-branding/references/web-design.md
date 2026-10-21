@@ -214,7 +214,7 @@ labelled `nav`, `main`, table captions, the smallest font, decorative SVGs witho
 `aria-hidden` and whether the page switches colours under `prefers-color-scheme` or
 `data-theme`; exit 1 on any text failure (at rest or under forced `:hover` and
 `:focus-visible`), focus-indicator failure or control-boundary failure. Focus indicators
-and boundaries are measured as painted: a blurred ring at its darkest point, under the
+and boundaries are measured as painted: a blurred ring at the pixel next to the border, under the
 opacity of the control and its ancestors. Icons and other graphics are not measured.
 
 TLS certificates are verified for the page and every request it makes; an invalid
