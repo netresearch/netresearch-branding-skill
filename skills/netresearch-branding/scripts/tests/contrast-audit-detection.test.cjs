@@ -423,6 +423,7 @@ for (const [name, out] of [
   ['timer', 'setTimeout(()=>setTimeout(rm,600),100)'], // a timer set in a timer
   ['string', 'window.rm=rm;window.later=()=>setTimeout(rm,600);setTimeout("later()",100)'], // a legacy string handler that sets the next timer
   ['await', 'setTimeout(async()=>{await null;await null;setTimeout(rm,600)},100)'], // two awaits before the next timer
+  ['a cleared string timer', 'clearTimeout(setTimeout("void 0",50));setTimeout(()=>setTimeout(rm,600),100)'], // a string timeout cleared before it runs opens no window to close
 ]) {
   test(`a hover-out chained through ${name} is waited for, on its own`, async () => {
     const { code, json } = await run(fixture(`chain-${name}`,
