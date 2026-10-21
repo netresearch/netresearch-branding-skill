@@ -94,8 +94,9 @@
  * at each end, its corner radius or a shadow's blur plus spread, less 2 px and its border
  * or inset outline (at least 8 px). A piece is measured by its extent, so a compact block
  * (a CSS icon that recolours) cannot carry it. A changed pixel outside the border box is
- * scored against its own unfocused value, one inside against the nearest unchanged pixel
- * (a fill tinted all over against its old fill);
+ * scored against its own unfocused value, one on the border against the nearest unchanged
+ * pixel, one inside the padding box (a tinted fill, an inset ring) against its own
+ * unfocused value;
  * a ring that changes no pixel fails at 1:1.
  * A boundary is judged on one shot at rest: the median of the lines across each side,
  * corners left out, against the surface a few pixels outside, on its best side. So these
@@ -419,11 +420,11 @@ function covered(g, clip) {
 // (`underB`, the unfocused shot with it at opacity 0) is hidden.
 // Each such pixel is scored against the colour beside it (SC 1.4.11): outside the border
 // box, its own unfocused value, the surface the ring is painted on; inside it (a
-// recoloured border, an inset ring), the nearest unchanged pixel within half the shorter
-// side, outward (then inward) for a pixel on the border, inward only and no further than
-// the box's centre line for one inside the padding box, and with none, again its own unfocused value: a fill tinted all over is
-// read against its old fill, never against the control's own border. The indicator's ratio is the highest score t at which the pixels
-// scoring t or more hold one piece (pixels up to 2 px apart are joined, across the
+// recoloured border), for a pixel on the border the nearest unchanged pixel within half
+// the shorter side, outward and then inward, and with none, again its own unfocused value;
+// inside the padding box (a tinted fill, an inset ring), its own unfocused value, never a
+// dark child or the far border. The indicator's ratio is the highest score t at which the
+// pixels scoring t or more hold one piece (pixels up to 2 px apart are joined, across the
 // anti-aliased corners of a rounded ring) at least as large as the straight part of the
 // element's longer side: its length less, at each end, the corner radius or a shadow's
 // blur plus spread (over which a ring fades towards the corner), less 2 px, and at least
@@ -503,11 +504,8 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
   // A pixel scored against the surface behind the control (`under`), for `against`.
   const behind = new Uint8Array(N);
   const cand = []; const hidden = [];
-  // half: an inward march from a padding-box pixel stops at the box's centre line, so a tinted
-  // fill never reaches the opposite border (on a pill, the centre rows would carry the ring).
-  const march = (x, y, sx, sy, half = false) => {
-    const lim = half ? Math.floor(sx ? Math.abs((bx0 + bx1) / 2 - (x + 0.5)) : Math.abs((by0 + by1) / 2 - (y + 0.5))) : Math.ceil(short / 2);
-    for (let k = 1; k <= lim; k++) {
+  const march = (x, y, sx, sy) => {
+    for (let k = 1; k <= Math.ceil(short / 2); k++) {
       const qx = x + k * sx; const qy = y + k * sy;
       if (qx < 0 || qy < 0 || qx >= W || qy >= H) return -1;
       if (!own(qx, qy)) return -1;
@@ -543,10 +541,11 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
       cand.push(i);
       continue;
     }
+    // A padding-box pixel (a tinted fill, an inset ring) is read against its own unfocused
+    // value: an unchanged pixel inward of it may be a dark child or the far border.
     const inPad = cx >= px0 + 0.5 && cx <= px1 - 0.5 && cy >= py0 + 0.5 && cy <= py1 - 0.5;
-    const s0 = inPad ? -1 : 1;
     let q = -1;
-    if (inBox) { q = march(x, y, s0 * dx, s0 * dy, inPad); if (q < 0 && !inPad) q = march(x, y, -s0 * dx, -s0 * dy); }
+    if (inBox && !inPad) { q = march(x, y, dx, dy); if (q < 0) q = march(x, y, -dx, -dy); }
     const la = lumAt(Ad, i * 4);
     score[i] = ratioL(la, lumAt(q < 0 ? Bd : Ad, (q < 0 ? src[i] : q) * 4));
     adjOf[i] = q;
