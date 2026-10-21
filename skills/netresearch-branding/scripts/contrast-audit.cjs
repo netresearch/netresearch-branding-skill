@@ -46,10 +46,13 @@
  * Scope: text contrast (SC 1.4.3) and two parts of SC 1.4.11 non-text contrast, each at
  * 3:1 and each failing the run. `focusRingFailures`: what changes on each interactive
  * element between unfocused and forced :focus plus :focus-visible — its outline, each
- * box-shadow ring layer, its border — each against the colour next to it; the indicator
- * passes when any changed part reaches 3:1, and a shadow present in both states is not
- * an indicator. `controlBoundaryFailures`: the border (painted over the control's fill)
- * or the fill of each input, select and textarea against the surface around it.
+ * box-shadow ring layer (a blurred one at its darkest point), its border — each against
+ * the colour next to it; the indicator passes when any changed part reaches 3:1, and a
+ * shadow present in both states is not an indicator. `controlBoundaryFailures`: the
+ * border (painted over the control's fill), a box-shadow ring (Tailwind's `ring-1
+ * ring-inset`) or the fill of each input, select and textarea against the surface
+ * around it. Both are composited as the page paints them, with the opacity of the
+ * control and its ancestors.
  * Disabled controls (also in a disabled fieldset), controls in a hidden ancestor or a
  * closed dialog, controls at opacity 0 (their own or an ancestor's) at every position
  * the scroll pass reaches and 1px visually hidden form fields are skipped; the opacity-0
@@ -93,7 +96,8 @@
  * An outline that only moves on focus counts as changed, except the moves Chromium's own
  * focus styles apply (1px on a link, 2px on a checkbox or radio). Elements whose focus
  * changes no outline, ring or border are counted in `focusWithoutRing`, and the
- * browser's own `outline: auto` ring in `focusUserAgentRing`; neither is judged. A ring
+ * browser's own `outline: auto` ring, in the browser's focus-ring colour, in
+ * `focusUserAgentRing`; neither is judged (an `auto` ring in an author's colour is). A ring
  * drawn on another element (a sibling label, a :focus-within ancestor) is not seen.
  * Icons, charts and other graphics are not evaluated, so a green run is still not a
  * full AA verdict. rgb() and rgba() are read numerically; other notations (oklch(),
@@ -327,7 +331,7 @@ async function measureInteractiveStates(page, scope = '', seen = new Set()) {
 // control was visible are recorded in __mountedAt, and every control visible there that
 // is not in the page at the top is measured there.
 async function revealOnScroll(selector) {
-  const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const frame = () => window.__auditFrame();
   window.__seenAt = new Map();
   window.__mountedAt = new Set();
   const initial = new WeakSet(document.querySelectorAll(selector));
@@ -432,6 +436,10 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     const st = window.setTimeout; const ct = window.clearTimeout; const pending = new Set();
     Object.defineProperty(window, '__auditTimers', { value: { pending } });
     const si = window.setInterval; const ci = window.clearInterval; let inherit = 0;
+    // The audit's frame waits use the native requestAnimationFrame, so a page that
+    // replaces or stubs it cannot stall the run.
+    const raf = window.requestAnimationFrame;
+    Object.defineProperty(window, '__auditFrame', { value: () => new Promise((r) => { raf.call(window, () => raf.call(window, r)); }) });
     // A timeout leaves `pending` when it fires; an interval stays until clearInterval.
     const track = (native, fn, ms, args, self, repeat) => {
       const tracked = (window.__auditLeaving || window.__auditReplaying || inherit > 0) && !(Number(ms) > 1000);
@@ -770,8 +778,25 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
 
     // SC 1.4.11 for non-text parts. A translucent colour is measured as it renders,
     // composited over what lies behind it.
-    const over = (c, b) => ({ r: c.r * c.a + b.r * (1 - c.a), g: c.g * c.a + b.g * (1 - c.a), b: c.b * c.a + b.b * (1 - c.a) });
     const rgb = (c) => `rgb(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)})`;
+    // The colour a pixel of `el` renders as: each ancestor's background under what lies
+    // above it, each ancestor's opacity applied to its whole subtree (a group), over white.
+    // `top` is a colour drawn on that pixel; with `ownBg` false the pixel lies outside el's
+    // box (an outline, an outer ring), where el paints only `top`. Opacity 0 is left out:
+    // such a control is skipped, or measured where it was visible.
+    const paint = (el, top = null, ownBg = true) => {
+      let C = top ? { r: top.r * top.a, g: top.g * top.a, b: top.b * top.a } : { r: 0, g: 0, b: 0 };
+      let A = top ? top.a : 0;
+      for (let e = el, first = true; e; e = e.parentElement, first = false) {
+        const ecs = getComputedStyle(e);
+        if (ecs.display === 'contents') continue;
+        const c = first && !ownBg ? null : parse(ecs.backgroundColor);
+        if (c && c.a > 0) { C = { r: C.r + c.r * c.a * (1 - A), g: C.g + c.g * c.a * (1 - A), b: C.b + c.b * c.a * (1 - A) }; A += c.a * (1 - A); }
+        const o = Number.parseFloat(ecs.opacity);
+        if (o > 0 && o < 1) { C = { r: C.r * o, g: C.g * o, b: C.b * o }; A *= o; }
+      }
+      return { r: C.r + 255 * (1 - A), g: C.g + 255 * (1 - A), b: C.b + 255 * (1 - A), a: 1 };
+    };
     // Whether a control can be seen and used at all: a closed <dialog>, a display:none or
     // visibility:hidden ancestor, opacity 0 on the control or an ancestor (a custom switch's
     // input over its drawn track, a closed popover), a disabled control (also inside
@@ -824,9 +849,15 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         const colour = leadingColour(layer);
         const rest = layer.slice(colour.length).split(/\s+/);
         const lengths = rest.filter((t) => t.endsWith('px')).map(Number.parseFloat);
-        return { text: layer, colour, inset: rest.includes('inset'), spread: lengths[3] || 0 };
+        return { text: layer, colour, inset: rest.includes('inset'), blur: lengths[2] || 0, spread: lengths[3] || 0 };
       });
     };
+    // A ring layer's colour at its darkest point, next to the border: a blur is a Gaussian
+    // with a standard deviation of half the blur radius (CSS Backgrounds 3), so there the
+    // layer reaches Phi(spread / sigma) of its alpha.
+    const erf = (x) => { const t = 1 / (1 + 0.3275911 * x);
+      return 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); };
+    const ringColour = (layer, c) => (layer.blur > 0 ? { ...c, a: c.a * 0.5 * (1 + erf((2 * layer.spread / layer.blur) / Math.SQRT2)) } : c);
     const SIDES = ['Top', 'Right', 'Bottom', 'Left'];
     const ringState = (el) => {
       const cs = getComputedStyle(el);
@@ -857,35 +888,41 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (after.offset === before.offset) return false;
       return !(before.offset === '0px' && UA_OFFSET.some(([sel, px]) => el.matches(sel) && after.offset === px));
     };
-    const outlinePart = (el, cs, before, after, { outer, own }) => {
+    const outlinePart = (el, cs, before, after) => {
       const width = Number.parseFloat(cs.outlineWidth);
       if (!outlineChanged(el, before, after) || cs.outlineStyle === 'none' || Number.isNaN(width) || width <= 0) return [];
       const c = parse(cs.outlineColor);
       if (!c || c.a === 0) return [];
-      const against = (Number.parseFloat(cs.outlineOffset) || 0) < 0 ? own : outer;
-      return [{ indicator: 'outline', shown: over(c, against), against }];
+      const inside = (Number.parseFloat(cs.outlineOffset) || 0) < 0;
+      return [{ indicator: 'outline', shown: paint(el, c, inside), against: inside ? paint(el) : paint(el.parentElement) }];
     };
     // Each new shadow layer with a spread (a ring): inset against the element's own
     // background, outer against the parent's.
-    const shadowParts = (cs, before, { outer, own }) => shadowLayers(cs.boxShadow)
+    const shadowParts = (el, cs, before) => shadowLayers(cs.boxShadow)
       .filter((layer) => !before.shadows.includes(layer.text) && layer.spread > 0)
       .map((layer) => ({ layer, c: parse(layer.colour) }))
       .filter(({ c }) => c && c.a > 0)
-      .map(({ layer, c }) => {
-        const against = layer.inset ? own : outer;
-        return { indicator: 'box-shadow', shown: over(c, against), against };
-      });
+      .map(({ layer, c }) => ({ indicator: 'box-shadow', shown: paint(el, ringColour(layer, c), layer.inset), against: layer.inset ? paint(el) : paint(el.parentElement) }));
     // Each changed, visible border side, painted over the element's fill unless
     // background-clip stops the fill short of it, against the parent's background.
-    const borderParts = (cs, before, after, { outer, own }) => SIDES.flatMap((sd, k) => {
+    const borderParts = (el, cs, before, after) => SIDES.flatMap((sd, k) => {
       const p = 'border' + sd;
       if (after.borders[k] === before.borders[k] || cs[p + 'Style'] === 'none') return [];
       const w = Number.parseFloat(cs[p + 'Width']);
       const c = parse(cs[p + 'Color']);
       if (Number.isNaN(w) || w <= 0 || !c || c.a === 0) return [];
-      const under = cs.backgroundClip === 'border-box' ? own : outer;
-      return [{ indicator: 'border', shown: over(c, under), against: outer }];
+      return [{ indicator: 'border', shown: paint(el, c, cs.backgroundClip === 'border-box'), against: paint(el.parentElement) }];
     });
+    // The browser's focus-ring colour where el sits (it follows color-scheme), read from a
+    // probe: an `outline: auto` ring in it is the browser's own.
+    const uaRingColour = (el) => {
+      const probe = document.createElement('span');
+      probe.style.outlineColor = '-webkit-focus-ring-color';
+      (el.parentElement || document.documentElement).append(probe);
+      const c = getComputedStyle(probe).outlineColor;
+      probe.remove();
+      return c;
+    };
     const ringBefore = new WeakMap();
     window.__focusWithoutRing = 0;
     window.__focusUserAgentRing = 0;
@@ -899,12 +936,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (!before) return null;
       const cs = getComputedStyle(el);
       const after = ringState(el);
-      const surfaces = { outer: bgOf(el.parentElement || el), own: bgOf(el) };
-      if (outlineChanged(el, before, after) && cs.outlineStyle === 'auto') { window.__focusUserAgentRing++; return null; }
+      if (outlineChanged(el, before, after) && cs.outlineStyle === 'auto' && cs.outlineColor === uaRingColour(el)) { window.__focusUserAgentRing++; return null; }
       const parts = [
-        ...outlinePart(el, cs, before, after, surfaces),
-        ...shadowParts(cs, before, surfaces),
-        ...borderParts(cs, before, after, surfaces),
+        ...outlinePart(el, cs, before, after),
+        ...shadowParts(el, cs, before),
+        ...borderParts(el, cs, before, after),
       ];
       if (!parts.length) { window.__focusWithoutRing++; return null; }
       const best = parts.map((p) => ({ ...p, r: ratio(p.shown, p.against) })).sort((a, b) => b.r - a.r)[0];
@@ -912,16 +948,17 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       return { element: describe(el), indicator: best.indicator, color: rgb(best.shown), against: rgb(best.against), ratio: +best.r.toFixed(2), required: 3 };
     };
 
-    // The visible boundary of a form control: its border, or its own fill where that
-    // differs enough from the surface around it. Disabled controls are exempt (SC 1.4.11),
-    // and native checkboxes and radios draw their own boundary.
+    // The visible boundary of a form control: its border, a box-shadow ring with a spread,
+    // or its own fill where that differs enough from the surface around it. Disabled
+    // controls are exempt (SC 1.4.11), and native checkboxes and radios draw their own
+    // boundary.
     const NO_BOUNDARY = new Set(['hidden', 'submit', 'button', 'reset', 'image', 'range', 'color', 'file']);
     window.__boundaryOf = (el) => {
       if (NO_BOUNDARY.has(el.type) || el.closest('[data-contrast-demo]') || !perceivable(el)) return null;
       const cs = getComputedStyle(el);
       if ((el.type === 'checkbox' || el.type === 'radio') && cs.appearance !== 'none') return null;
-      const outer = bgOf(el.parentElement || el);
-      const fill = bgOf(el);
+      const outer = paint(el.parentElement);
+      const fill = paint(el);
       let best = ratio(fill, outer); let border = null;
       for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
         const w = Number.parseFloat(cs[`border${side}Width`]);
@@ -929,7 +966,13 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         const c = parse(cs[`border${side}Color`]);
         if (!c) continue;
         // The background is painted under the border unless background-clip stops it.
-        const shown = over(c, cs.backgroundClip === 'border-box' ? fill : outer); const r = ratio(shown, outer);
+        const shown = paint(el, c, cs.backgroundClip === 'border-box'); const r = ratio(shown, outer);
+        if (r > best) { best = r; border = rgb(shown); }
+      }
+      for (const layer of shadowLayers(cs.boxShadow)) {
+        const c = parse(layer.colour);
+        if (layer.spread <= 0 || !c || c.a === 0) continue;
+        const shown = paint(el, ringColour(layer, c), layer.inset); const r = ratio(shown, outer);
         if (r > best) { best = r; border = rgb(shown); }
       }
       return best < 3 ? { element: describe(el), border, fill: rgb(fill), against: rgb(outer), ratio: +best.toFixed(2), required: 3 } : null;
@@ -975,7 +1018,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   for (const y of positions) {
     await page.evaluate(async ({ top, sel }) => {
       scrollTo({ top, behavior: 'instant' });
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await window.__auditFrame();
       // Marked even if it is at opacity 0 again (a carousel slide whose animation was
       // cancelled): it was seen, and opacity does not change the colours measured.
       for (const el of window.__deferred) if (window.__seenAt.get(el) === top) el.setAttribute('data-contrast-audit-at', '');

@@ -479,6 +479,36 @@ test('rings and boundaries at 3:1 or more pass; disabled controls and the browse
   assert.strictEqual(code, 0, `expected a pass, got exit ${code}`);
 });
 
+test('rings and boundaries are measured as painted: an author auto ring, a blur, opacity, an inset ring', async () => {
+  const { code, json } = await run(fixture('painted',
+    'button{color:#000;background:#fff;border:1px solid #000}'
+    + 'button.au:focus-visible{outline:4px auto #eee}' // an auto ring in the author's colour, 1.16:1
+    + 'button.bl:focus-visible{outline:none;box-shadow:0 0 8px 1px #767676}' // 4.54:1 solid, about 2.2:1 at its darkest
+    + 'button.sh:focus-visible{outline:none;box-shadow:0 0 0 2px #767676}' // the same ring unblurred passes
+    + 'button.tr{background:#000;color:#fff}button.tr:focus-visible{outline:2px solid rgba(255,255,255,.5)}' // over the page, not the button: 1:1
+    + '.faded{opacity:.15}button.ob:focus-visible{outline:2px solid #000}input.op{border:1px solid #000;background:#fff}'
+    + 'input.rg,input.wk{border:0;background:#fff;box-shadow:inset 0 0 0 1px #6b7280}input.wk{box-shadow:inset 0 0 0 1px #ddd}',
+    '<button type="button" class="au">Auto</button><button type="button" class="ua">Browser</button>'
+    + '<button type="button" class="bl">Blur</button><button type="button" class="sh">Sharp</button><button type="button" class="tr">Dark</button>'
+    + '<div class="faded"><button type="button" class="ob">Faded</button><label>Faded <input class="op"></label></div>'
+    + '<label>Ring <input class="rg"></label><label>Weak ring <input class="wk"></label>'));
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => `${f.element} ${f.indicator}`).sort(),
+    ['button.au outline', 'button.bl box-shadow', 'button.ob outline', 'button.tr outline']);
+  assert.deepStrictEqual(json.controlBoundaryFailures.map((f) => f.element).sort(), ['input.op', 'input.wk']);
+  assert.strictEqual(json.focusUserAgentRing, 4, 'the browser ring of button.ua and the three inputs, not the author auto ring');
+  assert.strictEqual(code, 1);
+});
+
+test('a page that stubs requestAnimationFrame is still measured, also at a scroll position', async () => {
+  const { code, json } = await run(fixture('stubraf', 'p.weak{color:#aaa}.tall{height:3000px}button.top{opacity:0}button.top.on{opacity:1}',
+    '<p class="weak">Weak</p><div class="tall"></div><button type="button" class="top">Top</button>' // shown only once scrolled
+    + '<script>const t=document.querySelector(".top");addEventListener("scroll",()=>t.classList.toggle("on",scrollY>100));'
+    + 'window.requestAnimationFrame=()=>0;</script>'));
+  assert.deepStrictEqual(json.contrastFailures.map((f) => f.element), ['p.weak']);
+  assert.strictEqual(json.transparentControlsSkipped, 0, 'button.top is measured where it was visible');
+  assert.strictEqual(code, 1);
+});
+
 // Shapes a page author meets: each of these must fail, and the class names which.
 test('weak indicators in their common shapes fail', async () => {
   const { code, json } = await run(fixture('weakshapes',
