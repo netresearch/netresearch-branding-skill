@@ -1131,3 +1131,47 @@ test('of two color-scheme meta tags the first that parses decides', async () => 
     assert.strictEqual(json.focusUserAgentRing, 1, metas.join(' | '));
   }
 });
+
+// Writes a whole page (own <style> and <script>) and audits it.
+async function page(name, html) {
+  const file = path.join(dir, `${name}.html`);
+  fs.writeFileSync(file, `<!doctype html><html lang="en"><title>${name}</title>${html}</html>`);
+  return run(file);
+}
+
+// Pins the scoring of the strip a lifted control vacates: a ring with no top line (an offset
+// spread shadow as an underline) lies over that strip after a 2 px lift. Not scored there, the
+// short sides alone failed it at 21:1; scored against the surfaces it may lie on, it passes.
+test('a strong ring with no top line still passes after a lift', async () => {
+  const css = 'body{background:#fff;color:#000;margin:0}button{color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}.t{margin:60px}';
+  for (const [name, rule, body] of [
+    ['striptop', 'button:focus-visible{outline:none;position:relative;top:-2px;box-shadow:0 1px 0 1px #000}', '<div class="t"><button type="button">Bar</button></div>'],
+    ['stripcard', '.card:focus-within{transform:translateY(-2px)}button:focus-visible{outline:none;box-shadow:0 1px 0 1px #000}', '<div class="t"><div class="card"><button type="button">Bar</button></div></div>'],
+  ]) {
+    const { code, json } = await page(name, `<style>${css}${rule}</style><main>${body}</main>`);
+    assert.deepStrictEqual({ failures: json.focusRingFailures, unverified: json.focusRingUnverified, code }, { failures: [], unverified: 0, code: 0 }, name);
+  }
+});
+
+// Pins the rule that a ring whose changed pixels all lie under an animated neighbour cannot be
+// read: an overlay recoloured each frame covers the button until focus raises it. Without the
+// rule no candidate is left and the strong ring fails at 1:1.
+test('a ring whose changed pixels all lie under an animation is unverified', async () => {
+  const { code, json } = await page('shimmer', '<style>body{background:#fff;color:#000;margin:0}.t{position:relative;margin:60px;display:inline-block}'
+    + 'button{position:relative;color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}'
+    + 'button:focus-visible{z-index:3;outline:2px solid #000;outline-offset:2px}.sh{position:absolute;left:-20px;top:-20px;width:200px;height:70px;z-index:2;background:rgb(240,240,240)}</style>'
+    + '<main><div class="t"><button type="button">Shimmer</button><span class="sh"></span></div></main>'
+    + '<script>const s=document.querySelector(".sh");let n=0;(function f(){n+=7;const g=200+(n%56);s.style.background="rgb("+g+","+g+","+g+")";requestAnimationFrame(f)})();</script>');
+  assert.deepStrictEqual({ failures: json.focusRingFailures, unverified: json.focusRingUnverified, code }, { failures: [], unverified: 1, code: 0 });
+});
+
+// Pins the sub-pixel half of the ancestor-transform rule: a card lifted by half a pixel on
+// focus cannot be registered, so the control is unverified; counted as measured, the moved
+// border carries the weak ring.
+test('a card lifted by a fraction of a pixel on focus leaves its control unverified', async () => {
+  const { code, json } = await page('subpxcard', '<style>body{background:#fff;color:#000;margin:0}'
+    + 'button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif}button.w:focus-visible{outline:none;box-shadow:0 0 2px 0.25px #000}'
+    + '.card{margin:60px;padding:12px;width:200px}.card:focus-within{transform:translateY(-0.5px)}</style>'
+    + '<main><div class="card"><button type="button" class="w">Card</button></div></main>');
+  assert.deepStrictEqual({ failures: json.focusRingFailures, unverified: json.focusRingUnverified, code }, { failures: [], unverified: 1, code: 0 });
+});

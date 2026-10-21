@@ -65,8 +65,9 @@
  * half (not a skip link), each focused pixel is compared with the unfocused pixel it
  * moved from, and counts as changed only when it differs from that one and from the one
  * in place, so neither the moved border nor a neighbour that stayed is taken for a ring;
- * a pixel outside the focused box over the strip the control vacated is not scored, as
- * no surface under it is known. A sub-pixel move or a resize is compared in place, except
+ * a pixel outside the focused box over the strip the control vacated is scored against
+ * the least contrasting surface it may lie on (the pixel it moved from, the unfocused
+ * surface beside the control on either side). A sub-pixel move or a resize is compared in place, except
  * one by an ancestor's transform (a card that scales on :focus-within), which leaves the
  * control unverified. A pixel counts as changed when a channel moves by more than 2
  * between two shots with the control's icons and images hidden, and a select's shown
@@ -396,7 +397,8 @@ function covered(g, clip) {
 // neighbour). Changed means: with icons hidden (mb, ma) and, for a control with icons,
 // also with them shown (before, after); where focus moved the box by whole pixels at the
 // same size (liftOf), against the unfocused pixel it moved from and the one in place; a
-// pixel outside the focused box over the strip the control vacated is then not scored.
+// pixel outside the focused box over the strip the control vacated is then scored against
+// the least contrasting surface it may lie on.
 // Each such pixel is scored against the colour beside it (SC 1.4.11): outside the border
 // box, its own unfocused value, the surface the ring is painted on; inside it (a
 // recoloured border, an inset ring), the nearest unchanged pixel, outward for a pixel on
@@ -506,7 +508,19 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
     }
     // Registered, an outside pixel over the strip the control vacated has no known surface:
     // neither the unfocused pixel there (the control) nor the one it moved from is under it.
-    if (reg && !inBox && cx > gb.box[0] - clip.vx && cx < gb.box[2] - clip.vx && cy > gb.box[1] - clip.vy && cy < gb.box[3] - clip.vy) continue;
+    // Scored instead against the least contrasting of the surfaces it may lie on: the pixel
+    // it moved from and the unfocused surface beside the control on either side, on the same
+    // row (a vertical lift) or column (a horizontal one). One of them animated: hidden.
+    if (reg && !inBox && cx > gb.box[0] - clip.vx && cx < gb.box[2] - clip.vx && cy > gb.box[1] - clip.vy && cy < gb.box[3] - clip.vy) {
+      const gx0 = gb.box[0] - clip.vx; const gx1 = gb.box[2] - clip.vx; const gy0 = gb.box[1] - clip.vy; const gy1 = gb.box[3] - clip.vy;
+      const sides = lift[1] !== 0 ? [[Math.floor(gx0) - 2, y], [Math.ceil(gx1) + 1, y]] : [[x, Math.floor(gy0) - 2], [x, Math.ceil(gy1) + 1]];
+      const at = [src[i], ...sides.filter(([sx, sy]) => sx >= 0 && sy >= 0 && sx < W && sy < H).map(([sx, sy]) => sy * W + sx)].filter((k) => k >= 0);
+      if (at.some((k) => noise[k])) { hidden.push(i); continue; }
+      const la = lumAt(Ad, i * 4);
+      score[i] = Math.min(...at.map((k) => ratioL(la, lumAt(Bd, k * 4))));
+      cand.push(i);
+      continue;
+    }
     const inPad = cx >= px0 + 0.5 && cx <= px1 - 0.5 && cy >= py0 + 0.5 && cy <= py1 - 0.5;
     const s0 = inPad ? -1 : 1;
     let q = -1;
@@ -516,6 +530,8 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
     adjOf[i] = q;
     cand.push(i);
   }
+  // Only pixels an animated neighbour hides changed: the ring cannot be read.
+  if (!cand.length && hidden.length) return { covered: true };
   if (!cand.length) {
     // What is painted at the middle of the top edge, just outside the box, in both states.
     const e = Math.min(H - 1, Math.max(0, Math.floor(by0) - 1)) * W + Math.min(W - 1, Math.max(0, Math.round((bx0 + bx1) / 2)));
