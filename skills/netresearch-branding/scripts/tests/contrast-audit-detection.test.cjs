@@ -419,6 +419,21 @@ test('string timer handlers run; chained timers and intervals of a hover-out are
   assert.strictEqual(code, 1);
 });
 
+for (const [name, out] of [
+  ['timer', 'setTimeout(()=>setTimeout(rm,600),100)'], // a timer set in a timer
+  ['string', 'window.rm=rm;window.later=()=>setTimeout(rm,600);setTimeout("later()",100)'], // a legacy string handler that sets the next timer
+  ['await', 'setTimeout(async()=>{await null;await null;setTimeout(rm,600)},100)'], // two awaits before the next timer
+]) {
+  test(`a hover-out chained through ${name} is waited for, on its own`, async () => {
+    const { code, json } = await run(fixture(`chain-${name}`,
+      'body{margin:0}a.logo{position:absolute;top:0;left:0;color:#000}a.logo.h{color:#ccc}main{padding-top:40px}',
+      '<a class="logo" href="#l">Logo</a><script>const l=document.querySelector(".logo");const rm=()=>l.classList.remove("h");'
+      + `l.addEventListener("mouseover",()=>l.classList.add("h"));l.addEventListener("mouseout",()=>{${out}});</script>`));
+    assert.deepStrictEqual(json.contrastFailures, []);
+    assert.strictEqual(code, 0);
+  });
+}
+
 test('only keyboard-reachable controls are judged as focus indicators', async () => {
   const { code, json } = await run(fixture('reach',
     'button{background:#fff;border:1px solid #000;color:#000}:focus-visible{outline:2px solid #ddd}', // 1.36:1
