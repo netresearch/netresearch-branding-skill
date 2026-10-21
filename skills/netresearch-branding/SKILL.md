@@ -5,7 +5,7 @@ name: netresearch-branding
 description: "Use when working with ANY Netresearch visual output: branded pages, dashboards, HTML reports, TYPO3 manuals on docs.typo3.org, extension icons, README badges, or CSS theming. Select the hosted-manual or standalone-page profile before applying logo, typography, color and footer requirements."
 license: "(MIT AND CC-BY-SA-4.0)"
 metadata:
-  version: "2.13.0"
+  version: "3.0.0"
   repository: "https://github.com/netresearch/netresearch-branding-skill"
   author: "Netresearch DTT GmbH"
 ---
