@@ -1189,7 +1189,7 @@ test('a ring that paints nothing next to a small animation still fails at 1:1', 
 });
 
 // Pins how the strip a lifted control vacates is scored: against the pixel it moved from
-// and the surface behind the control, read from a shot with the control hidden. Sampled
+// and the surface behind the control, read from focused shots with it at opacity 0. Sampled
 // beside the control instead, a weak ring in a dark group above a black bar passed, and a
 // strong underline next to one dark neighbour failed at 1.32.
 test('the vacated strip is scored against the surface behind the control', async () => {
@@ -1219,4 +1219,18 @@ test('the strip behind a lifted control is read in its focused state, and only a
     want[name] = { failures, unverified: 0, code: failures.length ? 1 : 0 };
   }
   assert.deepStrictEqual(got, want);
+});
+
+// Pins how the surface behind a lifted control is read. A visibility: visible descendant that
+// stays over the strip (positioned against the wrapper, the button lifted by margin) is hidden
+// at opacity 0, so the ring over it passes; under visibility: hidden it stayed painted and the
+// ring failed at 1.32. A surface that animates behind the strip leaves the ring unverified:
+// read from one shot it failed, and scored at 21:1 it passed.
+test('a visible child and an animated surface behind the vacated strip', async () => {
+  const got = {};
+  for (const [name, html] of [['fixedchild2', "<style>body{background:#fff;color:#000;margin:0}.t{position:relative;margin:60px;width:160px;display:flow-root}button{display:block;margin:0;color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif;padding:0}.in{visibility:visible;position:absolute;left:0;top:28px;width:160px;height:2px;z-index:-1;background:#222}button:focus-visible{outline:none;margin-top:-2px;margin-bottom:2px;box-shadow:0 1px 0 1px #000}</style><main><div class=\"t\"><button type=\"button\">Go<span class=\"in\"></span></button></div></main>"], ['anim4', "<style>body{background:#fff;color:#000;margin:0}.t{position:relative;display:inline-block;margin:60px}.pl{position:absolute;left:0;top:0;right:0;bottom:0;background:#222}button{position:relative;display:block;margin:0;color:#000;background:#fff;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}button:focus-visible{outline:none;top:-4px;box-shadow:0 1px 0 1px #000}</style><main><div class=\"t\"><div class=\"pl\"></div><button type=\"button\">Go</button></div></main><script>const s=document.querySelector(\".pl\");let n=0;(function f(){n+=13;const g=n%60;s.style.background=\"rgb(\"+g+\",\"+g+\",\"+g+\")\";requestAnimationFrame(f)})();</script>"]]) {
+    const { code, json } = await page(name, html);
+    got[name] = { failures: json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy} ${f.ratio}`), unverified: json.focusRingUnverified, code };
+  }
+  assert.deepStrictEqual(got, { fixedchild2: { failures: [], unverified: 0, code: 0 }, anim4: { failures: [], unverified: 1, code: 0 } });
 });

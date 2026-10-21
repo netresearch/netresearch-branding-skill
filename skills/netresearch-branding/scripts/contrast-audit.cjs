@@ -68,7 +68,9 @@
  * a pixel outside the focused box over the strip the control vacated is scored against
  * the lower of the pixel it moved from and the surface behind the control, read from
  * three focused shots with the control at opacity 0 (a pixel that changes between them is
- * taken as hidden by an animation). A sub-pixel move or a resize is compared in place, except
+ * taken as hidden by an animation). The lower of the two is conservative: a ring that covers
+ * the whole strip in front of a dark surface exactly behind the control (a plate as large
+ * as the control, never visible) fails, a known false failure. A sub-pixel move or a resize is compared in place, except
  * one by an ancestor's transform (a card that scales on :focus-within), which leaves the
  * control unverified. A pixel counts as changed when a channel moves by more than 2
  * between two shots with the control's icons and images hidden, and a select's shown
