@@ -95,8 +95,9 @@
  * or inset outline (at least 8 px). A piece is measured by its extent, so a compact block
  * (a CSS icon that recolours) cannot carry it. A changed pixel outside the border box is
  * scored against its own unfocused value, one on the border against the nearest unchanged
- * pixel, one inside the padding box (a tinted fill, an inset ring) against its own
- * unfocused value;
+ * pixel, one inside the padding box (a tinted fill, an inset ring) against the first
+ * pixel of another colour inward of it where focus changed that one too (a new fill
+ * beside an inset ring), else against its own unfocused value;
  * a ring that changes no pixel fails at 1:1.
  * A boundary is judged on one shot at rest: the median of the lines across each side,
  * corners left out, against the surface a few pixels outside, on its best side. So these
@@ -422,7 +423,8 @@ function covered(g, clip) {
 // box, its own unfocused value, the surface the ring is painted on; inside it (a
 // recoloured border), for a pixel on the border the nearest unchanged pixel within half
 // the shorter side, outward and then inward, and with none, again its own unfocused value;
-// inside the padding box (a tinted fill, an inset ring), its own unfocused value, never a
+// inside the padding box (a tinted fill, an inset ring), the first pixel of another colour
+// inward of it where focus changed that one too, else its own unfocused value, never a
 // dark child or the far border. The indicator's ratio is the highest score t at which the
 // pixels scoring t or more hold one piece (pixels up to 2 px apart are joined, across the
 // anti-aliased corners of a rounded ring) at least as large as the straight part of the
@@ -504,6 +506,18 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
   // A pixel scored against the surface behind the control (`under`), for `against`.
   const behind = new Uint8Array(N);
   const cand = []; const hidden = [];
+  // The first pixel inward of i whose focused colour differs from i's (past the rest of an
+  // inset ring), within half the shorter side; -1 when none.
+  const beside = (i, x, y, sx, sy) => {
+    for (let k = 1; k <= Math.ceil(short / 2); k++) {
+      const qx = x + k * sx; const qy = y + k * sy;
+      if (qx < 0 || qy < 0 || qx >= W || qy >= H || !own(qx, qy)) return -1;
+      const q = qy * W + qx;
+      if (hole[q]) continue;
+      if (dif(Ad, q, Ad, i)) return q;
+    }
+    return -1;
+  };
   const march = (x, y, sx, sy) => {
     for (let k = 1; k <= Math.ceil(short / 2); k++) {
       const qx = x + k * sx; const qy = y + k * sy;
@@ -541,11 +555,14 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
       cand.push(i);
       continue;
     }
-    // A padding-box pixel (a tinted fill, an inset ring) is read against its own unfocused
-    // value: an unchanged pixel inward of it may be a dark child or the far border.
+    // A padding-box pixel (a tinted fill, an inset ring) is read against the first pixel
+    // inward of its own colour when focus changed that one too (the new fill beside an inset
+    // ring), and otherwise against its own unfocused value: an unchanged pixel there may be a
+    // dark child or the far border.
     const inPad = cx >= px0 + 0.5 && cx <= px1 - 0.5 && cy >= py0 + 0.5 && cy <= py1 - 0.5;
     let q = -1;
     if (inBox && !inPad) { q = march(x, y, dx, dy); if (q < 0) q = march(x, y, -dx, -dy); }
+    if (inPad) { q = beside(i, x, y, -dx, -dy); if (q >= 0 && !changed[q]) q = -1; }
     const la = lumAt(Ad, i * 4);
     score[i] = ratioL(la, lumAt(q < 0 ? Bd : Ad, (q < 0 ? src[i] : q) * 4));
     adjOf[i] = q;
@@ -1657,7 +1674,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       // A rotated, skewed or 3D-transformed control is not sampled on axis-aligned lines.
       for (let a = el; a; a = a.parentElement) { const ro = getComputedStyle(a).rotate; if (ro && ro !== 'none' && Number.parseFloat(ro.split(' ').pop()) !== 0) { g.clipped = true; break; } const t = getComputedStyle(a).transform; if (t && t !== 'none') { const mx = new DOMMatrix(t); if (Math.abs(mx.b) > 1e-6 || Math.abs(mx.c) > 1e-6 || !mx.is2D) { g.clipped = true; break; } } }
       // How far inside the border edge a ring may lie: a border, an inset outline.
-      g.inset = Math.max(...g.bw, cs.outlineStyle === 'none' ? 0 : Math.max(0, -((Number.parseFloat(cs.outlineOffset) || 0) + (Number.parseFloat(cs.outlineWidth) || 0))));
+      g.inset = Math.max(...g.bw, cs.outlineStyle === 'none' ? 0 : Math.max(0, -(Number.parseFloat(cs.outlineOffset) || 0)));
       // How far a shadow's blur and spread reach along a side from a corner, where two sides' shadows overlap.
       g.soft = Math.max(0, ...shadowLayers(cs.boxShadow).map((l) => l.blur + Math.abs(l.spread)));
       g.tf = [cs.transform, cs.translate, cs.scale, cs.rotate].join('|');

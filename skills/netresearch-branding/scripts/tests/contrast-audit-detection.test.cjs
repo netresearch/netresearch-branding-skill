@@ -1281,6 +1281,12 @@ test('a fill tinted on focus is read against its old fill, not the control borde
     ['filltintrule', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px}button{display:flex;align-items:center;justify-content:center;margin:0;color:#000;font:14px sans-serif;background:#fff;border:1px solid #000;padding:0;width:160px;height:30px;border-radius:15px;}button:focus-visible{outline:none;background:#eef;box-shadow:0 0 2px 0.25px #000}.k{display:block;flex:none}</style><main><div class=\"t\"><button type=\"button\" aria-label=\"Go\"><span class=\"k\" style=\"width:130px;height:2px;background:#000\"></span></button></div></main>"],
     // a fill turned black with a small dark dot that stays: the black fill is the ring, a pass
     ['filldarkdot', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px}button{display:flex;align-items:center;justify-content:center;margin:0;color:#000;font:14px sans-serif;background:#fff;border:1px solid #000;width:160px;height:30px;padding:0;}button:focus-visible{outline:none;background:#000;box-shadow:0 0 2px 0.25px #000}.k{display:block;flex:none}</style><main><div class=\"t\"><button type=\"button\" aria-label=\"Go\"><span class=\"k\" style=\"width:10px;height:10px;background:#222\"></span></button></div></main>"],
+    // a gradient fill that focus lightens, with an inset ring close to the new fill: the ring
+    // is read against the new fill beside it
+    ['insetnewfill', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif;}.t{margin:60px}button{display:block;margin:0;color:#000;font:14px sans-serif;width:160px;height:30px;padding:0;background:linear-gradient(#000,#000);border:1px solid #8a8a8a;}button:focus-visible{outline:none;background:linear-gradient(#555,#555);box-shadow:inset 0 0 0 3px #666;}</style><main><div class=\"t\"><button type=\"button\" aria-label=\"Go\"></button></div></main>"],
+    // an inset outline right inside the border, on a fill that stays: the outline's inner
+    // edge, not its outer one, bounds the straight length it must span, a pass
+    ['insetoutline', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px}button{display:block;margin:0;color:#000;font:14px sans-serif;width:160px;height:30px;padding:0;background:#fff;border:1px solid #000;}button:focus-visible{outline:2px solid #fff;outline-offset:-3px;background:#000;}</style><main><div class=\"t\"><button type=\"button\" aria-label=\"Go\"></button></div></main>"],
     // the same through a transparent fill, with the section around it shaded on :focus-within
     ['sectiontint', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.s{padding:50px}.s:focus-within{background:#eef}button{display:block;margin:0;color:#000;background:transparent;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}button:focus-visible{outline:none;box-shadow:0 0 2px 0.25px #000}</style><main><div class=\"s\"><button type=\"button\">Go</button></div></main>"],
   ]) {
@@ -1294,6 +1300,8 @@ test('a fill tinted on focus is read against its old fill, not the control borde
     filltintchild: { failures: ['button pixels 2.07'], code: 1 },
     filltintrule: { failures: ['button pixels 2.68'], code: 1 },
     filldarkdot: { failures: [], code: 0 },
+    insetnewfill: { failures: ['button pixels 2.82'], code: 1 },
+    insetoutline: { failures: [], code: 0 },
     sectiontint: { failures: ['button pixels 2.35'], code: 1 },
   });
 });
