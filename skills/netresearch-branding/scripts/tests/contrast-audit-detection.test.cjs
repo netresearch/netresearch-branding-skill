@@ -750,7 +750,7 @@ test('a ring around an icon or an image is measured with the icon hidden, not cu
   assert.strictEqual(code, 1);
 });
 
-test('a rotated, skewed or 3D-transformed control is unverified (its box fails the cover test); a scaled one is measured', async () => {
+test('a rotated, skewed or 3D-transformed control is unverified; a scaled one is measured', async () => {
   const { code, json } = await run(fixture('transformed',
     'div.t{margin:60px}button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px}button:focus-visible{outline:2px solid #000;outline-offset:2px}'
     + 'input{border:1px solid #000;background:#fff}.sc{transform:scale(1.5);transform-origin:0 0}.rot{transform:rotate(12deg)}.sk{transform:skewX(20deg)}'
@@ -762,6 +762,135 @@ test('a rotated, skewed or 3D-transformed control is unverified (its box fails t
   assert.strictEqual(json.focusRingUnverified, 3, 'rot, sk and p3b');
   assert.strictEqual(json.controlBoundaryUnverified, 3, 'rot, sk and p3i');
   assert.strictEqual(code, 0);
+});
+
+// A plain button for the pixel tests below: w carries the weak ring, s a strong outline.
+const BTN = 'body{margin:0}button{color:#000;background:#fff;border:1px solid #000;width:120px;height:30px;font:14px sans-serif}'
+  + `button.w:focus-visible{outline:none;${WEAK}}button.s:focus-visible{outline:2px solid #000;outline-offset:2px}`;
+const SQUARE = (c, w, h) => `data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22${w}%22 height=%22${h}%22%3E%3Crect width=%22${w}%22 height=%22${h}%22 fill=%22%23${c}%22/%3E%3C/svg%3E`;
+// Runs each [name, css, body] fixture and returns, per name, its ring failures, unverified
+// rings and exit code, so one comparison shows every fixture that differs.
+async function rings(cases) {
+  const got = {};
+  for (const [name, css, body] of cases) {
+    const { code, json } = await run(fixture(name, css, body));
+    got[name] = { failures: json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy}`), unverified: json.focusRingUnverified, code };
+  }
+  return got;
+}
+
+// Pins that a control with an image is scored with the image shown: the image is hidden
+// only to find the changed pixels. Scored with it hidden, the inset black outline sits on
+// the white behind the image and passes at 21:1; drawn over the #333 image it is 1.66:1.
+test('an inset ring over an image is scored against the image, not the white behind it', async () => {
+  const { code, json } = await run(fixture('thumb',
+    'body{margin:0}a{display:inline-block;margin:40px;background:#fff}a img{display:block}a.blk:focus-visible{outline:3px solid #000;outline-offset:-3px}',
+    `<a class="blk" href="#a"><img alt="Dark photo" width="200" height="120" src="${SQUARE('333', 200, 120)}"></a>`));
+  assert.deepStrictEqual(json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy}`), ['a.blk pixels']);
+  assert.ok(json.focusRingFailures[0].ratio < 2, `about 1.66:1 on the image: ${JSON.stringify(json.focusRingFailures)}`);
+  assert.strictEqual(json.focusRingUnverified, 0);
+  assert.strictEqual(code, 1);
+});
+
+// Pins that the moved-page check counts only the control's own pixels inside its box: an
+// element animated beside it (by requestAnimationFrame, or a ticker on an interval) changes
+// pixels in the clip on every shot. Counting the whole clip made the rings unverified.
+test('a control next to an animated element is measured, not unverified', async () => {
+  const css = `${BTN}.t{margin:60px;display:flex;gap:6px;align-items:center}.sp{width:24px;height:24px;background:#000}`;
+  const got = await rings([
+    ['raf', css, '<div class="t"><button type="button" class="w">W</button><span class="sp"></span><button type="button" class="s">S</button></div>'
+      + '<script>const sp=document.querySelector(".sp");let a=0;(function f(){a+=12;sp.style.transform="rotate("+a+"deg)";requestAnimationFrame(f)})();</script>'],
+    ['caro', css, '<div class="t"><button type="button" class="w">W</button><span class="sp"></span></div><div class="t"><button type="button" class="s">S</button><span class="sp"></span></div>'
+      + '<script>let on=0;setInterval(()=>{on^=1;for(const t of document.querySelectorAll(".sp"))t.style.background=on?"#000":"#fff"},50);</script>'],
+  ]);
+  const fails = { failures: ['button.w pixels'], unverified: 0, code: 1 };
+  assert.deepStrictEqual(got, { raf: fails, caro: fails });
+});
+
+// Pins the containing-block chain of the clip test: an absolute control is clipped only by
+// an ancestor at or above its containing block, a fixed one only by a transformed, filtered
+// or contained ancestor. Without the chain both overflow boxes count as clipping and every
+// ring here is unverified.
+test('a control positioned out of an overflow box is measured, not unverified', async () => {
+  const got = await rings([
+    ['absesc', `${BTN}.cb{position:relative;margin:60px;height:200px}.ov{overflow:hidden;height:30px;width:150px}.ov button{position:absolute;top:80px;left:0}.ov button.s{left:140px}`,
+      '<div class="cb"><div class="ov"><button type="button" class="w">W</button><button type="button" class="s">S</button></div></div>'],
+    ['fixin', `${BTN}.shell{height:200px;overflow:auto;width:300px;margin:40px}.fab{position:fixed;bottom:40px;right:40px}.fab button.s{margin-left:8px}`,
+      '<div class="shell"><p>App</p><div style="height:600px"></div><div class="fab"><button type="button" class="w">W</button><button type="button" class="s">S</button></div></div>'],
+  ]);
+  const fails = { failures: ['button.w pixels'], unverified: 0, code: 1 };
+  assert.deepStrictEqual(got, { absesc: fails, fixin: fails });
+});
+
+// Pins what "paints nothing" excludes in the cover test: a replaced element (img, canvas,
+// iframe), an empty element painted by its ::before and one with a backdrop-filter all
+// paint over the control. Taken for transparent, they let the hidden strong ring fail at 1:1.
+test('a strong ring under an image, canvas, iframe, pseudo-element or backdrop filter is unverified', async () => {
+  const cover = 'position:absolute;top:90px;left:80px;width:340px;height:60px';
+  const row = '<div class="row"><button type="button" class="s">S</button></div>';
+  const css = `${BTN}.row{position:absolute;top:100px;left:100px}`;
+  const got = await rings([
+    ['imgc', `${css}img.cov{${cover}}`, `${row}<img class="cov" alt="" src="${SQUARE('36c', 340, 60)}">`],
+    ['canc', `${css}canvas{${cover}}`, `${row}<canvas width="340" height="60"></canvas><script>const c=document.querySelector("canvas").getContext("2d");c.fillStyle="#36c";c.fillRect(0,0,340,60);</script>`],
+    ['ifr', `${css}iframe{${cover.replace('absolute', 'fixed')};border:0}`, `${row}<iframe title="chat" srcdoc="<body style='margin:0;background:#36c'></body>"></iframe>`],
+    ['pse', `${css}.ov{${cover}}.ov::before{content:"";position:absolute;inset:0;background:#36c}`, `${row}<div class="ov"></div>`],
+    ['bdf', `${css}.ov{${cover};backdrop-filter:blur(6px)}`, `${row}<div class="ov"></div>`],
+  ]);
+  const unv = { failures: [], unverified: 1, code: 0 };
+  assert.deepStrictEqual(got, { imgc: unv, canc: unv, ifr: unv, pse: unv, bdf: unv });
+});
+
+// Pins the unverified cases of a control only partly visible: off the left edge of the
+// viewport (no scroll can bring it in), inside a contain: paint or a clip-path box (beside
+// overflow: clip, which was already handled) and inside a content-visibility: auto box.
+// Measured, the strong ring is cut where the control is cut and fails on its extent.
+test('a strong ring on a control only partly visible is unverified', async () => {
+  const box = 'width:180px;height:60px;margin:60px;padding:15px 0 0 0';
+  const got = await rings([
+    ['edge', `${BTN}.e{position:absolute;top:100px;left:-40px}`, '<button type="button" class="s e">Edge</button>'],
+    ['ovc', `${BTN}.c{overflow:clip;${box}}.cp{contain:paint;${box}}.ci{clip-path:inset(0);${box}}.c button,.cp button,.ci button{margin-left:100px}`,
+      '<div class="c"><button type="button" class="s">S</button></div><div class="cp"><button type="button" class="s">S</button></div>'
+      + '<div class="ci"><button type="button" class="s">S</button></div>'],
+    ['cv', `${BTN}.cv{content-visibility:auto;${box}}.cv button{margin-left:100px}`, '<div class="cv"><button type="button" class="s">S</button></div>'],
+  ]);
+  assert.deepStrictEqual(got, {
+    edge: { failures: [], unverified: 1, code: 0 },
+    ovc: { failures: [], unverified: 3, code: 0 },
+    cv: { failures: [], unverified: 1, code: 0 },
+  });
+});
+
+// Pins the boundary side of the same rule: an input off the left edge of the viewport is not
+// sampled on its visible part (inView(g, 0) in verifyBoundaries), so it is unverified.
+test('a form field only partly inside the viewport is unverified, not measured', async () => {
+  const { code, json } = await run(fixture('edgefield', 'input.e{position:absolute;top:100px;left:-40px;width:200px;border:1px solid #000;background:#fff}',
+    '<input class="e" aria-label="Edge">'));
+  assert.deepStrictEqual(json.controlBoundaryFailures, []);
+  assert.strictEqual(json.controlBoundaryUnverified, 1);
+  assert.strictEqual(code, 0);
+});
+
+// Pins two transform cases. The rotate property (not transform) makes a control unverified
+// like a rotated transform; unread, the controls are sampled on axis-aligned lines and the
+// input's border fails at 1:1. And a transform applied only on focus is pinned to its
+// unfocused value for the focused shots, also for the shot with the icons shown: unpinned,
+// the 1 px lift or the scale moves the black border onto the ring and the weak ring passes.
+test('the rotate property makes a control unverified; a transform on focus does not hide a weak ring', async () => {
+  const rot = await run(fixture('rotp', `${BTN}.t{margin:60px}.r{rotate:8deg}input{border:1px solid #000;background:#fff;margin:20px}`,
+    '<div class="t"><button type="button" class="w r">W</button> <button type="button" class="s r">S</button> <input class="r" aria-label="r"></div>'));
+  assert.deepStrictEqual(rot.json.focusRingFailures, []);
+  assert.deepStrictEqual(rot.json.controlBoundaryFailures, []);
+  assert.strictEqual(rot.json.focusRingUnverified, 2, 'button.w and button.s');
+  assert.strictEqual(rot.json.controlBoundaryUnverified, 1, 'the input');
+  assert.strictEqual(rot.code, 0);
+  const tf = await run(fixture('focustf', `${BTN}.t{margin:60px}button.l:focus-visible,button.ic:focus-visible{transform:translateY(-1px)}button.g:focus-visible{transform:scale(1.03)}button svg{vertical-align:middle}`,
+    '<div class="t"><button type="button" class="w l">Lift</button> <button type="button" class="w n">Plain</button></div>'
+    + '<div class="t"><button type="button" class="w g">Grow</button></div>'
+    + '<div class="t"><button type="button" class="w ic"><svg width="14" height="14" aria-hidden="true"><rect width="14" height="14" fill="currentColor"/></svg> Icon</button></div>'));
+  assert.deepStrictEqual(tf.json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy}`).sort(),
+    ['button.w.g pixels', 'button.w.ic pixels', 'button.w.l pixels', 'button.w.n pixels']);
+  for (const f of tf.json.focusRingFailures) assert.ok(f.ratio > 1.8 && f.ratio < 2.3, `about 2.07:1: ${JSON.stringify(f)}`);
+  assert.strictEqual(tf.code, 1);
 });
 
 test('a page whose debounced scroll handler moves the layout between the shots is unverified, not failed', async () => {
@@ -777,7 +906,10 @@ test('a page whose debounced scroll handler moves the layout between the shots i
 });
 
 test('of two color-scheme meta tags the first that parses decides', async () => {
-  for (const [i, metas] of [['light, dark', 'dark'], ['', 'dark']].entries()) {
+  // Pins the `break` in the meta loop: of "dark" then "light" (both parse) the first wins, so
+  // the button keeps the browser ring of the dark scheme; with the last one winning it
+  // reads as an author outline in #eee and fails at 1.16:1.
+  for (const [i, metas] of [['light, dark', 'dark'], ['', 'dark'], ['dark', 'light']].entries()) {
     const page = path.join(dir, `twometa${i}.html`);
     fs.writeFileSync(page, `<!doctype html><html lang="en"><head>${metas.map((c) => `<meta name="color-scheme" content="${c}">`).join('')}<title>m</title>`
       + '<style>body{background:#fff;color:#000}</style></head><body><main><button type="button">Meta</button></main></body></html>');

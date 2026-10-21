@@ -221,14 +221,20 @@ a fractional spread, a ring layer hidden under another, an ancestor's `overflow`
 gradient fill, `filter`, `mix-blend-mode` and a ring on a fully rounded pill are
 measured as painted. The pixels only add failures (`measuredBy: "pixels"`); a model failure
 stands (`measuredBy: "model"`). A control inside a scroll container is scrolled into view
-for the screenshots, like one outside the window, and scrolled back. A control the model
-passed that another element covers, that a scroll container still clips, that is rotated,
-skewed or transformed in 3D, or whose page moves between the screenshots (a debounced
-scroll handler) is counted in `focusRingUnverified` or `controlBoundaryUnverified` and
-does not fail. Icons and images inside a control are hidden for its screenshots. The
-browser's own ring, a focus change without outline, ring or border (counted in
-`focusWithoutRing`) and hidden controls are not judged on pixels. Icons and other
-graphics are not measured.
+for the screenshots, like one outside the window, and scrolled back. A transform that
+applies only on focus (a 1px lift, a scale) is pinned to its unfocused value for the
+focused screenshot. A control the model passed is counted in `focusRingUnverified` or
+`controlBoundaryUnverified` and does not fail when another element covers it (an image,
+canvas, iframe, a `::before` or a `backdrop-filter` covers; an empty transparent overlay
+does not), when an ancestor on its containing-block chain still clips it (`overflow`,
+`contain: paint`, `clip-path`, `content-visibility`), when it lies even partly outside
+the viewport, when it is rotated (`transform` or `rotate`), skewed or transformed in 3D,
+or when its own pixels move between the screenshots (a debounced scroll handler; an
+animated neighbour does not count). Icons and images inside a control are hidden to find
+the pixels focus changes, and shown again to score them, so an inset ring over a photo is
+measured against the photo. The browser's own ring, a focus change without outline, ring
+or border (counted in `focusWithoutRing`) and hidden controls are not judged on pixels.
+Icons and other graphics are not measured.
 
 TLS certificates are verified for the page and every request it makes; an invalid
 certificate aborts that connection before any request, and with it any `--header` value, is
