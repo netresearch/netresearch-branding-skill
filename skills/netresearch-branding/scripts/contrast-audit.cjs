@@ -69,8 +69,9 @@
  * the lower of the pixel it moved from and the surface behind the control, read from
  * three focused shots with the control at opacity 0 (a pixel that changes between them is
  * taken as hidden by an animation). The lower of the two is conservative: a ring that covers
- * the whole strip in front of a dark surface exactly behind the control (a plate as large
- * as the control, never visible) fails, a known false failure. A sub-pixel move or a resize is compared in place, except
+ * the strip in front of a surface behind it close to the ring's own colour (a dark plate or
+ * bar under a black ring, a light one under a white ring; not a descendant of the control,
+ * which is hidden with it), never visible, fails, a known false failure. A sub-pixel move or a resize is compared in place, except
  * one by an ancestor's transform (a card that scales on :focus-within), which leaves the
  * control unverified. A pixel counts as changed when a channel moves by more than 2
  * between two shots with the control's icons and images hidden, and a select's shown
@@ -122,8 +123,9 @@
  * unfocused shots (and, over the strip a lifted control vacates, in three shots with the
  * control hidden), so an animation that happens to show the
  * same frame in all three can still pass. Not judged
- * on pixels: the browser's own ring, an element counted in focusWithoutRing (a glow
- * without spread, a fill change, a ring drawn by a pseudo-element), a control that is not
+ * on pixels: the browser's own ring, an element counted in focusWithoutRing (a shadow
+ * without spread: a glow or a hard offset underline such as 0 2px 0 0; a fill change; a
+ * ring drawn by a pseudo-element), a control that is not
  * perceivable, and any ring or boundary the model already fails. A boundary judged on its
  * best side passes a field whose only contrast is a dark neighbour touching one side. The
  * screenshots are decoded with the PNG reader playwright-core bundles (lib/utilsBundle,
