@@ -1234,6 +1234,8 @@ test('the strip behind a lifted control is read in its focused state, and only a
     ["ruleopaque", ruleAbove('#fff', 'outline:none;box-shadow:0 0 2px 0.25px #000'), ["button pixels 2.07"]],
     ["ruleghost", ruleAbove('rgba(255,255,255,.1)', 'outline:none;box-shadow:0 0 2px 0.25px #000'), ["button pixels 2.07"]],
     ["rulestrong", ruleAbove('rgba(255,255,255,.1)', 'outline:2px solid #000;outline-offset:2px'), []],
+    // an opaque fill hides the rule it moved onto: a black top bar there is read against the fill, a pass
+    ["rulebar", "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{position:relative;margin:60px;width:160px}.rule{position:absolute;left:0;right:0;top:-3px;height:3px;background:#222}button{display:block;margin:0;padding:0;color:#000;background:#fff;border:0;width:160px;height:30px;font:14px sans-serif;position:relative}button:focus-visible{outline:none;top:-3px;box-shadow:inset 0 2px 0 1px #000}</style><main><div class=\"t\"><div class=\"rule\"></div><button type=\"button\">Go</button></div></main>", []],
   ]) {
     const { code, json } = await page(name, html);
     got[name] = { failures: json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy} ${f.ratio}`), unverified: json.focusRingUnverified, code };

@@ -66,10 +66,11 @@
  * moved from, and counts as changed only when it differs from that one and from the one
  * in place, so neither the moved border nor a neighbour that stayed is taken for a ring;
  * a pixel outside the focused box (over the strip the control vacated, or a neighbour
- * that stayed on the side it moved into) and a pixel of the focused box outside the
- * unfocused one (a rule seen through a translucent fill) are scored against the lower of
- * the pixel it moved from and the surface behind the control, read from
- * three focused shots with the control at opacity 0 (a pixel that changes between them is
+ * that stayed on the side it moved into) and, for a control whose fill, opacity or filter
+ * lets the surface show, a pixel of the focused box outside the unfocused one (a rule seen
+ * through a translucent fill) are scored against the lower of the pixel it moved from (or
+ * the colour beside it) and the surface behind the control, read from three focused shots
+ * with the control at opacity 0 (over the strip, a pixel that changes between them is
  * taken as hidden by an animation). The lower of the two is conservative: a ring that covers
  * the strip in front of a surface behind it close to the ring's own colour (a dark plate or
  * bar under a black ring, a light one under a white ring; not a descendant of the control,
@@ -405,10 +406,10 @@ function covered(g, clip) {
 // neighbour). Changed means: with icons hidden (mb, ma) and, for a control with icons,
 // also with them shown (before, after); where focus moved the box by whole pixels at the
 // same size (liftOf), against the unfocused pixel it moved from and the one in place; a
-// pixel over the strip the control vacated, or outside the unfocused box, is then scored
-// against the lower of the pixel it moved from (or, inside the focused box, the colour
-// beside it) and the surface behind the control (`under`, three focused shots with it at
-// opacity 0).
+// pixel over the strip the control vacated, or outside the unfocused box (inside the
+// focused one only when the control's fill lets the surface show), is then scored against
+// the lower of the pixel it moved from (or, inside the focused box, the colour beside it)
+// and the surface behind the control (`under`, three focused shots with it at opacity 0).
 // Each such pixel is scored against the colour beside it (SC 1.4.11): outside the border
 // box, its own unfocused value, the surface the ring is painted on; inside it (a
 // recoloured border, an inset ring), the nearest unchanged pixel, outward for a pixel on
@@ -540,9 +541,11 @@ function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again
     adjOf[i] = q;
     // Registered, the pixel it moved from need not be under a pixel outside the unfocused
     // box: a neighbour that stayed there (a rule above a lifted button) is not, and through a
-    // translucent fill that rule changes a pixel of the focused box without focus painting
-    // anything. Also scored against the surface behind the control (`under`).
-    if (reg && !(cx > gb.box[0] - clip.vx && cx < gb.box[2] - clip.vx && cy > gb.box[1] - clip.vy && cy < gb.box[3] - clip.vy)) {
+    // translucent fill (ga.see) that rule changes a pixel of the focused box without focus
+    // painting anything. Also scored against the surface behind the control (`under`); an
+    // opaque control hides that surface inside its box. An animation there shows in the
+    // unfocused shots, beside the control or through its fill, and is noise already.
+    if (reg && (!inBox || ga.see) && !(cx > gb.box[0] - clip.vx && cx < gb.box[2] - clip.vx && cy > gb.box[1] - clip.vy && cy < gb.box[3] - clip.vy)) {
       const ru = ratioL(la, lumAt(under[0].data, i * 4));
       if (ru < score[i]) { score[i] = ru; behind[i] = 1; adjOf[i] = -1; }
     }
@@ -1631,6 +1634,11 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       g.inset = Math.max(...g.bw, cs.outlineStyle === 'none' ? 0 : Math.max(0, -((Number.parseFloat(cs.outlineOffset) || 0) + (Number.parseFloat(cs.outlineWidth) || 0))));
       // How far a shadow's blur and spread reach along a side from a corner, where two sides' shadows overlap.
       g.soft = Math.max(0, ...shadowLayers(cs.boxShadow).map((l) => l.blur + Math.abs(l.spread)));
+      // Whether the control's own paint lets the surface behind it show: a fill with alpha
+      // below 1 (or none), an opacity below 1 or a filter.
+      { const al = /rgba\([^)]*,\s*([\d.]+)\)|\/\s*([\d.]+)(%?)\s*\)/.exec(cs.backgroundColor);
+        const a = !al ? 1 : al[1] !== undefined ? Number.parseFloat(al[1]) : Number.parseFloat(al[2]) / (al[3] ? 100 : 1);
+        g.see = cs.backgroundColor === 'transparent' || a < 1 || Number.parseFloat(cs.opacity) < 1 || cs.filter !== 'none'; }
       g.tf = [cs.transform, cs.translate, cs.scale, cs.rotate].join('|');
       g.atf = ''; for (let a = el.parentElement; a; a = a.parentElement) { const ac = getComputedStyle(a); g.atf += [ac.transform, ac.translate, ac.scale, ac.rotate].join('|') + ';'; }
       if (clip) {
