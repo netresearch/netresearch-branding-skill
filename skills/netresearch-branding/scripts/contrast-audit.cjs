@@ -78,7 +78,8 @@
  * the pointer leaves the page (the same check an exit-intent popup makes); a hover
  * delegated from the document for an element at (0, 0), where the pointer starts; a
  * hover-out that waits longer than 1 s in total, or that resumes in a later task (an
- * await on an animation frame, a fetch or an event) before it sets its timer; and the order of leave listeners when an
+ * await on an animation frame, a fetch or an event) before it sets its timer, or whose
+ * timer is set by a string interval (setInterval("code", ms)); and the order of leave listeners when an
  * element's own mouseleave replaces it. The page is scrolled through
  * once, instantly (content revealed on scroll, also content that hides again when
  * scrolled away), infinite animations are cancelled and finite ones finished,
@@ -434,13 +435,14 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // A timeout leaves `pending` when it fires; an interval stays until clearInterval.
     const track = (native, fn, ms, args, self, repeat) => {
       const tracked = (window.__auditLeaving || window.__auditReplaying || inherit > 0) && !(Number(ms) > 1000);
-      // A string handler goes to the native function as it is; native timers due at the
-      // same time just before and after it open and close its inherit window.
+      // A string handler goes to the native function as it is. For a string timeout, native
+      // timers due at the same time just before and after it open and close its inherit
+      // window; a string interval gets none, so the timers its ticks set are not followed.
       if (typeof fn !== 'function') {
         let id; let open = false;
         if (tracked && !repeat) st(() => { if (pending.has(id)) { open = true; inherit++; } }, ms);
         id = native.call(self, fn, ms, ...args);
-        if (tracked) { pending.add(id); if (!repeat) st(() => { pending.delete(id); if (open) st(() => { inherit--; }, 0); }, ms); }
+        if (tracked) { pending.add(id); if (!repeat) st(() => { pending.delete(id); if (open) inherit--; }, ms); }
         return id;
       }
       const id = native.call(self, function (...x) {
@@ -520,7 +522,8 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   });
   // A hover-out may run after a delay (hover intent, usually 100 to 500 ms). Timers and
   // intervals of at most 1 s that the page set while the audit's leave ran, and those they
-  // set in turn (also after an await, not after a wait for a frame, a fetch or an event), are
+  // set in turn (also after an await, not after a wait for a frame, a fetch or an event, and
+  // not from a string interval), are
   // waited for (an interval until it is cleared), at most 1 s in total; the page's other timers run on as
   // they would anyway (a toast is measured as before). The page sees wrapped setTimeout,
   // setInterval, clearTimeout and clearInterval; a string handler runs as it would.
