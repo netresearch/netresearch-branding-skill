@@ -905,6 +905,120 @@ test('a page whose debounced scroll handler moves the layout between the shots i
   assert.strictEqual(code, 0);
 });
 
+// Like rings(), with each failure's ratio to one decimal (the weak ring paints about 2.07:1).
+async function ringsAt(cases) {
+  const got = {};
+  for (const [name, css, body] of cases) {
+    const { code, json } = await run(fixture(name, css, body));
+    got[name] = { failures: json.focusRingFailures.map((f) => `${f.element} ${f.measuredBy} ${f.ratio.toFixed(1)}`), unverified: json.focusRingUnverified, code };
+  }
+  return got;
+}
+
+// Pins the moving-neighbour rule: pixels that change between the three unfocused shots are
+// never ring pixels, and such a piece as long as the ring must be makes the control
+// unverified. The bar below the button takes a random grey each frame, so the three shots
+// catch it changing unless all three show the same grey (estimated at one run in 2,600;
+// measured: 60 of 60 runs unverified): the test is not strictly deterministic. Without the
+// rule the bar, recoloured by 3:1 or more between the unfocused and the focused shot,
+// carries the weak ring in about half the runs (10 of 20) and fails it at 2.07 in the
+// others; without the unverified half, the ring fails at 2.07. The striped bar at rest is
+// not noise and the ring fails on it.
+test('a ring beside a long animated bar is unverified; beside a striped bar at rest it fails', async () => {
+  const css = `${BTN}button{width:200px}.t{margin:60px}.bar{width:200px;height:3px;margin-top:4px;background:repeating-linear-gradient(90deg,#000 0 4px,#fff 4px 8px)}`;
+  const body = '<div class="t"><button type="button" class="w">W</button><div class="bar"></div></div>';
+  for (let k = 0; k < 2; k++) {
+    const { anim } = await ringsAt([['anim', css, body
+      + '<script>const b=document.querySelector(".bar");(function f(){const g=(Math.random()*256)|0;b.style.background="rgb("+g+","+g+","+g+")";requestAnimationFrame(f)})();</script>']]);
+    assert.deepStrictEqual(anim, { failures: [], unverified: 1, code: 0 }, `run ${k}`);
+  }
+  const { still } = await ringsAt([['still', css, body]]);
+  assert.deepStrictEqual(still, { failures: ['button.w pixels 2.1'], unverified: 0, code: 1 });
+});
+
+// Pins the skip-link rule. Only the focused box must lie in the viewport: one that waits off
+// the left edge, above the top or moved up by a transform was unverified because the union
+// of both boxes left the viewport. And a focus transform is pinned to its unfocused value
+// only where the two boxes overlap by half: pinned, the transform skip link stays out of
+// view in the focused shot and its strong ring fails at 1:1. The weak ring of a skip link
+// without a border still fails.
+test('a skip link brought into view by left, top or a transform is measured', async () => {
+  const skip = 'a.skip{position:absolute;background:#fff;color:#000;padding:8px 16px;border:1px solid #000;z-index:10}';
+  const strong = 'a.skip:focus{outline:3px solid #000;outline-offset:2px}';
+  const got = await ringsAt([
+    ['skleft', `${skip}a.skip{left:-9999px;top:8px}a.skip:focus{left:8px}${strong}`, '<a class="skip" href="#m">Skip to content</a>'],
+    ['sktop', `${skip}a.skip{left:8px;top:-60px}a.skip:focus{top:8px}${strong}`, '<a class="skip" href="#m">Skip to content</a>'],
+    ['sktf', `${skip}a.skip{left:8px;top:8px;transform:translateY(-200%)}a.skip:focus{transform:none}${strong}`, '<a class="skip" href="#m">Skip to content</a>'],
+    ['sklight', 'a.skip{position:absolute;left:-9999px;top:8px;background:#eee;color:#000;padding:8px 16px}'
+      + `a.skip:focus{left:8px;outline:none;${WEAK}}`, '<a class="skip" href="#m">Skip to content</a>'],
+  ]);
+  const ok = { failures: [], unverified: 0, code: 0 };
+  assert.deepStrictEqual(got, { skleft: ok, sktop: ok, sktf: ok, sklight: { failures: ['a.skip pixels 2.1'], unverified: 0, code: 1 } });
+});
+
+// Pins the image rule: with icons or images in a control, a pixel counts as changed only
+// when it changed in both pairs, with them hidden and with them shown. An inset ring drawn
+// under an opaque image (box-shadow: inset paints below content) is seen in the hidden pair
+// only; counted there, it passed on the image's own dark frame. The thumb test above pins
+// that a ring over the image is still scored against it.
+test('an inset ring hidden under an opaque image fails at 1:1', async () => {
+  const frame = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22120%22%3E%3Crect width=%22200%22 height=%22120%22 fill=%22%23fff%22/%3E'
+    + '%3Crect x=%221%22 y=%221%22 width=%22198%22 height=%22118%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%222%22/%3E%3C/svg%3E';
+  const got = await ringsAt([['imgframe', 'body{margin:0}a{display:inline-block;margin:40px;background:#fff}a img{display:block}a:focus-visible{outline:none;box-shadow:inset 0 0 0 4px #000}',
+    `<a href="#a"><img alt="Framed" width="200" height="120" src="${frame}"></a>`]]);
+  assert.deepStrictEqual(got, { imgframe: { failures: ['a pixels 1.0'], unverified: 0, code: 1 } });
+});
+
+// Pins registration by offset: where focus moves the box by whole pixels at the same size
+// (a :focus-within transform on a card, top: -1px, a negative margin), each focused pixel is
+// compared with the unfocused pixel it moved from, and also in place. Compared only in
+// place, the moved black border is a 21:1 change along the whole side and carries the weak
+// ring; compared only shifted, a black bar that stayed below the button is one. Strong rings
+// with the same lifts still pass.
+test('a weak ring on a control lifted by an ancestor, top or a margin fails; a strong one passes', async () => {
+  const css = `${BTN}button{width:160px}.t{margin:60px}.card{margin:60px;padding:12px;width:200px;background:#fff}.card:focus-within{transform:translateY(-3px)}`
+    + 'button.top:focus-visible{position:relative;top:-1px}button.mg:focus-visible{margin-top:-2px;margin-bottom:2px}.bar{width:200px;height:3px;margin-top:4px;background:#000}';
+  const got = await ringsAt([
+    ['cardw', css, '<div class="card"><button type="button" class="w">Card</button></div>'],
+    ['cards', css, '<div class="card"><button type="button" class="s">Card</button></div>'],
+    ['topw', css, '<div class="t"><button type="button" class="w top">Top</button></div>'],
+    ['tops', css, '<div class="t"><button type="button" class="s top">Top</button></div>'],
+    ['topbar', css, '<div class="t"><button type="button" class="w top">Top</button><div class="bar"></div></div>'],
+    ['mgw', css, '<div class="t"><button type="button" class="w mg">Margin</button></div>'],
+  ]);
+  const weak = (el) => ({ failures: [`${el} pixels 2.1`], unverified: 0, code: 1 });
+  const ok = { failures: [], unverified: 0, code: 0 };
+  assert.deepStrictEqual(got, { cardw: weak('button.w'), cards: ok, topw: weak('button.w.top'), tops: ok, topbar: weak('button.w.top'), mgw: weak('button.w.mg') });
+});
+
+// Pins two inputs of the clip and pin geometry. The translate and scale properties (Tailwind
+// v4 writes them, not transform) are part of the pinned transform: unpinned, the 3% growth
+// moves the border onto the weak ring and it passes (translate alone would now be caught by
+// registration, so the scaled button is the one that discriminates). And a fixed control's
+// containing block is a transformed, perspective or filtered ancestor: with that ancestor's
+// overflow on the chain, the control is scrolled into it and its strong ring passes; without
+// it, the ring is cut at the ancestor's edge and fails at 21:1 for its length.
+test('translate and scale are pinned; a fixed control in a transformed, perspective or filtered box is scrolled into it', async () => {
+  const tw = await ringsAt([['tw4', `${BTN}.t{margin:60px}button.w:focus-visible{translate:0 -1px}button.w.sc:focus-visible{translate:none;scale:1.03}`,
+    '<div class="t"><button type="button" class="w">Lift</button> <button type="button" class="w sc">Grow</button></div>']]);
+  assert.deepStrictEqual(tw, { tw4: { failures: ['button.w pixels 2.1', 'button.w.sc pixels 2.1'], unverified: 0, code: 1 } });
+  const shell = (cb) => `${BTN}.shell{${cb};overflow:hidden;width:200px;height:100px;margin:60px;border:1px solid #888}button{position:fixed;left:140px;top:30px}`;
+  const body = '<div class="shell"><button type="button" class="s">Fixed</button></div>';
+  const got = await ringsAt([['cbtf', shell('transform:translateX(0)'), body], ['cbpersp', shell('perspective:300px'), body], ['cbfilter', shell('filter:brightness(1)'), body]]);
+  const ok = { failures: [], unverified: 0, code: 0 };
+  assert.deepStrictEqual(got, { cbtf: ok, cbpersp: ok, cbfilter: ok });
+});
+
+// Pins that the moved-page check counts only pixels that show the control: a badge drawn over
+// the button, recoloured on every frame (by a step of 7, so any two shots differ), changes
+// pixels inside the box on every shot. Counted, the strong ring is unverified.
+test('a badge animated over a control does not make it unverified', async () => {
+  const got = await ringsAt([['badge', `${BTN}.t{margin:60px;position:relative;display:inline-block}.bd{position:absolute;left:10px;top:4px;width:90px;height:22px;background:#c00}`,
+    '<div class="t"><button type="button" class="s">Badge</button><span class="bd"></span></div>'
+    + '<script>const b=document.querySelector(".bd");let n=0;(function f(){n+=7;b.style.background="rgb("+(n%256)+",0,80)";requestAnimationFrame(f)})();</script>']]);
+  assert.deepStrictEqual(got, { badge: { failures: [], unverified: 0, code: 0 } });
+});
+
 test('of two color-scheme meta tags the first that parses decides', async () => {
   // Pins the `break` in the meta loop: of "dark" then "light" (both parse) the first wins, so
   // the button keeps the browser ring of the dark scheme; with the last one winning it

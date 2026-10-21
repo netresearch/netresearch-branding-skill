@@ -223,17 +223,28 @@ measured as painted. The pixels only add failures (`measuredBy: "pixels"`); a mo
 stands (`measuredBy: "model"`). A control inside a scroll container is scrolled into view
 for the screenshots, like one outside the window, and scrolled back. A transform that
 applies only on focus (a 1px lift, a scale) is pinned to its unfocused value for the
-focused screenshot. A control the model passed is counted in `focusRingUnverified` or
-`controlBoundaryUnverified` and does not fail when another element covers it (an image,
-canvas, iframe, a `::before` or a `backdrop-filter` covers; an empty transparent overlay
-does not), when an ancestor on its containing-block chain still clips it (`overflow`,
-`contain: paint`, `clip-path`, `content-visibility`), when it lies even partly outside
-the viewport, when it is rotated (`transform` or `rotate`), skewed or transformed in 3D,
-or when its own pixels move between the screenshots (a debounced scroll handler; an
-animated neighbour does not count). Icons and images inside a control are hidden to find
-the pixels focus changes, and shown again to score them, so an inset ring over a photo is
-measured against the photo. The browser's own ring, a focus change without outline, ring
-or border (counted in `focusWithoutRing`) and hidden controls are not judged on pixels.
+focused screenshot, unless focus moves the control by more than half its size (a skip
+link that a transform brings into view is shot where focus shows it). A lift the pin
+cannot undo (an ancestor's `transform`, `top`, a margin) is registered: where focus
+moves the box by whole pixels at the same size, each focused pixel is compared with the
+unfocused pixel it moved from and with the one in place, so neither the moved border nor
+a neighbour that stayed counts as a ring. Pixels that change between the three unfocused
+screenshots (an animated neighbour) are never part of a ring. A control the model
+passed is counted in `focusRingUnverified` or `controlBoundaryUnverified` and does not
+fail when another element covers it (an image, canvas, iframe, a `::before` or a
+`backdrop-filter` covers; an empty transparent overlay does not), when an ancestor on its
+containing-block chain still clips it (`overflow`, `contain: paint`, `clip-path`,
+`content-visibility`), when its focused box lies even partly outside the viewport (a
+skip link waiting outside it is measured where focus shows it), when it is rotated
+(`transform` or `rotate`), skewed or transformed in 3D, when its own pixels move between
+the screenshots (a debounced scroll handler), or when an animated neighbour changes along
+as much of it as a ring must cover (a moving stripe; a small spinner does not count; an
+animation that shows the same frame in all three unfocused screenshots can still pass).
+Icons and images inside a control are hidden to find the pixels focus changes, and shown
+again to score them; a pixel counts only when it changed in both, so an inset ring over a
+photo is measured against the photo and one painted under an opaque image fails at 1:1.
+The browser's own ring, a focus change without outline, ring or border (counted in
+`focusWithoutRing`) and hidden controls are not judged on pixels.
 Icons and other graphics are not measured.
 
 TLS certificates are verified for the page and every request it makes; an invalid
