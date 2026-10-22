@@ -87,8 +87,14 @@ Complete color palette with technical specifications and usage guidelines.
   color: #FFFFFF;
 }
 
-.highlight {
-  border-left: 4px solid var(--nr-accent);
+.highlight::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--nr-accent);  /* the accent as a marker */
 }
 ```
 
@@ -322,7 +328,7 @@ netresearch.de — see "WCAG-AAA contrast variants" below.
 | Section background | `--nr-bg-alt` | `#1A2024` | — |
 | Card / table surface | `--nr-surface` | `#1E2429` | — |
 | Body text | `--nr-text` | `#E8EDEF` | 15.1:1 on `#14181B`, 13.3:1 on the surface |
-| Help, meta, captions | `--nr-text-secondary` | `#A9B2B8` | 8.3:1 / 7.3:1 |
+| Help, meta, captions | `--nr-text-secondary` | `#CDD3D7` | 11.8:1 / 10.4:1 (APCA Lc 78 / 77) |
 | Links, small labels, headings | `--nr-primary-text` | `#5FC6D2` | 8.9:1 on `#14181B`, 7.8:1 on the surface, 5.7:1 on a lifted `#363a40` |
 | Hover for those — it lifts, it does not darken | `--nr-primary-deep` | `#7FD6E0` | 10.7:1 on `#14181B`, 6.9:1 on `#363a40` |
 | Fills carrying white text | `--nr-primary-fill` | `#1B6C74` | 6.1:1 |
@@ -337,8 +343,8 @@ Status tints on dark, opaque (a translucent tint has no ratio of its own):
 
 | Tint | Background | Foreground | Measured |
 |---|---|---|---|
-| Pass | `#12301C` | `#8FE0A6` | 9.1:1 |
-| Fail | `#3A1418` | `#FFA7AE` | 8.8:1 |
+| Pass | `#12301C` | `#A3E8B6` | 10.1:1 |
+| Fail | `#3A1418` | `#FFC4C9` | 10.8:1 |
 | Warning | `#33280A` | `#F2CE5C` | 9.5:1 |
 | Info | `#0E2E33` | `#7FD6E0` | 8.6:1 |
 
@@ -386,6 +392,30 @@ It needs resolved CSS and a compositing model, so it belongs in a browser:
 - **Emphasis:** Orange for key points
 
 ---
+
+### Component tokens
+
+`templates/styles.css` adds these tokens for its components
+(`references/web-design.md`, "How a branded page is built"). Every text pair is measured;
+tints are opaque because a translucent tint has no ratio of its own.
+
+| Token | Light | Dark | Measured |
+|---|---|---|---|
+| `--nr-primary-tint` | `#E6F2F3` | `#0E2E33` | `--nr-primary-text` on it: 7.09:1 / 7.20:1 |
+| `--nr-primary-wash` | `#F3F9F9` | `#16262A` | `--nr-primary-text` on it: 7.62:1 / 7.80:1 |
+| `--nr-accent-tint` | `#FFF0E8` | `#4A2D26` | `--nr-accent-text` on it: 6.83:1 / 5.60:1 |
+| `--nr-success-text` on `--nr-success-tint` | `#19632B` on `#E9F6EC` | `#A3E8B6` on `#12301C` | 6.59:1 / 10.08:1 |
+| `--nr-warning-text` on `--nr-warning-tint` | `#6E4C00` on `#FFF6DB` | `#F2CE5C` on `#33280A` | 7.21:1 / 9.50:1 |
+| `--nr-danger-text` on `--nr-danger-tint` | `#911E2A` on `#FCEBED` | `#FFC4C9` on `#3A1418` | 7.53:1 / 10.82:1 |
+| `--nr-success` / `--nr-warning` / `--nr-danger` (markers) | `#28A745` / `#FFC107` / `#DC3545` | `#3FBF62` / `#F2B92A` / `#F0606C` | non-text; dark: 6.60 / 8.77 / 4.92:1 on `#1E2429` |
+| `--nr-focus` (focus outline) | `#2F99A4` | `#5FC6D2` | 3.38:1 on white / 7.83:1 on `#1E2429`; footer foreground on the footer (2.06:1 on `#585961` otherwise), white on the gradient |
+| `--nr-focus-on-tint` (focus outline inside a badge, tinted row or `.tinted`) | `#257880` | `#5FC6D2` | 4.48:1 or more on the light tints (`#2F99A4` is 2.94:1 there) / 6.19:1 or more on the dark tints |
+| `--nr-hero-end` (third gradient stop) | `#0A5057` | `#0B3539` | white on it: 9.14:1 / 13.27:1 |
+
+The light markers are the semantic set below (`--nr-error` is an alias of
+`--nr-danger`). Form error text uses `--nr-danger-text`, not the marker red.
+`--nr-text-secondary` stays on white and `#F5F5F5`: on the light tints it is
+4.34 to 4.49:1, so tinted containers switch it to `--nr-text` (6.05:1 or more).
 
 ## CSS Custom Properties (Complete Set)
 

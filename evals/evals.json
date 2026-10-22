@@ -649,6 +649,62 @@
     }
   },
   {
+    "name": "branded-page-construction",
+    "prompt": "Create a branded HTML sign-in page for a Netresearch customer portal where customers request a magic link by email",
+    "assertions": [
+      {
+        "type": "content_contains",
+        "value": "Netresearch DTT GmbH",
+        "description": "Footer names Netresearch DTT GmbH"
+      },
+      {
+        "type": "content_regex",
+        "value": "border-radius:[[:space:]]*(var\\(--radius-(md|lg|xl)\\)|[1-9][0-9]+px)",
+        "description": "A rule declares a radius of 10px or more, or a --radius-md/lg/xl token (the grader matches line by line, so the declaration is checked, not its selector)"
+      },
+      {
+        "type": "must_not",
+        "value": "border-radius:[[:space:]]*4px",
+        "description": "No 4px box radius (web-design.md excludes 4px boxes)"
+      },
+      {
+        "type": "content_regex",
+        "value": "#257880|--nr-primary-fill",
+        "description": "The page names the #257880 fill that carries white button text"
+      },
+      {
+        "type": "must_not",
+        "value": "background(-color)?:[[:space:]]*(#2F99A4|rgb\\(47,[[:space:]]*153,[[:space:]]*164\\))",
+        "description": "No surface filled with the literal brand hue #2F99A4 (white on it is 3.38:1); the template fills with tokens only"
+      },
+      {
+        "type": "must_not",
+        "value": "\\.btn[^{]*\\{[^}]*background(-color)?:[[:space:]]*var\\(--nr-primary\\)",
+        "description": "No button filled with the --nr-primary token (caught when the rule is written on one line)"
+      },
+      {
+        "type": "must_not",
+        "value": "translateY\\(-",
+        "description": "No upward hover jump on buttons or cards"
+      },
+      {
+        "type": "must_not",
+        "value": "border-left:[[:space:]]*[2-9]px[[:space:]]+solid",
+        "description": "No coloured edge stripe on cards, notices or panels (the standalone construction in web-design.md, which replaced the former 4px .highlight example)"
+      }
+    ],
+    "samples": {
+      "passing": "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header>\n<style>\n:root {\n  --nr-primary-fill: #257880;\n}\n.form-input {\n  border-radius: 10px;\n}\n.card {\n  border-radius: var(--radius-lg);\n}\n</style>\n<footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+      "failing": [
+        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.btn{border-radius:4px}.btn:hover{transform:translateY(-2px)}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.form-input{border-radius:10px}.card{border-radius:16px}.notice{border-radius:14px;border-left:4px solid #2F99A4}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary-fill:#257880}.btn-primary{border-radius:10px;background:#2F99A4;color:#fff}.card{border-radius:16px}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header><style>:root{--nr-primary:#2F99A4;--nr-primary-fill:#257880}.btn-primary{border-radius:10px;background-color:var(--nr-primary);color:#fff}.card{border-radius:16px}</style><footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>",
+        "<header><img src=\"netresearch-symbol-only.svg\" alt=\"Netresearch\"></header>\n<style>\n:root {\n  --nr-primary-fill: #257880;\n}\n.btn-primary {\n  border-radius: 10px;\n  background: #2F99A4;\n  color: #fff;\n}\n.card {\n  border-radius: 16px;\n}\n</style>\n<footer><a href=\"https://www.netresearch.de/\">Netresearch DTT GmbH</a></footer>"
+      ]
+    }
+  },
+  {
     "name": "typo3-docs-localized-assets",
     "prompt": "Our English and German TYPO3 manuals render from Documentation/ and Documentation/Localization.de_DE/. Both use /Images/netresearch-underline.svg, but only the English file exists. Is the layout verified? What needs to be done?",
     "assertions": [

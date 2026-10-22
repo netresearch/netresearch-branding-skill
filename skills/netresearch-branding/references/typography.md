@@ -209,6 +209,13 @@ font-family: Calibri, 'Open Sans', Arial, sans-serif;
 
 ### Web Typography Hierarchy
 
+The sizes below are the reference scale. `templates/styles.css` sizes h1
+fluidly from 36px to 56px, h2 from 28px to 36px, h3 from 22px to 28px and h4
+from 20px to 22px, so each heading stays below the one above it at every width;
+h5 is 18px, h6 16px bold and `.lead` 18px. The app-page title (`.page-band h1`)
+runs from 32px to 40px, a step above h2 at every width. Headings keep anthracite
+`#585961`, and no text goes below 14px ("Minimum Font Sizes").
+
 ```css
 /* h1 - Page Title */
 h1 {
@@ -532,7 +539,7 @@ ul.branded li::before {
 
 All text must meet WCAG AA:
 - **Normal text:** 4.5:1 contrast ratio
-- **Large text (≥18px):** 3:1 contrast ratio
+- **Large text (≥24px, or ≥18.66px bold):** 3:1 contrast ratio
 
 ### Readability
 
@@ -565,7 +572,7 @@ p + p {
   --font-document: Calibri, 'Open Sans', sans-serif;
 
   /* Font Sizes */
-  --font-size-xs: 12px;
+  --font-size-xs: 12px;   /* compatibility only; no text below 14px */
   --font-size-sm: 14px;
   --font-size-base: 16px;
   --font-size-lg: 18px;

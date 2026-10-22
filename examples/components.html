@@ -20,8 +20,9 @@
       margin-bottom: 64px;
       padding: 32px;
       background: var(--nr-surface);
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--nr-border-light);
+      border-radius: 16px;
+      box-shadow: var(--shadow-sm);
     }
     .component-section h2 {
       border-bottom: 3px solid #2F99A4;
@@ -32,13 +33,13 @@
       margin: 24px 0;
       padding: 24px;
       background: var(--nr-bg-alt);
-      border-radius: 4px;
+      border-radius: 12px;
     }
     .code-block {
       background: var(--nr-footer-bg);
       color: #fff;
       padding: 16px;
-      border-radius: 4px;
+      border-radius: 10px;
       overflow-x: auto;
       font-family: 'Courier New', monospace;
       font-size: 14px;
@@ -47,7 +48,17 @@
   </style>
 </head>
 <body>
-  <div class="component-showcase">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <nav class="navbar" aria-label="Main">
+    <div class="navbar-container">
+      <a class="navbar-brand" href="https://www.netresearch.de/">
+        <img src="../skills/netresearch-branding/assets/logos/netresearch-symbol-only.svg" alt="Netresearch" class="navbar-logo" width="40" height="40">
+      </a>
+    </div>
+  </nav>
+
+  <main id="main" class="component-showcase">
     <h1 style="text-align: center; margin-bottom: 48px;">Netresearch Brand Components</h1>
 
     <!-- Buttons -->
@@ -68,14 +79,14 @@
         <button class="btn-secondary btn-large">Large Button</button>
       </div>
 
-      <div class="component-demo" style="background: #257880; color: white;">
+      <div class="component-demo on-gradient" style="background: #257880; color: white;">
         <h3 style="color: white;">Outline Buttons (on dark background)</h3>
         <button class="btn-outline btn-small">Small Button</button>
         <button class="btn-outline">Default Button</button>
         <button class="btn-outline btn-large">Large Button</button>
       </div>
 
-      <div class="code-block">
+      <div class="code-block" tabindex="0" role="region" aria-label="Button markup">
 &lt;button class="btn-primary"&gt;Primary Action&lt;/button&gt;
 &lt;button class="btn-secondary"&gt;Secondary Action&lt;/button&gt;
 &lt;button class="btn-outline"&gt;Tertiary Action&lt;/button&gt;
@@ -121,7 +132,7 @@
         </div>
       </div>
 
-      <div class="code-block">
+      <div class="code-block" tabindex="0" role="region" aria-label="Card markup">
 &lt;div class="card"&gt;
   &lt;div class="card-content"&gt;
     &lt;h3 class="card-title"&gt;Card Title&lt;/h3&gt;
@@ -140,16 +151,16 @@
       <h2>Typography</h2>
 
       <div class="component-demo">
-        <h1>Heading 1 - Raleway Bold 48px</h1>
-        <h2>Heading 2 - Raleway Bold 36px</h2>
-        <h3>Heading 3 - Raleway SemiBold 28px</h3>
-        <h4>Heading 4 - Raleway SemiBold 22px</h4>
-        <p class="lead">Lead paragraph - Open Sans Regular 20px with comfortable line height for improved readability.</p>
+        <h1>Heading 1 - Raleway Bold 36–56px</h1>
+        <h2>Heading 2 - Raleway Bold 28–36px</h2>
+        <h3>Heading 3 - Raleway SemiBold 22–28px</h3>
+        <h4>Heading 4 - Raleway SemiBold 20–22px</h4>
+        <p class="lead">Lead paragraph - Open Sans Regular 18px with comfortable line height for improved readability.</p>
         <p>Body text - Open Sans Regular 16px. This is the standard paragraph text used throughout the website. It maintains excellent readability with a line-height of 1.6.</p>
         <p><small>Small text - Open Sans Regular 14px for captions and metadata.</small></p>
       </div>
 
-      <div class="code-block">
+      <div class="code-block" tabindex="0" role="region" aria-label="Typography markup">
 &lt;h1&gt;Heading 1&lt;/h1&gt;
 &lt;h2&gt;Heading 2&lt;/h2&gt;
 &lt;h3&gt;Heading 3&lt;/h3&gt;
@@ -170,7 +181,7 @@
         <p><a href="https://example.com" target="_blank">External link with icon</a></p>
       </div>
 
-      <div class="code-block">
+      <div class="code-block" tabindex="0" role="region" aria-label="Link markup">
 &lt;!-- Inline link --&gt;
 &lt;a href="#"&gt;Link text&lt;/a&gt;
 
@@ -191,14 +202,15 @@
 
       <div class="component-demo">
         <form style="max-width: 600px;">
+          <p class="form-help mb-md">Fields marked * are required.</p>
           <div class="form-group">
             <label for="demo-name" class="form-label">Name*</label>
-            <input type="text" id="demo-name" class="form-input" placeholder="Your name" required>
+            <input type="text" id="demo-name" class="form-input" placeholder="Your name" autocomplete="name" required>
           </div>
 
           <div class="form-group">
             <label for="demo-email" class="form-label">Email*</label>
-            <input type="email" id="demo-email" class="form-input" placeholder="your@email.com" required>
+            <input type="email" id="demo-email" class="form-input" placeholder="your@email.com" autocomplete="email" required>
           </div>
 
           <div class="form-group">
@@ -210,12 +222,13 @@
         </form>
       </div>
 
-      <div class="code-block">
+      <div class="code-block" tabindex="0" role="region" aria-label="Form markup">
 &lt;form&gt;
+  &lt;p class="form-help"&gt;Fields marked * are required.&lt;/p&gt;
   &lt;div class="form-group"&gt;
     &lt;label for="name" class="form-label"&gt;Name*&lt;/label&gt;
     &lt;input type="text" id="name" class="form-input"
-           placeholder="Your name" required&gt;
+           placeholder="Your name" autocomplete="name" required&gt;
   &lt;/div&gt;
 
   &lt;div class="form-group"&gt;
@@ -263,7 +276,7 @@
         </div>
       </div>
 
-      <div class="code-block">
+      <div class="code-block" tabindex="0" role="region" aria-label="Color token markup">
 /* CSS Custom Properties */
 :root {
   --nr-primary: #2F99A4;
@@ -294,7 +307,7 @@
         </div>
       </div>
 
-      <div class="code-block">
+      <div class="code-block" tabindex="0" role="region" aria-label="Grid layout markup">
 &lt;!-- Two-column layout --&gt;
 &lt;div class="two-column"&gt;
   &lt;div&gt;Content 1&lt;/div&gt;
@@ -310,6 +323,124 @@
       </div>
     </div>
 
-  </div>
+    <!-- Status, metrics and notices -->
+    <div class="component-section">
+      <h2>Status, Metrics and Notices</h2>
+
+      <div class="component-demo">
+        <h3>Badges</h3>
+        <div class="cluster">
+          <span class="badge badge-success">Deployed</span>
+          <span class="badge badge-info">Running</span>
+          <span class="badge badge-warning">Waiting for review</span>
+          <span class="badge badge-danger">Failed</span>
+          <span class="badge badge-accent">In review</span>
+          <span class="badge">Queued</span>
+        </div>
+      </div>
+
+      <div class="component-demo">
+        <h3>Metric tiles</h3>
+        <div class="stat-grid">
+          <div class="stat"><span class="stat-label">Builds today</span><span class="stat-value">42</span><span class="stat-meta">38 passed, 4 failed</span></div>
+          <div class="stat"><span class="stat-label">Median build time</span><span class="stat-value">6:12</span><span class="stat-meta">minutes, last 7 days</span></div>
+          <div class="stat"><span class="stat-label">Open releases</span><span class="stat-value">3</span><span class="stat-meta">1 waiting for approval</span></div>
+        </div>
+      </div>
+
+      <div class="component-demo stack">
+        <h3>Notices</h3>
+        <div class="notice notice-success"><svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="m8 12.4 2.7 2.7L16.2 9.5"/></svg><div><strong>Release 2.4.0 is live.</strong>All four services report healthy.</div></div>
+        <div class="notice notice-warning"><svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 2.8 19.5h18.4L12 4Z"/><path d="M12 10v4M12 17v.01"/></svg><div><strong>Certificate expires in 9 days.</strong>Renewal runs automatically on the next deploy.</div></div>
+        <div class="notice notice-danger"><svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg><div><strong>Build #1284 failed.</strong>Unit tests in <code>checkout</code> report 2 failures.</div></div>
+      </div>
+
+      <div class="code-block" tabindex="0" role="region" aria-label="Status and notice markup">
+&lt;span class="badge badge-success"&gt;Deployed&lt;/span&gt;
+&lt;div class="stat"&gt;&lt;span class="stat-label"&gt;Builds today&lt;/span&gt;&lt;span class="stat-value"&gt;42&lt;/span&gt;&lt;/div&gt;
+&lt;div class="notice notice-success"&gt;&lt;svg class="notice-icon"&gt;…&lt;/svg&gt;&lt;div&gt;&lt;strong&gt;Title&lt;/strong&gt;Text&lt;/div&gt;&lt;/div&gt;
+      </div>
+    </div>
+
+    <!-- Tables and controls -->
+    <div class="component-section">
+      <h2>Tables and Controls</h2>
+
+      <div class="component-demo">
+        <h3>Table</h3>
+        <div class="table-wrap" tabindex="0" role="region" aria-labelledby="deploy-caption">
+          <table class="table">
+            <caption class="visually-hidden" id="deploy-caption">Recent deployments</caption>
+            <thead><tr><th>Service</th><th>Environment</th><th>Status</th><th class="num">Duration</th></tr></thead>
+            <tbody>
+              <tr><td>checkout-api</td><td>production</td><td><span class="badge badge-success">Deployed</span></td><td class="num">4:51</td></tr>
+              <tr><td>search-indexer</td><td>staging</td><td><span class="badge badge-info">Running</span></td><td class="num">2:07</td></tr>
+              <tr><td>media-worker</td><td>production</td><td><span class="badge badge-danger">Failed</span></td><td class="num">0:58</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="component-demo">
+        <h3>Segmented control, checkbox and radio</h3>
+        <div class="stack">
+          <div class="segmented" role="group" aria-label="Period">
+            <button type="button" aria-pressed="false">Day</button>
+            <button type="button" aria-pressed="true">Week</button>
+            <button type="button" aria-pressed="false">Month</button>
+          </div>
+          <div class="form-check"><input type="checkbox" id="demo-check" checked><label for="demo-check">Notify me when the build finishes</label></div>
+          <div class="form-check"><input type="radio" name="demo-radio" id="demo-radio-1" checked><label for="demo-radio-1">Production</label></div>
+          <div class="form-check"><input type="radio" name="demo-radio" id="demo-radio-2"><label for="demo-radio-2">Staging</label></div>
+          <div class="cluster">
+            <button class="btn-primary">Deploy</button>
+            <button class="btn-tonal">Compare</button>
+            <button class="btn-ghost">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-block" tabindex="0" role="region" aria-label="Control markup">
+&lt;div class="segmented" role="group" aria-label="Period"&gt;
+  &lt;button aria-pressed="true"&gt;Week&lt;/button&gt; …
+&lt;/div&gt;
+&lt;div class="form-check"&gt;&lt;input type="checkbox" id="c"&gt;&lt;label for="c"&gt;Label&lt;/label&gt;&lt;/div&gt;
+&lt;button class="btn-tonal"&gt;Second action&lt;/button&gt;
+      </div>
+    </div>
+
+    <!-- Split layout -->
+    <div class="component-section">
+      <h2>Split Layout</h2>
+
+      <div class="split-layout" style="min-height: 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--nr-border-light);">
+        <div class="split-panel">
+          <p class="eyebrow">Customer portal</p>
+          <h2>From request to result.</h2>
+          <ol class="steps">
+            <li aria-current="step"><span class="step-num" aria-hidden="true">1</span><span class="step-body"><strong>Create an account</strong><span>Name and work email, no password.</span></span></li>
+            <li><span class="step-num" aria-hidden="true">2</span><span class="step-body"><strong>Upload your files</strong><span>One ZIP, checked on arrival.</span></span></li>
+            <li><span class="step-num" aria-hidden="true">3</span><span class="step-body"><strong>Review the result</strong><span>We email you when it is ready.</span></span></li>
+          </ol>
+        </div>
+        <div class="split-main">
+          <form>
+            <h3>Create an account</h3>
+            <div class="form-group"><label class="form-label" for="split-name">Name</label><input class="form-input" id="split-name" placeholder="First and last name" autocomplete="name"></div>
+            <div class="form-group"><label class="form-label" for="split-email">Work email</label><input class="form-input" type="email" id="split-email" placeholder="you@company.com" autocomplete="email"><span class="form-help">We send a sign-in link to this address.</span></div>
+            <button type="submit" class="btn-primary btn-block">Create account</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-bottom">
+      <p>&copy; 2026 <a href="https://www.netresearch.de/">Netresearch DTT GmbH</a>. All rights reserved.</p>
+      <p>Nonnenstraße 11d · 04229 Leipzig</p>
+    </div>
+  </footer>
 </body>
 </html>
