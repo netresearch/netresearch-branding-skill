@@ -1292,6 +1292,10 @@ test('a fill tinted on focus is read against its old fill, not the control borde
     // an inset outline right inside the border, on a fill that stays: the outline's inner
     // edge, not its outer one, bounds the straight length it must span, a pass
     ['insetoutline', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px}button{display:block;margin:0;color:#000;font:14px sans-serif;width:160px;height:30px;padding:0;background:#fff;border:1px solid #000;}button:focus-visible{outline:2px solid #fff;outline-offset:-3px;background:#000;}</style><main><div class=\"t\"><button type=\"button\" aria-label=\"Go\"></button></div></main>"],
+    // a 100 px bar that turns black, too short for a ring: an inset outline that paints
+    // nothing (transparent, or 0 wide) does not shorten the length it must span
+    ['outlinetransp', "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>bar_transp_outline</title><style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px}button{display:flex;align-items:center;justify-content:center;margin:0;color:#000;font:14px sans-serif;background:#fff;border:1px solid #000;padding:0;width:160px;height:30px;}button:focus-visible{background:#eef;box-shadow:0 0 2px 0.25px #000}.k{display:block;flex:none;width:100px;height:20px;background:#fff}button:focus-visible .k{background:#000}button{outline:2px solid transparent;outline-offset:-30px}</style></head><body><main><div class=\"t\"><button type=\"button\" aria-label=\"Go\"><span class=\"k\"></span></button></div></main></body>"],
+    ['outlinezero', "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>bar_zero_outline</title><style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.t{margin:60px}button{display:flex;align-items:center;justify-content:center;margin:0;color:#000;font:14px sans-serif;background:#fff;border:1px solid #000;padding:0;width:160px;height:30px;}button:focus-visible{background:#eef;box-shadow:0 0 2px 0.25px #000}.k{display:block;flex:none;width:100px;height:20px;background:#fff}button:focus-visible .k{background:#000}button{outline:0 solid #000;outline-offset:-30px}button:focus-visible{outline:0 solid #000}</style></head><body><main><div class=\"t\"><button type=\"button\" aria-label=\"Go\"><span class=\"k\"></span></button></div></main></body>"],
     // the same through a transparent fill, with the section around it shaded on :focus-within
     ['sectiontint', "<style>body{margin:0;background:#fff;color:#000;font:14px sans-serif}.s{padding:50px}.s:focus-within{background:#eef}button{display:block;margin:0;color:#000;background:transparent;border:1px solid #000;width:160px;height:30px;font:14px sans-serif}button:focus-visible{outline:none;box-shadow:0 0 2px 0.25px #000}</style><main><div class=\"s\"><button type=\"button\">Go</button></div></main>"],
   ]) {
@@ -1309,6 +1313,8 @@ test('a fill tinted on focus is read against its old fill, not the control borde
     insetfrac: { failures: [], code: 0 },
     insetblur: { failures: [], code: 0 },
     insetoutline: { failures: [], code: 0 },
+    outlinetransp: { failures: ['button pixels 2.07'], code: 1 },
+    outlinezero: { failures: ['button pixels 2.07'], code: 1 },
     sectiontint: { failures: ['button pixels 2.35'], code: 1 },
   });
 });

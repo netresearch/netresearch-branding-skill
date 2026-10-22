@@ -1658,8 +1658,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       g.radius = Math.max(...rr);
       // A rotated, skewed or 3D-transformed control is not sampled on axis-aligned lines.
       for (let a = el; a; a = a.parentElement) { const ro = getComputedStyle(a).rotate; if (ro && ro !== 'none' && Number.parseFloat(ro.split(' ').pop()) !== 0) { g.clipped = true; break; } const t = getComputedStyle(a).transform; if (t && t !== 'none') { const mx = new DOMMatrix(t); if (Math.abs(mx.b) > 1e-6 || Math.abs(mx.c) > 1e-6 || !mx.is2D) { g.clipped = true; break; } } }
-      // How far inside the border edge a ring may lie: a border, an inset outline.
-      g.inset = Math.max(...g.bw, cs.outlineStyle === 'none' ? 0 : Math.max(0, -(Number.parseFloat(cs.outlineOffset) || 0)));
+      // How far inside the border edge a ring may lie: a border, an inset outline that paints.
+      const paintsOutline = cs.outlineStyle !== 'none' && Number.parseFloat(cs.outlineWidth) > 0 && !/rgba\([^)]*,\s*0\)|transparent/.test(cs.outlineColor);
+      g.inset = Math.max(...g.bw, paintsOutline ? Math.max(0, -(Number.parseFloat(cs.outlineOffset) || 0)) : 0);
       // How far a shadow's blur and spread reach along a side from a corner, where two sides' shadows overlap.
       g.soft = Math.max(0, ...shadowLayers(cs.boxShadow).map((l) => l.blur + Math.abs(l.spread)));
       g.tf = [cs.transform, cs.translate, cs.scale, cs.rotate].join('|');
