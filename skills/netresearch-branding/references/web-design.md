@@ -261,6 +261,9 @@ again to score them; a pixel counts only when it changed in both, so an inset ri
 photo is measured against the photo and one painted under an opaque image fails at 1:1.
 The browser's own ring, a focus change without outline, ring or border (counted in
 `focusWithoutRing`) and hidden controls are not judged on pixels.
+An inset ring is read against the fill it replaced, not the fill beside it: where focus also
+changes a gradient or image fill, a weak inset ring passes
+([#128](https://github.com/netresearch/netresearch-branding-skill/issues/128)).
 Icons and other graphics are not measured.
 
 TLS certificates are verified for the page and every request it makes; an invalid
