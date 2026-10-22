@@ -206,9 +206,68 @@ node scripts/contrast-audit.cjs public/index.html
 node scripts/contrast-audit.cjs https://pages.nrdev.de/<ns>/<project>/ --header "Authorization: Bearer $GITLAB_TOKEN"
 ```
 
-It lists every text element below AA for its size, plus skip link, labelled `nav`, `main`,
-table captions, the smallest font and decorative SVGs without `aria-hidden`; exit 1 on any
-contrast failure.
+It lists every text element below AA for its size, every focus indicator below 3:1 (what
+changes on focus: the outline, a box-shadow ring or the border, under forced `:focus`
+and `:focus-visible`) and every form-control boundary below 3:1 (SC 1.4.11: the border,
+a box-shadow ring or the fill; disabled and hidden controls skipped), plus skip link,
+labelled `nav`, `main`, table captions, the smallest font, decorative SVGs without
+`aria-hidden` and whether the page switches colours under `prefers-color-scheme` or
+`data-theme`; exit 1 on any text failure (at rest or under forced `:hover` and
+`:focus-visible`), focus-indicator failure or control-boundary failure. These are the
+failures it measured: controls it cannot read are counted in `focusRingUnverified`,
+`controlBoundaryUnverified`, `focusUserAgentRing` and `focusWithoutRing` without failing,
+so check those by hand; exit 0 is no complete SC 1.4.11 result. Focus indicators
+and boundaries are judged first by a colour model of the computed styles, under the
+opacity of the control and its ancestors. Where that model passes a ring or a boundary,
+the control is judged again on screenshots, unfocused and focused for a ring, so a blur,
+a fractional spread, a ring layer hidden under another, an ancestor's `overflow` clip, a
+gradient fill, `filter`, `mix-blend-mode` and a ring on a fully rounded pill are
+measured as painted. The pixels only add failures (`measuredBy: "pixels"`); a model failure
+stands (`measuredBy: "model"`). A control inside a scroll container is scrolled into view
+for the screenshots, like one outside the window, and scrolled back. A transform that
+applies only on focus (a 1px lift, a scale) is pinned to its unfocused value for the
+focused screenshot where the focused box still overlaps the unfocused one by half (a
+skip link that a transform brings into view is shot where focus shows it). A lift the
+pin cannot undo (an ancestor's `transform`, `top`, a margin) is registered: where focus
+moves the box by whole pixels at the same size and the two boxes overlap by half, each
+focused pixel is compared with the unfocused pixel it moved from and with the one in
+place, so neither the moved border nor a neighbour that stayed counts as a ring. A pixel
+outside the focused box (over the strip the control vacated, or over a rule it moved onto)
+is scored against the lower of the pixel it moved from and the surface behind the control,
+read from shots with the control made transparent, one before the focused shot and three
+after (a ring over a surface behind the strip close to its own colour, a dark plate under
+a black ring or a light one under a white ring, never visible, fails: a known false
+failure). A pixel inside the focused box over a surface the control moved onto is not
+scored, because the screenshots cannot tell whether that surface shows through the
+control (a translucent fill, a blend mode, an ancestor's `filter`); where the ring would
+pass with those pixels, the control is unverified. A surface that moves with the control
+and keeps its colour (a card that lifts it) is read as before; a card that also changes
+its background on `:focus-within` counts as another surface. Pixels that change between the
+three unfocused screenshots (an animated neighbour; for a skip link, looked for where
+the focused link shows) are never part of a ring. A control the model
+passed is counted in `focusRingUnverified` or `controlBoundaryUnverified` and does not
+fail when another element covers it (an image, canvas, iframe, a `::before` or a
+`backdrop-filter` covers; an empty transparent overlay does not), when an ancestor on its
+containing-block chain still clips it (`overflow`, `contain: paint`, `clip-path`,
+`content-visibility`), when its focused box lies even partly outside the viewport (a
+skip link waiting outside it is measured where focus shows it), when it is rotated
+(`transform` or `rotate`), skewed or transformed in 3D, when an ancestor's focus
+transform resizes it or moves it by a fraction of a pixel (a card that scales on
+`:focus-within`, also with a strong ring), when its own pixels move between the
+screenshots (a debounced scroll handler), when an animated neighbour changes along as
+much of it as a ring must cover (a moving stripe; a small spinner does not count; an
+animation that shows the same frame in all three unfocused screenshots can still pass),
+or when its ring fails only where such a neighbour hides it and the hidden pixels, taken
+at 21:1, would complete it.
+Icons and images inside a control are hidden to find the pixels focus changes, and shown
+again to score them; a pixel counts only when it changed in both, so an inset ring over a
+photo is measured against the photo and one painted under an opaque image fails at 1:1.
+The browser's own ring, a focus change without outline, ring or border (counted in
+`focusWithoutRing`) and hidden controls are not judged on pixels.
+An inset ring is read against the fill it replaced, not the fill beside it: where focus also
+changes a gradient or image fill, a weak inset ring passes
+([#128](https://github.com/netresearch/netresearch-branding-skill/issues/128)).
+Icons and other graphics are not measured.
 
 TLS certificates are verified for the page and every request it makes; an invalid
 certificate aborts that connection before any request, and with it any `--header` value, is

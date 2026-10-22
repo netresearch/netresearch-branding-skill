@@ -11,7 +11,8 @@ const AUDIT = path.join(__dirname, '..', 'contrast-audit.cjs');
 
 function audit(...args) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [AUDIT, ...args], { env: process.env });
+    // A hung audit is killed, so the test fails instead of holding the runner open.
+    const child = spawn(process.execPath, [AUDIT, ...args], { env: process.env, timeout: 120000, killSignal: 'SIGKILL' });
     let stdout = ''; let stderr = '';
     child.stdout.on('data', (d) => { stdout += d; });
     child.stderr.on('data', (d) => { stderr += d; });

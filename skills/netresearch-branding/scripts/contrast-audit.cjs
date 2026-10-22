@@ -31,13 +31,179 @@
  * for ≥24 px / ≥18.66 px bold) with foreground, effective background and the measured
  * ratio; whether a skip link, a labelled <nav>, <main> and table captions exist; the
  * smallest rendered font size; SVGs inside text badges without aria-hidden. Hidden
- * elements are skipped. Exits non-zero on a contrast failure OR on a stylesheet/script
+ * elements (their own or an ancestor's display or visibility) are skipped; a submenu that
+ * only a parent item's :hover reveals is therefore measured only through its focus state.
+ * Measured although checkVisibility() calls them hidden: the options of a <select>, the
+ * content of a closed <details> (also one nested in another closed one) and display:
+ * contents (no box, but its text is painted; its own background is not painted and is
+ * not composited). A single-line <select> is measured on the shown value in its own
+ * colour.
+ * Exits non-zero on a contrast failure (text or non-text) OR on a stylesheet/script
  * the page failed to load: an unstyled page has no contrast failures and would otherwise
  * pass for the wrong reason. Other failed requests (a template's placeholder images) are
  * listed under failedRequests without failing the run.
  *
- * Scope: text contrast (SC 1.4.3). It does NOT evaluate SC 1.4.11 non-text contrast —
- * control boundaries, focus rings, icons — so a green run is not a full AA verdict.
+ * Scope: text contrast (SC 1.4.3) and two parts of SC 1.4.11 non-text contrast, each at
+ * 3:1 and each failing the run. Both parts are judged first by a colour model of the
+ * computed styles, composited with the opacity of the control and its ancestors.
+ * `focusRingFailures`: what changes on each interactive element between unfocused and
+ * forced :focus plus :focus-visible — its outline, each box-shadow ring layer (a blurred
+ * one at the pixel next to the border), its border — each against the colour next to it;
+ * the indicator passes when any changed part reaches 3:1, and a shadow present in both
+ * states is not an indicator. `controlBoundaryFailures`: the border (painted over the
+ * control's fill), a box-shadow ring (Tailwind's `ring-1 ring-inset`) or the fill of each
+ * input, select and textarea against the surface around it.
+ * Where the model passes a ring or a boundary, the control is judged again on a
+ * screenshot of a clip around it (device pixel ratio 1; a control whose clip leaves the
+ * viewport, or that a scroll container clips, is scrolled to its centre and back, the
+ * container too). A ring is judged on shots unfocused and focused, with the text of the
+ * whole page and the caret hidden, and a transform, translate, scale or rotate that only
+ * focus applies (a lift by 1px) pinned to its unfocused value where the focused box still
+ * overlaps the unfocused one by half (a skip link that a transform brings into view is
+ * shot where focus shows it). Where focus otherwise moves the box by whole pixels at the
+ * same size (an ancestor's transform, top or a margin) and the two boxes still overlap by
+ * half (not a skip link), each focused pixel is compared with the unfocused pixel it
+ * moved from, and counts as changed only when it differs from that one and from the one
+ * in place, so neither the moved border nor a neighbour that stayed is taken for a ring;
+ * a pixel outside the focused box (over the strip the control vacated, or a neighbour
+ * that stayed on the side it moved into) is scored against the lower of the pixel it
+ * moved from and the surface behind the control, read from four shots with the control
+ * at opacity 0, one before the focused shot and three after (a pixel that changes between
+ * them is taken as hidden by an animation). A pixel of the focused box outside the
+ * unfocused one keeps its score where the surface behind moved with the control and kept
+ * its colour (an ancestor's lift, read from one more shot of the unfocused control at
+ * opacity 0; a card that also changes its background on :focus-within counts as another
+ * surface), and is
+ * taken as hidden where the control moved onto another surface: whether that surface shows
+ * through the control (a translucent fill, a blend mode, an ancestor's filter) is not known
+ * from the pixels. The lower of the two is conservative: a ring that covers
+ * the strip in front of a surface behind it close to the ring's own colour (a dark plate or
+ * bar under a black ring, a light one under a white ring; not a descendant of the control,
+ * which is hidden with it), never visible, fails, a known false failure. A sub-pixel move or a resize is compared in place, except
+ * one by an ancestor's transform (a card that scales on :focus-within), which leaves the
+ * control unverified. A pixel counts as changed when a channel moves by more than 2
+ * between two shots with the control's icons and images hidden, and a select's shown
+ * value is left out; a control that has icons or images is shot again with them shown, a
+ * pixel counts only when it changed in that pair too, and it is scored on that pair, so
+ * an inset ring drawn over a photo is scored against the photo and one painted under an
+ * opaque image fails at 1:1. The unfocused state is shot three times: a pixel that
+ * differs between those shots (an animated neighbour) is never part of the ring; for a
+ * skip link, which shows nothing of itself unfocused, that neighbour is looked for where
+ * the focused link shows. The ring passes when one piece of changed pixels (pixels up to
+ * 2 px apart joined) reaches 3:1 and spans the length of the control's longer side less,
+ * at each end, its corner radius or a shadow's blur plus spread, less 2 px and its border
+ * or inset outline (at least 8 px). A piece is measured by its extent, so a compact block
+ * (a CSS icon that recolours) cannot carry it. A changed pixel outside the border box is
+ * scored against its own unfocused value, one on the border against the nearest unchanged
+ * pixel, one inside the padding box (a tinted fill, an inset ring) against its own
+ * unfocused value (so an inset ring is read against the fill it replaced: where focus also
+ * changes a gradient or image fill the colour model cannot read, a weak inset ring passes,
+ * https://github.com/netresearch/netresearch-branding-skill/issues/128);
+ * a ring that changes no pixel fails at 1:1.
+ * A boundary is judged on one shot at rest: the median of the lines across each side,
+ * corners left out, against the surface a few pixels outside, on its best side. So these
+ * are measured as painted, where the model passes: a blurred ring (also a fractional
+ * spread, or a blur wide against the control), a ring layer hidden under another layer or
+ * under the outline, an outline clipped by an ancestor's overflow, a gradient fill under a
+ * boundary, filter and mix-blend-mode, and a ring on a fully rounded pill. The pixels only
+ * add failures: a model failure stands as the model measured it, and each failure says
+ * which judged it (`measuredBy`: "model" or "pixels"). A control the model passed whose
+ * pixels cannot be read is counted and not failed, in `focusRingUnverified` or
+ * `controlBoundaryUnverified`: when another element covers most of the 3 px around its
+ * border box (a hit test at its edge, repeated with pointer-events forced on for a ring
+ * that changed no pixel, so a cover with pointer-events: none is found). An element that
+ * paints nothing covers nothing: an empty one (a transparent stretched-link overlay) with
+ * no background, border, box-shadow, outline or backdrop-filter, whose ::before and
+ * ::after paint nothing either, and that is no image, canvas, iframe, video, svg, form
+ * field or other replaced element. Also unverified: a control that an ancestor still
+ * clips after the scroll (overflow other than visible, contain: paint, strict or content,
+ * clip-path, content-visibility), counting only the ancestors on its containing-block
+ * chain, so an absolute control that escapes an overflow box between it and its
+ * containing block, or a fixed one inside a scrolling shell, is measured; a control whose
+ * focused box lies even partly outside the viewport after the scroll (one pushed past the
+ * page edge; a skip link that waits outside it unfocused is measured where focus shows
+ * it); one rotated (by transform or the rotate property), skewed or transformed in 3D,
+ * itself or by an ancestor; one whose box an ancestor's focus transform resizes or moves
+ * by a fraction of a pixel (also with a strong ring); one whose page moved between the
+ * shots (its own pixels inside its box differ in an unfocused shot taken again after the
+ * focused one, as with a debounced scroll handler; an element animated beside it does not
+ * count); and one beside
+ * an animated neighbour whose changing pixels, joined up to 4 px apart, form one piece as
+ * long as the ring must be (a stripe moving along the control; a small spinner does not
+ * count), or whose ring fails only where such a neighbour hides it: the hidden pixels,
+ * taken at 21:1, would complete it. That check samples the animation in the three
+ * unfocused shots (and, for a lifted control outside its box, in four shots with the
+ * control hidden), so an animation that happens to show the
+ * same frame in all three can still pass. Not judged
+ * on pixels: the browser's own ring, an element counted in focusWithoutRing (a shadow
+ * without spread: a glow or a hard offset underline such as 0 2px 0 0; a fill change; a
+ * ring drawn by a pseudo-element), a control that is not
+ * perceivable, and any ring or boundary the model already fails. A boundary judged on its
+ * best side passes a field whose only contrast is a dark neighbour touching one side. The
+ * screenshots are decoded with the PNG reader playwright-core bundles (lib/utilsBundle,
+ * not its documented API).
+ * Disabled controls (also in a disabled fieldset), controls in a hidden ancestor or a
+ * closed dialog, controls at opacity 0 (their own or an ancestor's) at every position
+ * the scroll pass reaches and 1px visually hidden form fields are skipped; the opacity-0
+ * ones are counted in `transparentControlsSkipped`, with a note on stderr; one hidden by
+ * display or visibility everywhere (a closed menu) is skipped like any hidden element and
+ * not counted. A control hidden at the top (opacity 0, display or visibility) that was
+ * visible further down is measured at that position, and so is a control that exists
+ * only while the page is scrolled: its resting text, hover, focus and boundary. A
+ * scroll-driven animation (animation-timeline) is left to show the state of each
+ * position. Animations are settled again at each such position; a colour tween driven by
+ * requestAnimationFrame (not a CSS or Web Animations API animation) is measured where it
+ * stands. Not covered: text that is not a control and appears only on scroll (a banner),
+ * the scrolled look of a control already visible at the top (a sticky header's scrolled
+ * palette), a control with display: contents shown only on scroll, and a scrolling
+ * container inside the page; the scroll pass covers the window's own scroll. Before
+ * anything is measured, the pointer is moved outside the viewport. mouseleave and
+ * pointerleave on the document, <html> and <body>, and mouseout and pointerout that
+ * leave the window (also to a page's own listener or listener object on <html> or
+ * <body>), are held back, and an onmouseout/onpointerout handler there is removed for
+ * the rest of the run, so an exit-intent popup does not open, while an element's own
+ * leave events still release its hover. A leave such a listener skipped is then handed
+ * to that listener alone, with <body> as related target and the path and phase it had,
+ * so a hover-out delegated from <html> or <body> still releases. Not covered: an
+ * exit-intent capture listener on window or the document; an exit check that compares the
+ * related target with <body>; a hover state on <html> or <body> itself that ends only when
+ * the pointer leaves the page (the same check an exit-intent popup makes); a hover
+ * delegated from the document for an element at (0, 0), where the pointer starts; a
+ * hover-out that waits longer than 1 s in total, or that resumes in a later task (an
+ * await on an animation frame, a fetch or an event) before it sets its timer, or whose
+ * timer is set by a string interval (setInterval("code", ms)); and the order of leave listeners when an
+ * element's own mouseleave replaces it. The page is scrolled through
+ * once, instantly (content revealed on scroll, also content that hides again when
+ * scrolled away), infinite animations are cancelled and finite ones finished,
+ * unless finishing leaves the element less visible (a toast fading out), so a fade-in
+ * counts at its final opacity. An animation started later by a forced :hover or :focus
+ * is measured at its start. An <a> without href is measured hovered, never focused; a
+ * tabindex="-1" element without a widget role (a skip-link target), inert content and a
+ * tabindex="-1" element under aria-hidden are not judged as focus indicators; <area> is
+ * not measured. A state failure names the control and, where it differs, the text
+ * inside it that fails; a text that fails the same way at rest is reported only there.
+ * An outline that only moves on focus counts as changed, except the moves Chromium's own
+ * focus styles apply (1px on a link, 2px on a checkbox or radio). Elements whose focus
+ * changes no outline, ring or border are counted in `focusWithoutRing`, and the
+ * browser's own `outline: auto` ring, in the browser's focus-ring colour for the control's
+ * used color-scheme, in `focusUserAgentRing`; neither is judged (an `auto` ring in an
+ * author's colour is). A ring drawn on another element (a sibling label, a :focus-within
+ * ancestor) is not seen. `filter` and `mix-blend-mode` are seen only by the pixel check, so
+ * only where the model passes: a model failure that one of them would lift still stands.
+ * Content inside an iframe is not measured.
+ * Icons, charts and other graphics are not evaluated, so a green run is still not a
+ * full AA verdict. rgb() and rgba() are read numerically; other notations (oklch(),
+ * color()) go through a canvas. An element focused on load is blurred before any
+ * measurement, and the focused state is always forced as :focus with :focus-visible.
+ *
+ * `darkScheme` / `darkSchemeBy` say whether the page switches its colours under the
+ * other `prefers-color-scheme` or either `data-theme` value, measured from computed
+ * colours, so a stylesheet the browser keeps unreadable cannot hide a dark palette.
+ * `data-theme` counts when its "dark" and "light" values give different colours; the run
+ * then sets it on <html> to its --scheme before measuring (`dataThemeSet`), so
+ * `--scheme dark` measures that palette too. A page's own other value (a named theme such
+ * as data-theme="corporate") is kept and reported in `dataThemeKept`. Only `data-theme`
+ * on <html> is detected (not on <body>, not `data-bs-theme`).
  *
  * `stateFailures` repeats the measurement with :hover and :focus-visible forced on every
  * interactive element (CDP CSS.forcePseudoState), because a hover colour is invisible to a
@@ -61,6 +227,9 @@
  */
 const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT_CORE || 'playwright-core');
+// The PNG decoder playwright-core bundles (pngjs), for the screenshots of the pixel checks.
+// lib/utilsBundle is listed in its package exports but is not part of its documented API.
+const { PNG } = require(`${process.env.PLAYWRIGHT_CORE || 'playwright-core'}/lib/utilsBundle`);
 // CLI arguments are only parsed when this file IS the entry point; required as a
 // module (the error-path tests) it exposes its internals instead and parses nothing.
 const CLI = require.main === module;
@@ -113,12 +282,24 @@ async function sendHeaderToOriginOnly(page, origin, name, value) {
 // hovered simultaneously — and an ancestor, sibling or :has() selector then resolves
 // against that fiction.
 const INTERACTIVE = 'a, button, input, textarea, select, summary, [tabindex]';
+// What the focus passes judge: an <a> without href (a named anchor) can be hovered, not
+// focused, and a tabindex="-1" element without a role (a skip-link target, a heading that
+// receives focus after navigation) is a focus target, not a user interface component.
+// A tabindex="-1" element counts only with a widget role (a roving-tabindex tab or
+// option); inert content and a tabindex="-1" element under aria-hidden (a card's
+// duplicate image link) are never reached by keyboard.
+const WIDGET_ROLES = ['button', 'checkbox', 'combobox', 'gridcell', 'link', 'menuitem', 'menuitemcheckbox', 'menuitemradio', 'option', 'radio', 'row', 'slider', 'spinbutton', 'switch', 'tab', 'treeitem'];
+const FOCUSABLE = `:is(a[href], button, input, textarea, select, summary, [tabindex]:not([tabindex^="-"]), [tabindex]:is(${WIDGET_ROLES.map((r) => `[role="${r}"]`).join(', ')}))`
+  + ':not([inert], [inert] *, [aria-hidden="true"][tabindex^="-"], [aria-hidden="true"] [tabindex^="-"])';
 // A node can legitimately disappear between the query and the force. Anything else is
 // a real failure and must not be swallowed: an element silently dropped here is an
 // element whose hover colour nobody measured, in a run that still exits 0.
 const isDetached = (e) => /Could not find node|No node (found )?with given id|Node with given id does not belong/i.test(String(e?.message));
 
-async function measureOneNode(cdp, nodeId, state) {
+// `fn` names the in-page measurement: __measureOne (text colour), __ringBefore or
+// __measureFocusRing (focus indicator), or a helper of the pixel checks (__geometry and
+// the others defined next to it), which takes `state` as its argument and may be async.
+async function measureOneNode(cdp, nodeId, state, fn = '__measureOne') {
   const { object } = await cdp.send('DOM.resolveNode', { nodeId });
   // No throw from a finally anywhere here: it would replace the measurement error
   // with whatever the cleanup said. Both are captured and reported together.
@@ -126,8 +307,8 @@ async function measureOneNode(cdp, nodeId, state) {
   let measureError;
   try {
     const { result, exceptionDetails } = await cdp.send('Runtime.callFunctionOn', {
-      objectId: object.objectId, returnByValue: true,
-      functionDeclaration: 'function (state) { return window.__measureOne(this, state); }',
+      objectId: object.objectId, returnByValue: true, awaitPromise: true,
+      functionDeclaration: `function (state) { return window.${fn}(this, state); }`,
       arguments: [{ value: state }],
     });
     // callFunctionOn reports a thrown measurement through exceptionDetails and still
@@ -155,13 +336,519 @@ async function measureOneNode(cdp, nodeId, state) {
   return value;
 }
 
-async function measureInteractiveStates(page) {
+// --- SC 1.4.11 on painted pixels ---------------------------------------------------------
+// The colour model (__measureFocusRing, __boundaryOf) judges from computed styles. Where it
+// passes a focus indicator or a boundary, the same element is judged again on a screenshot
+// of a clip around it (one device pixel per CSS pixel), which shows what Chromium paints: a
+// blur, a layer hidden under another, an ancestor's overflow clip, a gradient fill, filter
+// and mix-blend-mode. The pixels can only add a failure; a model failure stands as it is.
+const PX_DIFF = 2; // a pixel has changed when one of its channels moved by more than this
+// Hidden page-wide while focus screenshots are taken, so a text colour, underline or text
+// shadow that changes on focus is not taken for an indicator. `color` (and with it
+// currentColor in a border or outline) is left as it is.
+const TEXT_OFF = '[data-contrast-audit-icon]{visibility:hidden !important}*,*::before,*::after,*::placeholder,*::marker{-webkit-text-fill-color:transparent !important;-webkit-text-stroke-color:transparent !important;'
+  + 'text-decoration-color:transparent !important;text-emphasis-color:transparent !important;text-shadow:none !important}';
+const linC = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+const lumAt = (d, i) => 0.2126 * linC(d[i]) + 0.7152 * linC(d[i + 1]) + 0.0722 * linC(d[i + 2]);
+const ratioL = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+const rgbAt = (d, i) => `rgb(${d[i]}, ${d[i + 1]}, ${d[i + 2]})`;
+
+// The clip around a box (viewport coordinates) grown by m, cut to the viewport: Chromium
+// returns white, not the page, for a clip outside it. The clip's x/y are document coordinates.
+function clipAround(g, m) {
+  const x0 = Math.max(0, Math.floor(g.box[0] - m)); const y0 = Math.max(0, Math.floor(g.box[1] - m));
+  const x1 = Math.min(g.vw, Math.ceil(g.box[2] + m)); const y1 = Math.min(g.vh, Math.ceil(g.box[3] + m));
+  if (x1 - x0 < 1 || y1 - y0 < 1) return null;
+  return { x: x0 + Math.round(g.sx), y: y0 + Math.round(g.sy), width: x1 - x0, height: y1 - y0, vx: x0, vy: y0 };
+}
+const inView = (g, m) => !g.clipped && g.box[0] - m >= 0 && g.box[1] - m >= 0 && g.box[2] + m <= g.vw && g.box[3] + m <= g.vh;
+// Whether two boxes overlap by at least half the smaller one: focus moved the control a
+// little (a lift), not far (a skip link that moves into view).
+const overlapHalf = (p, q) => Math.max(0, Math.min(p[2], q[2]) - Math.max(p[0], q[0])) * Math.max(0, Math.min(p[3], q[3]) - Math.max(p[1], q[1]))
+  >= 0.5 * Math.min((p[2] - p[0]) * (p[3] - p[1]), (q[2] - q[0]) * (q[3] - q[1]));
+// The whole-pixel offset [dx, dy] by which focus moved box b to box a without resizing it,
+// when the two overlap by at least half; [0, 0] otherwise (a sub-pixel move, a resize, a
+// skip link).
+function liftOf(b, a) {
+  const dx = a[0] - b[0]; const dy = a[1] - b[1];
+  const whole = (v) => Math.abs(v - Math.round(v)) < 0.01;
+  if (!whole(dx) || !whole(dy) || Math.abs(a[2] - b[2] - dx) > 0.01 || Math.abs(a[3] - b[3] - dy) > 0.01 || !overlapHalf(a, b)) return [0, 0];
+  return [Math.round(dx), Math.round(dy)];
+}
+
+async function capture(cdp, clip) {
+  const { data } = await cdp.send('Page.captureScreenshot', {
+    format: 'png', captureBeyondViewport: false, clip: { x: clip.x, y: clip.y, width: clip.width, height: clip.height, scale: 1 },
+  });
+  const img = PNG.sync.read(Buffer.from(data, 'base64'));
+  if (img.width !== clip.width || img.height !== clip.height) throw new Error(`screenshot is ${img.width}x${img.height}, clip ${clip.width}x${clip.height}`);
+  return img;
+}
+
+// Rectangles (viewport coordinates) as a mask over the clip, by pixel centre.
+function maskOf(rects, clip) {
+  const m = new Uint8Array(clip.width * clip.height);
+  for (const r of rects) {
+    const x0 = Math.max(0, Math.ceil(r[0] - clip.vx - 0.5)); const x1 = Math.min(clip.width, Math.ceil(r[2] - clip.vx - 0.5));
+    const y0 = Math.max(0, Math.ceil(r[1] - clip.vy - 0.5)); const y1 = Math.min(clip.height, Math.ceil(r[3] - clip.vy - 0.5));
+    for (let y = y0; y < y1; y++) m.fill(1, y * clip.width + x0, y * clip.width + Math.max(x0, x1));
+  }
+  return m;
+}
+// g.own holds one bit per 2x2 block of the clip: whether that pixel shows the element.
+const ownBit = (own, W, x, y) => own.charCodeAt((y >> 1) * Math.ceil(W / 2) + (x >> 1)) === 49;
+// Covered: most of the 3 px strip around the border box shows another element.
+function covered(g, clip) {
+  const bx0 = g.box[0] - clip.vx; const by0 = g.box[1] - clip.vy; const bx1 = g.box[2] - clip.vx; const by1 = g.box[3] - clip.vy;
+  let strip = 0; let stripOwn = 0;
+  for (let y = 0; y < clip.height; y++) for (let x = 0; x < clip.width; x++) {
+    const cx = x + 0.5; const cy = y + 0.5;
+    const d = Math.max(bx0 - cx, cx - bx1, by0 - cy, cy - by1);
+    if (d > 0 && d <= 3) { strip++; if (ownBit(g.own, clip.width, x, y)) stripOwn++; }
+  }
+  return strip > 0 && stripOwn / strip < 0.5;
+}
+
+// The focus indicator on two screenshots of one clip. A pixel is part of the indicator when
+// it changed, lies outside the element's icons and form value, shows the element (not a
+// fixed header over it) and did not change between the unfocused shots (an animated
+// neighbour). Changed means: with icons hidden (mb, ma) and, for a control with icons,
+// also with them shown (before, after); where focus moved the box by whole pixels at the
+// same size (liftOf), against the unfocused pixel it moved from and the one in place; a
+// pixel outside the focused box, over the strip the control vacated or outside the
+// unfocused box, is then scored against the lower of the pixel it moved from and the
+// surface behind the control (`under`, focused shots with it at opacity 0); a pixel of the
+// focused box outside the unfocused one over a surface that did not move with the control
+// (`underB`, the unfocused shot with it at opacity 0) is hidden.
+// Each such pixel is scored against the colour beside it (SC 1.4.11): outside the border
+// box, its own unfocused value, the surface the ring is painted on; inside it (a
+// recoloured border), for a pixel on the border the nearest unchanged pixel within half
+// the shorter side, outward and then inward, and with none, again its own unfocused value;
+// inside the padding box (a tinted fill, an inset ring), its own unfocused value, never a
+// dark child or the far border. The indicator's ratio is the highest score t at which the
+// pixels scoring t or more hold one piece (pixels up to 2 px apart are joined, across the
+// anti-aliased corners of a rounded ring) at least as large as the straight part of the
+// element's longer side: its length less, at each end, the corner radius or a shadow's
+// blur plus spread (over which a ring fades towards the corner), less 2 px, and at least
+// 8 px. So a 1 px ring along one side or a bottom bar passes, a stray anti-aliased pixel
+// does not. No changed pixel at all: the computed ring paints nothing, 1:1. Returns {
+// covered: true } when another element covers the edge; when the pixels changing without
+// focus form one piece (joined up to 4 px apart) at least that large, counted over the
+// pixels that show the element unfocused, or focused where the boxes overlap by less than
+// half (a skip link); and when the ring would fail but the changed pixels left out under
+// an animated neighbour, taken at 21:1, complete it (also when they are all that changed).
+function focusPixels(before, after, clip, gb, ga, mb = before, ma = after, again = null, under = null, underB = null) {
+  // again: further unfocused shots (icons hidden), taken after the focused one.
+  const W = clip.width; const H = clip.height; const N = W * H;
+  const Bd = before.data; const Ad = after.data;
+  // The focused box: where the indicator is drawn (a skip link moves into view on focus).
+  const bx0 = ga.box[0] - clip.vx; const by0 = ga.box[1] - clip.vy; const bx1 = ga.box[2] - clip.vx; const by1 = ga.box[3] - clip.vy;
+  const bw = ga.bw;
+  const px0 = bx0 + bw[3]; const py0 = by0 + bw[0]; const px1 = bx1 - bw[1]; const py1 = by1 - bw[2];
+  const own = (x, y) => ownBit(ga.own, W, x, y);
+  if (covered(ga, clip)) return { covered: true };
+  const long = Math.max(bx1 - bx0, by1 - by0); const short = Math.min(bx1 - bx0, by1 - by0);
+  const fade = Math.max(Math.min(Math.max(gb.radius, ga.radius), short / 2), gb.soft, ga.soft);
+  const minSize = Math.max(8, Math.round(long - 2 * fade) - 2 - 2 * Math.max(gb.inset, ga.inset));
+  const dif = (P, p, Q, q) => { const a = p * 4; const b = q * 4; return Math.abs(P[a] - Q[b]) > PX_DIFF || Math.abs(P[a + 1] - Q[b + 1]) > PX_DIFF || Math.abs(P[a + 2] - Q[b + 2]) > PX_DIFF; };
+  // Pixels that change without focus (an animated neighbour): those that differ between
+  // consecutive unfocused shots. Never part of the indicator; one piece of them as long as
+  // the ring must be makes the shots unreadable.
+  const Mb = mb.data; const Ma = ma.data;
+  const noiseOf = (shots, own2) => {
+    const m = new Uint8Array(N);
+    for (let s = 1; s < shots.length; s++) { const P = shots[s - 1].data; const Q = shots[s].data; for (let i = 0; i < N; i++) if (dif(P, i, Q, i)) m[i] = 1; }
+    const sn = new Uint8Array(N);
+    for (let i0 = 0; i0 < N; i0++) {
+      if (!m[i0] || sn[i0] || !ownBit(own2, W, i0 % W, (i0 / W) | 0)) continue;
+      let x0 = W; let x1 = -1; let y0 = H; let y1 = -1; const st = [i0]; sn[i0] = 1;
+      while (st.length) {
+        const p = st.pop(); const x = p % W; const y = (p - x) / W;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        // Joined up to 4 px apart: a moving pattern (a stripe) changes only some of its
+        // pixels between any two shots.
+        for (let ey = -4; ey <= 4; ey++) for (let ex = -4; ex <= 4; ex++) {
+          const nx = x + ex; const ny = y + ey;
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          const n = ny * W + nx;
+          if (sn[n] || !m[n] || !ownBit(own2, W, nx, ny)) continue;
+          sn[n] = 1; st.push(n);
+        }
+      }
+      if (Math.max(x1 - x0 + 1, y1 - y0 + 1) >= minSize) return null;
+    }
+    return m;
+  };
+  // A control that focus moves far (a skip link) shows nothing of itself unfocused: its
+  // focused pixels decide where an animated neighbour would hide the ring.
+  const noise = noiseOf(again ? [mb, ...again] : [], overlapHalf(gb.box, ga.box) ? gb.own : ga.own);
+  if (!noise) return { covered: true };
+  // Registration: where focus moves the box by whole pixels without resizing it (a lift by
+  // an ancestor's transform, top or a margin), each focused pixel is compared with the
+  // unfocused pixel it moved from; src[i] is that pixel, -1 outside the clip. A pixel then
+  // counts as changed only when it also changed in place, so the moved border is no change
+  // and a neighbour that stayed is none either.
+  const lift = liftOf(gb.box, ga.box);
+  const src = new Int32Array(N);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const sx = x - lift[0]; const sy = y - lift[1];
+    src[y * W + x] = sx < 0 || sy < 0 || sx >= W || sy >= H ? -1 : sy * W + sx;
+  }
+  const reg = lift[0] !== 0 || lift[1] !== 0;
+  const hole = maskOf(ga.holes, clip);
+  { const hb = maskOf(gb.holes, clip); for (let i = 0; i < N; i++) if (src[i] >= 0 && hb[src[i]]) hole[i] = 1; }
+  const moved = (P, Q, i) => src[i] >= 0 && dif(P, src[i], Q, i) && (!reg || dif(P, i, Q, i));
+  // With icons, a pixel counts only when it changed with them hidden and with them shown: an
+  // inset ring under an opaque image changes nothing a user sees.
+  const changed = new Uint8Array(N);
+  for (let i = 0; i < N; i++) if (moved(Mb, Ma, i) && (mb === before || moved(Bd, Ad, i))) changed[i] = 1;
+  const score = new Float32Array(N); const adjOf = new Int32Array(N).fill(-1);
+  // A pixel scored against the surface behind the control (`under`), for `against`.
+  const behind = new Uint8Array(N);
+  const cand = []; const hidden = [];
+  const march = (x, y, sx, sy) => {
+    for (let k = 1; k <= Math.ceil(short / 2); k++) {
+      const qx = x + k * sx; const qy = y + k * sy;
+      if (qx < 0 || qy < 0 || qx >= W || qy >= H) return -1;
+      if (!own(qx, qy)) return -1;
+      const q = qy * W + qx;
+      if (hole[q]) continue;
+      if (!changed[q]) return q;
+    }
+    return -1;
+  };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    if (!changed[i] || hole[i] || !own(x, y)) continue;
+    if (noise[i] || noise[src[i]]) { hidden.push(i); continue; }
+    const cx = x + 0.5; const cy = y + 0.5;
+    let dx = 0; let dy = 0;
+    // Half a pixel of tolerance on each side: at a fractional edge, the pixel that carries
+    // the anti-aliased border straddles it and belongs to the border.
+    const inBox = cx > bx0 - 0.5 && cx < bx1 + 0.5 && cy > by0 - 0.5 && cy < by1 + 0.5;
+    if (!inBox) { dx = cx < bx0 ? -1 : cx > bx1 ? 1 : 0; dy = cy < by0 ? -1 : cy > by1 ? 1 : 0; } else {
+      const dl = cx - bx0; const dr = bx1 - cx; const dt = cy - by0; const db = by1 - cy; const m = Math.min(dl, dr, dt, db);
+      if (m === dl) dx = -1; else if (m === dr) dx = 1; else if (m === dt) dy = -1; else dy = 1;
+    }
+    // Registered, an outside pixel over the strip the control vacated has no known surface:
+    // neither the unfocused pixel there (the control) nor the one it moved from is under it.
+    // Scored instead against the lower of the pixel it moved from and the surface behind the
+    // control (`under`, focused shots with it at opacity 0, taken whenever a lift is
+    // registered); a pixel that changes between those shots is hidden.
+    if (reg && !inBox && cx > gb.box[0] - clip.vx && cx < gb.box[2] - clip.vx && cy > gb.box[1] - clip.vy && cy < gb.box[3] - clip.vy) {
+      if (under.some((u, k) => k > 0 && dif(under[k - 1].data, i, u.data, i))) { hidden.push(i); continue; }
+      const la = lumAt(Ad, i * 4);
+      const rs = ratioL(la, lumAt(Bd, src[i] * 4)); const ru = ratioL(la, lumAt(under[0].data, i * 4));
+      score[i] = Math.min(rs, ru); behind[i] = ru < rs ? 1 : 0;
+      cand.push(i);
+      continue;
+    }
+    // A padding-box pixel (a tinted fill, an inset ring) is read against its own unfocused
+    // value: an unchanged pixel inward of it may be a dark child or the far border.
+    const inPad = cx >= px0 + 0.5 && cx <= px1 - 0.5 && cy >= py0 + 0.5 && cy <= py1 - 0.5;
+    let q = -1;
+    if (inBox && !inPad) { q = march(x, y, dx, dy); if (q < 0) q = march(x, y, -dx, -dy); }
+    const la = lumAt(Ad, i * 4);
+    score[i] = ratioL(la, lumAt(q < 0 ? Bd : Ad, (q < 0 ? src[i] : q) * 4));
+    adjOf[i] = q;
+    // Registered, the pixel it moved from need not be under a pixel outside the unfocused
+    // box: a neighbour that stayed there (a rule above a lifted button) is not. Outside the
+    // focused box, also scored against the surface behind the control (`under`); hidden
+    // when that surface changes between the shots behind the control, one of them taken
+    // before the focused shot (an animation). Inside the focused box the pixel it moved from
+    // stands where the surface behind moved with the control (an ancestor's lift: the same
+    // there behind the focused control as behind the unfocused one, `underB`); over a
+    // surface the control moved onto, whether that surface shows through it (a translucent
+    // fill, a blend mode, an ancestor's filter) or not (an opaque fill, a gradient) is not
+    // known from the pixels: hidden.
+    if (reg && !(cx > gb.box[0] - clip.vx && cx < gb.box[2] - clip.vx && cy > gb.box[1] - clip.vy && cy < gb.box[3] - clip.vy)) {
+      if (inBox) {
+        if (src[i] < 0 || dif(under[0].data, i, underB.data, src[i])) { score[i] = 0; hidden.push(i); continue; }
+      } else {
+        if (under.some((u, k) => k > 0 && dif(under[k - 1].data, i, u.data, i))) { score[i] = 0; hidden.push(i); continue; }
+        const ru = ratioL(la, lumAt(under[0].data, i * 4));
+        if (ru < score[i]) { score[i] = ru; behind[i] = 1; adjOf[i] = -1; }
+      }
+    }
+    cand.push(i);
+  }
+  // Largest piece of the candidates scoring t or more, and its weakest pixel (the one at t,
+  // whose colours the failure names).
+  const seen = new Int32Array(N);
+  let stamp = 0;
+  const piece = (t) => {
+    stamp++; let bestSize = 0; let bestPx = -1;
+    for (const i of cand) {
+      if (seen[i] === stamp || score[i] < t) continue;
+      let low = i; const stack = [i]; seen[i] = stamp;
+      let x0 = W; let x1 = -1; let y0 = H; let y1 = -1;
+      while (stack.length) {
+        const p = stack.pop(); if (score[p] < score[low]) low = p;
+        const x = p % W; const y = (p - x) / W;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        for (let ey = -2; ey <= 2; ey++) for (let ex = -2; ex <= 2; ex++) {
+          const nx = x + ex; const ny = y + ey;
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          const n = ny * W + nx;
+          if (seen[n] === stamp || !changed[n] || score[n] < t || hole[n] || !own(nx, ny)) continue;
+          seen[n] = stamp; stack.push(n);
+        }
+      }
+      const size = Math.max(x1 - x0 + 1, y1 - y0 + 1);
+      if (size > bestSize) { bestSize = size; bestPx = low; }
+    }
+    return { size: bestSize, px: bestPx };
+  };
+  if (!cand.length) {
+    // Only pixels an animated neighbour hides changed: unverified when, taken at 21:1, they hold a ring.
+    if (hidden.length) {
+      for (const i of hidden) { score[i] = 21; cand.push(i); }
+      if (piece(3).size >= minSize) return { covered: true };
+      for (const i of hidden) score[i] = 0;
+      cand.length = 0;
+    }
+    // What is painted at the middle of the top edge, just outside the box, in both states.
+    const e = Math.min(H - 1, Math.max(0, Math.floor(by0) - 1)) * W + Math.min(W - 1, Math.max(0, Math.round((bx0 + bx1) / 2)));
+    return { changed: false, pass: false, ratio: 1, color: rgbAt(Ad, e * 4), against: rgbAt(Bd, (src[e] < 0 ? e : src[e]) * 4), pixels: 0, minPixels: 0 };
+  }
+  const ts = [...new Set(cand.map((i) => score[i]))].sort((a, b) => b - a);
+  // Smallest index (highest t) whose piece reaches minSize; the piece grows as t falls.
+  let lo = 0; let hi = ts.length - 1; let found = -1;
+  if (piece(ts[hi]).size >= minSize) {
+    while (lo <= hi) { const mid = (lo + hi) >> 1; if (piece(ts[mid]).size >= minSize) { found = mid; hi = mid - 1; } else lo = mid + 1; }
+  }
+  const t = found >= 0 ? ts[found] : ts[0];
+  // A ring that fails only where an animated neighbour hid part of it: unverified, when the
+  // hidden pixels, taken at full contrast, would complete it.
+  if (!(found >= 0 && t >= 3) && hidden.length) {
+    for (const i of hidden) { score[i] = 21; cand.push(i); }
+    if (piece(3).size >= minSize) return { covered: true };
+    for (const i of hidden) score[i] = 0;
+    cand.length -= hidden.length;
+  }
+  const best = piece(t);
+  const adj = adjOf[best.px];
+  return {
+    changed: true, pass: found >= 0 && t >= 3, ratio: t, pixels: best.size, minPixels: minSize,
+    color: rgbAt(Ad, best.px * 4), against: adj >= 0 ? rgbAt(Ad, adj * 4) : behind[best.px] ? rgbAt(under[0].data, best.px * 4) : rgbAt(Bd, src[best.px] * 4),
+  };
+}
+
+// Judges the focus indicator of the element behind nodeId on pixels. Called with the element
+// forced into :focus plus :focus-visible; leaves it forced (the caller resets it). An
+// element whose clip lies partly outside the viewport is scrolled into its centre for both
+// screenshots, and the page is scrolled back afterwards. `pin` is the unfocused outline
+// offset where focus only applies Chromium's own offset move (see outlineChanged): it is
+// kept for the focused screenshot, so that move is not taken for an indicator; so is a
+// transform, translate, scale or rotate that only focus applies, where the focused box
+// still overlaps the unfocused one by half (overlapHalf; a skip link is not pinned). The
+// changed pixels come from shots with the icons hidden; a control with icons is shot again
+// with them shown and scored on that pair. The unfocused state is shot three times with
+// icons hidden, to find an animated neighbour. Returns { unverified: true } for an element whose edge
+// another element covers (a fixed header), that an ancestor on its containing-block chain
+// still clips, whose focused box lies even partly outside the viewport after the scroll,
+// that is rotated, skewed or transformed in 3D, whose box an ancestor's focus transform
+// resizes or moves by a fraction of a pixel, whose own pixels inside its box moved between
+// the shots, or beside which an animated neighbour moves along a ring's length or hides the
+// part of it that would decide.
+async function judgeFocus(page, cdp, nodeId, force, unforce, pin) {
+  const geometry = (arg, fn = '__geometry') => measureOneNode(cdp, nodeId, arg, fn);
+  let ga0 = await geometry(null);
+  await unforce();
+  let gb = await geometry(null);
+  const m = Math.min(64, Math.max(6, Math.ceil(Math.max(ga0.reach, gb.reach)) + 4));
+  // Both states' boxes: focus may move the element (a skip link) or grow it.
+  const both = () => ({ ...gb, box: [Math.min(gb.box[0], ga0.box[0]), Math.min(gb.box[1], ga0.box[1]), Math.max(gb.box[2], ga0.box[2]), Math.max(gb.box[3], ga0.box[3])] });
+  let back = null;
+  const icons = await measureOneNode(cdp, nodeId, null, '__iconsOff');
+  try {
+    if (!inView(both(), m)) {
+      back = await geometry(null, '__bringIntoView');
+      await page.evaluate(settleAnimations);
+      gb = await geometry(null);
+      await force(); ga0 = await geometry(null); await unforce();
+    }
+    // A few pixels of slack: focus may grow the box (a thicker content-box border).
+    const clip = clipAround(both(), m + 4);
+    // Only the focused box must lie in the viewport: a skip link waits outside it unfocused.
+    if (!clip || gb.clipped || !inView({ ...gb, box: ga0.box }, 0)) { await force(); return { unverified: true }; }
+    gb = await geometry(clip);
+    const before = await capture(cdp, clip);
+    await force();
+    const prev = pin && await measureOneNode(cdp, nodeId, pin, '__pinOffset');
+    let ga; let after; let tfPrev = null; let under0 = null;
+    try {
+      // Pinned only where the focused box still overlaps the unfocused one by half: a skip
+      // link brought into view by a transform is shown where focus puts it.
+      const gf = await geometry(null);
+      if (gf.tf !== gb.tf && overlapHalf(gf.box, gb.box)) tfPrev = await measureOneNode(cdp, nodeId, gb.tf, '__pinTf');
+      ga = await geometry(clip);
+      // Behind the control once before the focused shot too, so a surface that changes
+      // between it and the later shots behind the control is seen changing.
+      if (liftOf(gb.box, ga.box).some(Boolean)) { const hv = await measureOneNode(cdp, nodeId, null, '__hideSelf'); try { under0 = await capture(cdp, clip); } finally { await measureOneNode(cdp, nodeId, hv, '__showSelf'); } }
+      after = await capture(cdp, clip);
+    } finally {
+      if (tfPrev) await measureOneNode(cdp, nodeId, tfPrev, '__unpinTf');
+      if (pin) await measureOneNode(cdp, nodeId, prev, '__unpinOffset');
+    }
+    // An ancestor's focus transform that resizes the box or moves it by a fraction of a pixel
+    // (a card that scales on :focus-within) cannot be registered: its moved border would be
+    // taken for a ring.
+    if (ga.atf !== gb.atf && !liftOf(gb.box, ga.box).some(Boolean) && ga.box.some((v, k) => Math.abs(v - gb.box[k]) > 0.01)) return { unverified: true };
+    await unforce();
+    const before2 = await capture(cdp, clip);
+    // Unfocused a third time, so an animated neighbour that shows the same frame in two shots
+    // is more likely to be caught moving (the focused state is not sampled again: an
+    // animation that focus starts on the ring itself would read as a neighbour).
+    const before3 = await capture(cdp, clip);
+    // A registered lift: what lies behind the unfocused control, to tell a surface that
+    // moved with it (an ancestor's lift) from one it moved onto.
+    let underB = null;
+    if (liftOf(gb.box, ga.box).some(Boolean)) { const hv = await measureOneNode(cdp, nodeId, null, '__hideSelf'); try { underB = await capture(cdp, clip); } finally { await measureOneNode(cdp, nodeId, hv, '__showSelf'); } }
+    await force();
+    // A registered lift: what lies behind the focused control (moved with an ancestor that
+    // lifted it, or left in place by its own move), for the strip it vacates.
+    let under = null;
+    if (liftOf(gb.box, ga.box).some(Boolean)) {
+      const hv = await measureOneNode(cdp, nodeId, null, '__hideSelf');
+      try { under = [under0, await capture(cdp, clip), await capture(cdp, clip), await capture(cdp, clip)]; } finally { await measureOneNode(cdp, nodeId, hv, '__showSelf'); }
+    }
+    // The page moved between the shots (a debounced scroll handler): a stray anti-aliased pixel is not a move.
+    const inGb = (x, y) => x + 0.5 > gb.box[0] - clip.vx && x + 0.5 < gb.box[2] - clip.vx && y + 0.5 > gb.box[1] - clip.vy && y + 0.5 < gb.box[3] - clip.vy;
+    let moved = 0; for (let i = 0; i < before.data.length; i += 4) if (inGb((i / 4) % clip.width, Math.floor(i / 4 / clip.width)) && ownBit(gb.own, clip.width, (i / 4) % clip.width, Math.floor(i / 4 / clip.width)) && (Math.abs(before.data[i] - before2.data[i]) > PX_DIFF || Math.abs(before.data[i + 1] - before2.data[i + 1]) > PX_DIFF || Math.abs(before.data[i + 2] - before2.data[i + 2]) > PX_DIFF)) moved++;
+    if (moved > Math.max(4, before.data.length / 400)) return { unverified: true };
+    let bV = before; let aV = after;
+    if (icons) {
+      await measureOneNode(cdp, nodeId, null, '__iconsOn');
+      await unforce(); bV = await capture(cdp, clip); await force();
+      const prev2 = pin && await measureOneNode(cdp, nodeId, pin, '__pinOffset');
+      let tfPrev2 = null;
+      try {
+        if (tfPrev) tfPrev2 = await measureOneNode(cdp, nodeId, gb.tf, '__pinTf');
+        aV = await capture(cdp, clip);
+      } finally {
+        if (tfPrev2) await measureOneNode(cdp, nodeId, tfPrev2, '__unpinTf');
+        if (pin) await measureOneNode(cdp, nodeId, prev2, '__unpinOffset');
+      }
+    }
+    const px = focusPixels(bV, aV, clip, gb, ga, before, after, [before2, before3], under, underB);
+    if (px.covered) return { unverified: true };
+    // Nothing changed: a cover with pointer-events: none is invisible to the hit test, so
+    // the edge is tested again with pointer-events on everywhere. Only here, because a
+    // transparent overlay of that kind (a texture over the page) would otherwise cover
+    // every control, while a ring under it still paints.
+    if (!px.changed && covered(await geometry(clip, '__geometryAll'), clip)) return { unverified: true };
+    return px;
+  } finally {
+    if (back) { await page.evaluate((at) => window.__scrollBack(at), back); await page.evaluate(settleAnimations); }
+    await measureOneNode(cdp, nodeId, null, '__iconsOn');
+  }
+}
+
+// The boundary of a form control at rest, on one screenshot. Along each side (outside the
+// rounded corners, and the reach of a shadow's blur from them), a line across the edge:
+// the pixels from just inside (border, inset ring, fill: up to the border plus padding,
+// 1 to 4 px) to just outside (an outer ring) are each compared with the surface 2 px beyond
+// them, and the line scores its best pixel. Each side scores the median of its lines, so a
+// corner, an icon or a label glyph cannot carry it, and the boundary is its best side (a
+// text field drawn as a bottom line has one).
+function boundaryPixels(img, clip, g) {
+  const W = clip.width; const H = clip.height; const D = img.data;
+  const b = [g.box[0] - clip.vx, g.box[1] - clip.vy, g.box[2] - clip.vx, g.box[3] - clip.vy];
+  const dout = Math.ceil(g.reach);
+  const r = Math.ceil(g.radius) + 1 + Math.ceil(g.soft);
+  const lines = [];
+  const at = (x, y) => (x >= 0 && y >= 0 && x < W && y < H ? (y * W + x) * 4 : -1);
+  const line = (side, pts, sur) => {
+    if (sur < 0) return;
+    const ls = lumAt(D, sur); let best = 1; let bp = -1; let inner = -1;
+    for (const [p, isInner] of pts) {
+      if (p < 0) continue;
+      const v = ratioL(lumAt(D, p), ls);
+      if (v > best || bp < 0) { best = Math.max(best, v); bp = p; }
+      if (isInner) inner = p;
+    }
+    if (bp >= 0) lines.push({ side, r: best, bp, inner, sur });
+  };
+  const din = (k) => Math.max(1, Math.min(4, Math.floor(g.bw[k] + g.pad[k])));
+  const top = Math.round(b[1]); const bottom = Math.round(b[3]); const left = Math.round(b[0]); const right = Math.round(b[2]);
+  for (let x = left + r; x < right - r; x++) {
+    const pt = []; const pb = [];
+    for (let k = 0; k < din(0); k++) pt.push([at(x, top + k), true]);
+    for (let k = 1; k <= dout; k++) pt.push([at(x, top - k), false]);
+    line(0, pt, at(x, top - dout - 3));
+    for (let k = 1; k <= din(2); k++) pb.push([at(x, bottom - k), true]);
+    for (let k = 0; k < dout; k++) pb.push([at(x, bottom + k), false]);
+    line(2, pb, at(x, bottom + dout + 2));
+  }
+  for (let y = top + r; y < bottom - r; y++) {
+    const pl = []; const pr = [];
+    for (let k = 0; k < din(3); k++) pl.push([at(left + k, y), true]);
+    for (let k = 1; k <= dout; k++) pl.push([at(left - k, y), false]);
+    line(3, pl, at(left - dout - 3, y));
+    for (let k = 1; k <= din(1); k++) pr.push([at(right - k, y), true]);
+    for (let k = 0; k < dout; k++) pr.push([at(right + k, y), false]);
+    line(1, pr, at(right + dout + 2, y));
+  }
+  let med = null;
+  for (let side = 0; side < 4; side++) {
+    const ls = lines.filter((l) => l.side === side).sort((p, q) => p.r - q.r);
+    const mid = ls[Math.floor(ls.length / 2)];
+    if (mid && (!med || mid.r > med.r)) med = mid;
+  }
+  if (!med) return null;
+  return { border: rgbAt(D, med.bp), fill: med.inner >= 0 ? rgbAt(D, med.inner) : null, against: rgbAt(D, med.sur), ratio: +med.r.toFixed(2) };
+}
+
+// The pixel check of the boundaries the model passed (window.__bndPass, filled by
+// window.__boundaries): the failures, and how many could not be measured because another
+// element covers the control's edge, an ancestor on its containing-block chain still clips
+// it, it lies even partly outside the viewport after the scroll, or it is rotated (also by
+// the rotate property), skewed or transformed in 3D.
+async function verifyBoundaries(page) {
+  const n = await page.evaluate(() => window.__bndPass.length);
+  const failures = []; let unverified = 0;
+  if (!n) return { failures, unverified };
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    for (let i = 0; i < n; i++) {
+      const geo = (clip) => page.evaluate(([k, c]) => window.__geometry(window.__bndPass[k].el, c), [i, clip]);
+      let g = await geo(null);
+      const m = Math.ceil(g.reach) + 4;
+      let back = null; let img = null; let clip = null;
+      try {
+        if (!inView(g, m)) {
+          back = await page.evaluate((k) => window.__bringIntoView(window.__bndPass[k].el), i);
+          await page.evaluate(settleAnimations);
+          g = await geo(null);
+        }
+        clip = clipAround(g, m);
+        if (clip && inView(g, 0)) { g = await geo(clip); if (!covered(g, clip)) img = await capture(cdp, clip); }
+      } finally {
+        if (back) { await page.evaluate((at) => window.__scrollBack(at), back); await page.evaluate(settleAnimations); }
+      }
+      if (!img) { unverified++; continue; }
+      const f = boundaryPixels(img, clip, g);
+      if (!f || f.ratio >= 3) continue;
+      const model = await page.evaluate((k) => window.__bndPass[k].model, i);
+      failures.push({ element: model.element, border: f.border, fill: f.fill ?? model.fill, against: f.against, ratio: f.ratio, required: 3, measuredBy: 'pixels' });
+    }
+  } finally {
+    try { await cdp.detach(); } catch (e) { /* nothing measured depends on it */ }
+  }
+  return { failures, unverified };
+}
+
+// `scope` narrows both passes to the elements that also match it (an attribute selector);
+// `seen` is shared by every call of one run, so a failure is reported once.
+async function measureInteractiveStates(page, scope = '', seen = new Set()) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('DOM.enable'); await cdp.send('CSS.enable'); await cdp.send('Runtime.enable');
   const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
-  const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: INTERACTIVE });
+  const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: `:is(${INTERACTIVE})${scope}` });
+  const focusable = new Set((await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: `${FOCUSABLE}${scope}` })).nodeIds);
   const failures = [];
-  const seen = new Set();
+  const focusFailures = [];
   // Errors are collected, never thrown from a finally — a throw there replaces the
   // exception already on its way out, which would be the measurement failure this
   // whole pass exists to surface. Everything collected is reported together at the
@@ -175,16 +862,17 @@ async function measureInteractiveStates(page) {
   for (const state of ['hover', 'focus-visible']) {
     if (aborted) break;
     for (const nodeId of nodeIds) {
+      if (state === 'focus-visible' && !focusable.has(nodeId)) continue;
       let forced = false;
       try {
-        await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [state] });
+        // A browser never shows :focus-visible without :focus; a colour set under :focus
+        // alone must be measured too.
+        const forcedPseudoClasses = state === 'focus-visible' ? ['focus', 'focus-visible'] : [state];
+        await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses });
         forced = true;
         const f = await measureOneNode(cdp, nodeId, state);
-        if (!f) continue;
-        const key = `${state}|${f.element}|${f.fg}|${f.bg}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        failures.push(f);
+        const key = f && `${state}|${f.element}|${f.fg}|${f.bg}`;
+        if (f && !seen.has(key)) { seen.add(key); failures.push(f); }
       } catch (e) {
         if (isDetached(e)) continue;
         // Stop measuring, but let this element's reset run and keep whatever the
@@ -197,12 +885,145 @@ async function measureInteractiveStates(page) {
       if (aborted) break;
     }
   }
+  // Focus indicators: what an element shows unfocused is recorded first, then :focus and
+  // :focus-visible are forced together (a browser never shows one without the other) and
+  // only what changed is judged (the page was blurred before the first pass). One element
+  // at a time, like the pass above: a forced state must be reset before the next element
+  // is recorded.
+  // An indicator the model passes is judged again on pixels (judgeFocus), with text hidden
+  // page-wide (TEXT_OFF) from the first such element to the end of the pass.
+  let textOff = false;
+  try {
+    for (const nodeId of aborted ? [] : nodeIds.filter((id) => focusable.has(id))) {
+      let forced = false;
+      try {
+        await measureOneNode(cdp, nodeId, 'unfocused', '__ringBefore');
+        const force = () => cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: ['focus', 'focus-visible'] });
+        await force();
+        forced = true;
+        let ring = await measureOneNode(cdp, nodeId, 'focus', '__measureFocusRing');
+        if (ring?.pass) {
+          if (!textOff) { await page.evaluate((css) => window.__auditStyle('contrast-audit-text-off', css), TEXT_OFF); textOff = true; }
+          const px = await judgeFocus(page, cdp, nodeId, force, () => cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] }), ring.pin);
+          if (px.unverified) await page.evaluate(() => { window.__focusRingUnverified++; });
+          ring = px.unverified || px.pass ? null : { element: ring.element, indicator: ring.indicator, color: px.color, against: px.against,
+            ratio: +px.ratio.toFixed(2), required: 3, measuredBy: 'pixels', pixels: px.pixels, minPixels: px.minPixels };
+        }
+        const ringKey = ring && `ring|${ring.element}|${ring.color}|${ring.against}`;
+        if (ring && !seen.has(ringKey)) { seen.add(ringKey); focusFailures.push(ring); }
+      } catch (e) {
+        if (!isDetached(e)) { errors.push(e); break; }
+      } finally {
+        if (forced) await reset(nodeId);
+      }
+    }
+  } finally {
+    if (textOff) await page.evaluate(() => document.getElementById('contrast-audit-text-off')?.remove()).catch((e) => errors.push(e));
+  }
+  // A session left attached would stay open for the rest of the run; a failure to detach
+  // changes no measurement.
+  try { await cdp.detach?.(); } catch (e) { /* nothing measured depends on it */ }
   if (errors.length) {
     const [first, ...rest] = errors;
     if (rest.length) first.message += ` (+${rest.length} more: ${rest.map((e) => e.message).join('; ')})`;
     throw first;
   }
-  return failures;
+  return { failures, focusFailures };
+}
+
+// Scrolls through the page one viewport at a time, instantly (a smooth scroll-behavior
+// would only start an animation that the next step restarts), so content revealed on
+// scroll (an IntersectionObserver adding a class, a scroll-triggered animation) is
+// revealed, then back to the top. Covers the height as loaded, at most 200 viewports.
+// For every control, the first position where it is visible at a non-zero opacity is
+// recorded in __seenAt: a control at opacity 0 at the top that was visible further down
+// (a reveal that hides again when scrolled away, a header button shown once the page
+// scrolls) is measured at that position, where the page looks as the user saw it. In
+// the page.
+// A control that exists only while the page is scrolled (a back-to-top button a framework
+// mounts past some offset) is not in the page at the top: the positions where such a
+// control was visible are recorded in __mountedAt, and every control visible there that
+// is not in the page at the top is measured there.
+async function revealOnScroll(selector) {
+  const frame = () => window.__auditFrame();
+  window.__seenAt = new Map();
+  window.__mountedAt = new Set();
+  const initial = new WeakSet(document.querySelectorAll(selector));
+  const record = (y) => {
+    for (const el of document.querySelectorAll(selector)) {
+      if (!el.checkVisibility({ opacityProperty: true, checkOpacity: true, visibilityProperty: true })) continue;
+      if (window.__seenAt.has(el)) continue;
+      window.__seenAt.set(el, y);
+      if (!initial.has(el)) window.__mountedAt.add(y);
+    }
+  };
+  const max = Math.min(document.documentElement.scrollHeight, innerHeight * 200);
+  for (let y = 0; y < max; y += innerHeight) { scrollTo({ top: y, behavior: 'instant' }); await frame(); record(scrollY); }
+  scrollTo({ top: 0, behavior: 'instant' });
+  await frame();
+}
+
+// Every animation (CSS or Web Animations API) is put into the state a user sees once it
+// has run: an infinite one (a spinner, a blink) is cancelled, so its element shows its
+// rest style (a control a CSS-only carousel shows was recorded by revealOnScroll and is
+// measured even at rest opacity 0); a finite one is finished, unless that leaves its
+// element less visible (a toast that fades out after a delay), in which case it is
+// cancelled. In the page.
+function settleAnimations() {
+  const seen = (a) => {
+    const t = a.effect?.target;
+    if (!t) return 1;
+    const cs = getComputedStyle(t, a.effect.pseudoElement || null);
+    return cs.visibility === 'hidden' ? 0 : Number.parseFloat(cs.opacity);
+  };
+  for (const a of document.getAnimations()) {
+    // A scroll-driven animation (animation-timeline: scroll() or view()) shows the state
+    // of the current scroll position; finishing it would pin its end state at the top.
+    if (a.timeline && !(a.timeline instanceof DocumentTimeline)) continue;
+    const before = seen(a);
+    // finish() throws InvalidStateError for an infinite animation, which is cancelled.
+    try { a.finish(); } catch (e) { a.cancel(); continue; }
+    if (seen(a) < before - 0.01) a.cancel();
+  }
+}
+
+// Fingerprints of the computed colours, one per entry of `attrs`: null for the page as
+// it is, a value for the page with that data-theme set (and then restored). In the page.
+function colourFingerprints(attrs) {
+  const html = document.documentElement;
+  const prev = html.dataset.theme;
+  const take = () => [...document.querySelectorAll('html, body, body *')].slice(0, 3000).map((e) => {
+    const c = getComputedStyle(e); return [c.color, c.backgroundColor, c.borderTopColor].join('/');
+  }).join('|');
+  const out = attrs.map((attr) => {
+    if (attr) html.dataset.theme = attr;
+    return take();
+  });
+  if (prev === undefined) delete html.dataset.theme; else html.dataset.theme = prev;
+  return out;
+}
+
+// Which mechanisms switch this page's colours. Detected from computed colours, not by
+// scanning stylesheets: Chromium refuses `cssRules` on a cross-origin sheet and on any
+// external sheet of a file:// page, and a scan then reports "no dark scheme" for a page
+// whose dark palette renders.
+async function detectDarkScheme(page, scheme) {
+  const other = scheme === 'dark' ? 'light' : 'dark';
+  const [base] = await page.evaluate(colourFingerprints, [null]);
+  const by = [];
+  await page.emulateMedia({ colorScheme: other });
+  try {
+    const [flipped] = await page.evaluate(colourFingerprints, [null]);
+    if (flipped !== base) by.push('prefers-color-scheme');
+  } finally {
+    await page.emulateMedia({ colorScheme: scheme });
+  }
+  // data-theme switches the scheme when "dark" and "light" give different colours. Not
+  // when either differs from the page as loaded: on a page with a named theme
+  // (data-theme="corporate"), setting either value only drops that theme's rules.
+  const [dark, light] = await page.evaluate(colourFingerprints, ['dark', 'light']);
+  if (dark !== light) by.push('data-theme');
+  return by;
 }
 
 // Exported when required as a module so the error paths can be tested against a
@@ -215,8 +1036,63 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   // ignoreHTTPSErrors stays false unless --insecure was given, and --insecure excludes
   // --header (checked above), so the header never reaches an https server whose
   // certificate failed verification.
-  const ctx = await browser.newContext({ viewport: { width, height: 900 }, ignoreHTTPSErrors: insecure, colorScheme: scheme });
+  // One device pixel per CSS pixel: the pixel checks read screenshots.
+  const ctx = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1, ignoreHTTPSErrors: insecure, colorScheme: scheme });
   const page = await ctx.newPage();
+  // A page's own mouseout or pointerout listener on <html> or <body> runs before anything
+  // the audit can add there, and an exit-intent popup opens from it when the pointer leaves
+  // the window. Such listeners are wrapped before the page runs, so they skip the one leave
+  // the audit causes (window.__auditLeaving); removeEventListener finds the wrapper.
+  await page.addInitScript(() => {
+    const add = EventTarget.prototype.addEventListener;
+    const remove = EventTarget.prototype.removeEventListener;
+    const wrapped = new WeakMap();
+    // Timers the page sets while the audit's leave runs: native copies, taken before any page script.
+    const st = window.setTimeout; const ct = window.clearTimeout; const pending = new Set();
+    Object.defineProperty(window, '__auditTimers', { value: { pending } });
+    const si = window.setInterval; const ci = window.clearInterval; let inherit = 0;
+    // The audit's frame waits use the native requestAnimationFrame, so a page that
+    // replaces or stubs it cannot stall the run.
+    const raf = window.requestAnimationFrame;
+    Object.defineProperty(window, '__auditFrame', { value: () => new Promise((r) => { raf.call(window, () => raf.call(window, r)); }) });
+    // A timeout leaves `pending` when it fires; an interval stays until clearInterval.
+    const track = (native, fn, ms, args, self, repeat) => {
+      const tracked = (window.__auditLeaving || window.__auditReplaying || inherit > 0) && !(Number(ms) > 1000);
+      // A string handler goes to the native function as it is. For a string timeout, native
+      // timers due at the same time just before and after it open and close its inherit
+      // window; a string interval gets none, so the timers its ticks set are not followed.
+      if (typeof fn !== 'function') {
+        let id; let open = false;
+        if (tracked && !repeat) st(() => { if (pending.has(id)) { open = true; inherit++; } }, ms);
+        id = native.call(self, fn, ms, ...args);
+        if (tracked) { pending.add(id); if (!repeat) st(() => { pending.delete(id); if (open) inherit--; }, ms); }
+        return id;
+      }
+      const id = native.call(self, function (...x) {
+        const mine = repeat ? pending.has(id) : pending.delete(id); if (mine) inherit++;
+        // Released by a native 0 ms timer: the callback's microtask continuations, at any depth, run first.
+        try { return fn.apply(this, x); } finally { if (mine) st(() => { inherit--; }, 0); }
+      }, ms, ...args);
+      if (tracked) pending.add(id); return id;
+    };
+    window.setTimeout = function (fn, ms, ...args) { return track(st, fn, ms, args, this, false); };
+    window.setInterval = function (fn, ms, ...args) { return track(si, fn, ms, args, this, true); };
+    window.clearTimeout = function (id) { pending.delete(id); return ct.call(this, id); };
+    window.clearInterval = function (id) { pending.delete(id); return ci.call(this, id); };
+    const guarded = (target, type, fn) => (target === document.documentElement || target === document.body)
+      && (type === 'mouseout' || type === 'pointerout') && (typeof fn === 'function' || (typeof fn === 'object' && fn !== null)) && !fn.__audit;
+    EventTarget.prototype.addEventListener = function (type, fn, opts) {
+      if (guarded(this, type, fn)) {
+        // A listener object's handleEvent is looked up when the event arrives, as the DOM does.
+        if (!wrapped.has(fn)) { const orig = fn; wrapped.set(fn, function (e) { if (window.__auditLeaving && !e.relatedTarget) { (window.__auditSkipped ||= []).push({ orig, ctx: this, e, path: e.composedPath(), phase: e.eventPhase }); return undefined; } return typeof orig === 'function' ? orig.call(this, e) : orig.handleEvent(e); }); }
+        return add.call(this, type, wrapped.get(fn), opts);
+      }
+      return add.call(this, type, fn, opts);
+    };
+    EventTarget.prototype.removeEventListener = function (type, fn, opts) {
+      return remove.call(this, type, guarded(this, type, fn) && wrapped.has(fn) ? wrapped.get(fn) : fn, opts);
+    };
+  });
   if (header) await sendHeaderToOriginOnly(page, originOf(url), header.split(':')[0].trim(), header.split(':').slice(1).join(':').trim());
   // A page whose stylesheet 404s renders unstyled and reports zero contrast failures —
   // it passes for the wrong reason. Collect every failed subresource and fail on it.
@@ -229,10 +1105,118 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   page.on('response', (r) => { if (r.status() >= 400) badRequests.push({ what: `HTTP ${r.status()}`, url: r.url(), type: r.request().resourceType(), gating: gates(r.request().resourceType()) }); });
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
-  // Kill transitions before measuring anything: see the note on stateFailures above.
-  await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important;animation:none !important}' });
-  const result = await page.evaluate(() => {
-    const parse = (c) => { const m = c.match(/\d+(\.\d+)?/g); return m ? { r: +m[0], g: +m[1], b: +m[2], a: m[3] !== undefined ? +m[3] : 1 } : null; };
+  // The headless mouse rests at (0, 0), so an element there (a fixed header's logo link)
+  // is really hovered and would be measured in its :hover colours as if at rest. Hover is
+  // measured on purpose by forcing it, one element at a time; the pointer stays outside.
+  await page.evaluate(() => {
+    const top = (t) => t === document || t === document.documentElement || t === document.body;
+    window.__stopLeave = (e) => { if (top(e.target)) e.stopImmediatePropagation(); };
+    window.__stopOut = (e) => { if (!e.relatedTarget) e.stopPropagation(); }; window.__stopOut.__audit = true;
+    for (const t of ['mouseleave', 'pointerleave']) window.addEventListener(t, window.__stopLeave, true);
+    for (const t of ['mouseout', 'pointerout']) { window.addEventListener(t, window.__stopLeave, true); document.documentElement.addEventListener(t, window.__stopOut); }
+  });
+  // An onmouseout or onpointerout handler (property or attribute) on <html> or <body> is not
+  // an addEventListener call: it is taken off for the rest of the run, in which no mouse
+  // event reaches the page again (hover and focus are forced).
+  await page.evaluate(() => {
+    window.__auditLeaving = true;
+    for (const el of [document.documentElement, document.body]) {
+      for (const prop of ['onmouseout', 'onpointerout']) if (el?.[prop]) el[prop] = null;
+    }
+  });
+  await page.mouse.move(-10, -10);
+  await page.evaluate(() => { window.__auditReplaying = true; window.__auditLeaving = false;
+    // The leave a wrapped listener skipped is replayed with <body> as relatedTarget:
+    // a delegated hover-out releases, an exit-intent check for a null relatedTarget stays shut.
+    // The related target is inside the document (an exit check that tests contains() stays
+    // shut) and, on a page with a <body>, is not <html> (the classic relatedTarget-or-HTML
+    // check stays shut either).
+    const rel = document.body ?? document.documentElement;
+    for (const { orig, ctx, e, path, phase } of window.__auditSkipped ?? []) {
+      const b = e.target.getBoundingClientRect?.() ?? { left: 0, top: 0, width: 0, height: 0 };
+      const cx = b.left + b.width / 2; const cy = b.top + b.height / 2;
+      const over = { relatedTarget: rel, toElement: rel, currentTarget: ctx, composedPath: () => path, eventPhase: phase, clientX: cx, clientY: cy, x: cx, y: cy, pageX: cx + scrollX, pageY: cy + scrollY };
+      const ev = new Proxy(e, { get: (t, k) => (k in over ? over[k] : (typeof t[k] === 'function' ? t[k].bind(t) : t[k])) });
+      try { typeof orig === 'function' ? orig.call(ctx, ev) : orig.handleEvent(ev); } catch (err) { /* a page error stays the page's */ }
+    } });
+  await page.evaluate(() => {
+    for (const t of ['mouseleave', 'pointerleave', 'mouseout', 'pointerout']) window.removeEventListener(t, window.__stopLeave, true);
+    for (const t of ['mouseout', 'pointerout']) document.documentElement.removeEventListener(t, window.__stopOut);
+  });
+  // A hover-out may run after a delay (hover intent, usually 100 to 500 ms). Timers and
+  // intervals of at most 1 s that the page set while the audit's leave ran, and those they
+  // set in turn (also after an await, not after a wait for a frame, a fetch or an event, and
+  // not from a string interval), are
+  // waited for (an interval until it is cleared), at most 1 s in total; the page's other timers run on as
+  // they would anyway (a toast is measured as before). The page sees wrapped setTimeout,
+  // setInterval, clearTimeout and clearInterval; a string handler runs as it would.
+  await page.evaluate(() => { window.__auditReplaying = false; });
+  await page.waitForFunction(() => window.__auditTimers.pending.size === 0, null, { timeout: 1000, polling: 50 }).catch(() => {});
+  // Kill transitions before measuring anything: see the note on stateFailures above. The
+  // caret is hidden too: a blinking caret would differ between two screenshots.
+  await page.addStyleTag({ content: '*,*::before,*::after{transition:none !important;caret-color:transparent !important}' });
+  // Content revealed on scroll and every animation are put into the state a user sees:
+  // `animation: none` would leave a fade-in at its starting opacity 0.
+  await page.evaluate(revealOnScroll, INTERACTIVE);
+  await page.evaluate(settleAnimations);
+  // An element focused on load (autofocus) would be measured in its focused colours, and
+  // the focus-indicator pass would record it focused: nothing may hold focus.
+  await page.evaluate(() => document.activeElement?.blur?.());
+  // A palette switched by data-theme is not reached by emulating prefers-color-scheme:
+  // where data-theme switches the colours, the run sets it to its own scheme.
+  // A value of the page's own other than light or dark (a named theme) is kept and
+  // reported in dataThemeKept: it is what the page ships.
+  const darkSchemeBy = await detectDarkScheme(page, scheme);
+  const ownTheme = await page.evaluate(() => document.documentElement.dataset.theme ?? null);
+  const dataThemeSet = darkSchemeBy.includes('data-theme') && [null, 'light', 'dark'].includes(ownTheme);
+  if (dataThemeSet) await page.evaluate((t) => { document.documentElement.dataset.theme = t; }, scheme);
+  // The browser's focus-ring colours, read in a page of their own so the audited page
+  // sees no probe: one per color-scheme.
+  const probePage = await browser.newPage();
+  await probePage.setContent('<span style="color-scheme:light;outline-color:-webkit-focus-ring-color"></span><span style="color-scheme:dark;outline-color:-webkit-focus-ring-color"></span>');
+  const [light, dark] = await probePage.evaluate(() => [...document.querySelectorAll('span')].map((e) => getComputedStyle(e).outlineColor));
+  const uaRings = { light, dark, scheme };
+  await probePage.close();
+  const result = await page.evaluate((uaRings) => {
+    // Colours: rgb()/rgba() are read numerically, exactly; any other notation the browser
+    // computes (oklch(), color()) goes through a 1x1 canvas, which returns sRGB bytes with
+    // 8-bit alpha. Filling over two different colours tells an unparseable value (it leaves
+    // the fill as it was) from a real one: null, never black.
+    const ctx2d = Object.assign(document.createElement('canvas'), { width: 1, height: 1 }).getContext('2d', { willReadFrequently: true });
+    const colourCache = new Map();
+    const RGB_FN = /^rgba?\(([^)]*)\)$/;
+    const channel = (x) => (x.endsWith('%') ? Number.parseFloat(x) * 2.55 : Number.parseFloat(x));
+    const alpha = (x) => {
+      if (x === undefined) return 1;
+      return x.endsWith('%') ? Number.parseFloat(x) / 100 : Number.parseFloat(x);
+    };
+    const viaCanvas = (c) => {
+      const fill = (sentinel) => {
+        ctx2d.clearRect(0, 0, 1, 1);
+        ctx2d.fillStyle = sentinel;
+        ctx2d.fillStyle = c;
+        ctx2d.fillRect(0, 0, 1, 1);
+        return ctx2d.getImageData(0, 0, 1, 1).data;
+      };
+      const a = fill('#000000');
+      const b = fill('#ffffff');
+      if (!a.every((x, i) => x === b[i])) return null;
+      return { r: a[0], g: a[1], b: a[2], a: a[3] / 255 };
+    };
+    const parse = (c) => {
+      if (!c) return null;
+      if (colourCache.has(c)) return colourCache.get(c);
+      const m = RGB_FN.exec(c.trim());
+      let v;
+      if (m) {
+        const n = m[1].split(/[\s,/]+/).filter(Boolean);
+        v = { r: channel(n[0]), g: channel(n[1]), b: channel(n[2]), a: alpha(n[3]) };
+      } else {
+        v = viaCanvas(c);
+      }
+      colourCache.set(c, v);
+      return v;
+    };
     const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
     const lum = (c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
     // Composite the translucent layers instead of taking the first one at face value:
@@ -240,7 +1224,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // invents failures and hides them.
     const bgOf = (el) => {
       const stack = [];
-      while (el) { const c = parse(getComputedStyle(el).backgroundColor);
+      while (el) { const ecs = getComputedStyle(el); const c = ecs.display === 'contents' ? null : parse(ecs.backgroundColor);
         if (c && c.a > 0) { stack.push(c); if (c.a >= 1) break; }
         el = el.parentElement; }
       let out = { r: 255, g: 255, b: 255 };
@@ -307,18 +1291,47 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       return null;
     };
     const seen = new Map();
+    const restFail = new WeakMap();
     const apcaSeen = new Map();
     let smallest = Infinity;
     let exempt = 0;
     // <title>/<desc> inside an SVG are accessible names, never painted; script/style/
     // template hold source text. None of them have a rendered contrast.
-    const describe = (el) => el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).trim().replaceAll(/\s+/g, '.') : '');
+    // An SVG element's className is an SVGAnimatedString; its baseVal is the class list.
+    const cls = (el) => String(el.className?.baseVal ?? el.className ?? '').trim();
+    const describe = (el) => { const c = cls(el); return el.tagName.toLowerCase() + (c ? '.' + c.replaceAll(/\s+/g, '.') : ''); };
     const NOT_PAINTED = new Set(['TITLE', 'DESC', 'SCRIPT', 'STYLE', 'TEMPLATE', 'METADATA', 'NOSCRIPT']);
-    for (const el of document.querySelectorAll('body *')) {
+    // Hidden by its own or an ancestor's display: none, or by visibility (inherited, so an
+    // ancestor's counts unless the element overrides it). Not checkVisibility(): that also
+    // drops a closed <details>, a <select>'s options and display: contents, which paint.
+    window.__displayed = (el) => { for (let a = el; a; a = a.parentElement) if (getComputedStyle(a).display === 'none') return false;
+      return !['hidden', 'collapse'].includes(getComputedStyle(el).visibility); };
+    window.__painted = (el) => {
+      if (el.checkVisibility({ visibilityProperty: true })) return true;
+      if (!(getComputedStyle(el).display === 'contents' || el.closest('details:not([open]), select'))) return false;
+      return window.__displayed(el);
+    };
+    // A closed single-line <select> paints its selected option's text in its own colour.
+    const singleSelect = (el) => el.tagName === 'SELECT' && !el.multiple && el.size <= 1;
+    const directText = (el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
+    const ownText = (el) => (singleSelect(el) ? (el.selectedOptions[0]?.textContent ?? '').trim() : directText(el));
+    // The text a report names: the shown value of a single-line select, else the content.
+    const shownText = (el) => (singleSelect(el) ? el.selectedOptions[0]?.textContent ?? '' : el.textContent).trim().slice(0, 40);
+    // An option of a single-line <select> that shows a value, in the select's own colours,
+    // is measured on the select; with no value shown, the options are measured themselves.
+    const isShownOption = (el, cs, bg) => {
+      const box = el.tagName === 'OPTION' && el.closest('select');
+      return !!box && singleSelect(box) && !!ownText(box) && getComputedStyle(box).color === cs.color && JSON.stringify(bgOf(box)) === JSON.stringify(bg);
+    };
+    // The text pass over a set of elements, each with its own text in its own colour. Run
+    // on the whole page here, and later on the subtree of each control measured at another
+    // scroll position, into the same results.
+    window.__textIn = (elements) => { for (const el of elements) {
       if (NOT_PAINTED.has(el.tagName.toUpperCase())) continue;
-      if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
+      if (!ownText(el)) continue;
       const cs = getComputedStyle(el);
-      if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) continue;
+      // Hidden by its own or an ancestor's display or visibility: not painted.
+      if (!window.__painted(el)) continue;
       // A style guide legitimately shows failing pairs as specimens. They must be declared
       // with data-contrast-demo, and the count is reported so the exemption is visible.
       if (el.closest('[data-contrast-demo]')) { exempt++; continue; }
@@ -327,36 +1340,418 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       const weight = Number.parseInt(cs.fontWeight, 10) || 400;
       const bold = weight >= 700; const large = size >= 24 || (size >= 18.66 && bold);
       const need = large ? 3 : 4.5;
+      if (isShownOption(el, cs, bg)) {
+        // Its failure is the select's; recorded so the state pass does not repeat it.
+        if (r < need) { if (!restFail.has(el)) restFail.set(el, new Set()); restFail.get(el).add(`${cs.color}|${bg.r},${bg.g},${bg.b}`); }
+        continue;
+      }
       const lc = apcaLc(fg, bg);
       const lcNeed = apcaRequired(size, weight);
       if (lcNeed !== null && Math.abs(lc) < lcNeed) {
-        const akey = `apca|${el.tagName}.${el.className}|${cs.color}|${bg.r},${bg.g},${bg.b}|${size}`;
-        if (!apcaSeen.has(akey)) apcaSeen.set(akey, { element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, lc: +lc.toFixed(1), lcRequired: +lcNeed.toFixed(1), fontSize: size, fontWeight: cs.fontWeight });
+        const akey = `apca|${el.tagName}.${cls(el)}|${cs.color}|${bg.r},${bg.g},${bg.b}|${size}`;
+        if (!apcaSeen.has(akey)) apcaSeen.set(akey, { element: describe(el), text: shownText(el), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, lc: +lc.toFixed(1), lcRequired: +lcNeed.toFixed(1), fontSize: size, fontWeight: cs.fontWeight });
       }
       if (r < need) {
-        const key = `${el.tagName}.${el.className}|${cs.color}|${bg.r},${bg.g},${bg.b}`;
-        if (!seen.has(key)) seen.set(key, { element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
+        const key = `${el.tagName}.${cls(el)}|${cs.color}|${bg.r},${bg.g},${bg.b}`;
+        if (!restFail.has(el)) restFail.set(el, new Set());
+        restFail.get(el).add(`${cs.color}|${bg.r},${bg.g},${bg.b}`);
+        if (!seen.has(key)) seen.set(key, { element: describe(el), text: shownText(el), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
       }
-    }
+    } };
+    window.__textIn(document.querySelectorAll('body *'));
+    window.__textSummary = () => ({ contrastFailures: [...seen.values()], apcaWarnings: [...apcaSeen.values()], demoExemptElements: exempt, smallestFontPx: +smallest.toFixed(1) });
     // Re-used by the interactive-state pass, which runs after this evaluate returns.
     // Measures ONE element — the one currently forced into `state`. The caller hands
     // it over by object reference (CDP DOM.resolveNode + Runtime.callFunctionOn), so
     // nothing in the page has to be marked or mutated to find it again.
     window.__measureOne = (el, state) => {
       if (!el || el.closest('[data-contrast-demo]')) return null;
+      // A control visible only at another scroll position (at opacity 0 here, or hidden by
+      // display or visibility) is queued and measured there, not here; this also covers a
+      // control the focus passes never see (a link without href, a tabindex="-1" element).
+      if (!el.hasAttribute('data-contrast-audit-at') && window.__seenAt?.has(el)
+        && !el.checkVisibility({ opacityProperty: true, checkOpacity: true, visibilityProperty: true })) { window.__deferred.add(el); return null; }
       const cs = getComputedStyle(el);
-      if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]')) return null;
-      // Unlike the main pass, a wrapped label counts here: in <a><span>Read more</span></a>
-      // the colour that :hover changes sits on the <a>, and requiring a direct text node
-      // would skip exactly those controls.
-      if (!el.textContent.trim()) return null;
-      const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
-      const size = Number.parseFloat(cs.fontSize);
-      const bold = (Number.parseInt(cs.fontWeight, 10) || 400) >= 700;
-      const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
-      if (r >= need) return null;
-      return { state, element: describe(el), text: el.textContent.trim().slice(0, 40), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
+      if (!window.__painted(el)) return null;
+      // Each painted text inside the control, in its own colour: in <a><span>Read more</span></a>
+      // the colour :hover changes may sit on the <a> (inherited) or on the <span>. The text of
+      // an SVG <title> or <desc> is an accessible name, never painted, and is left out.
+      let worst = null;
+      let worstRatio = Infinity;
+      for (const t of [el, ...el.querySelectorAll('*')]) {
+        if (NOT_PAINTED.has(t.tagName.toUpperCase()) || !ownText(t)) continue;
+        if (!window.__painted(t)) continue;
+        if (t.closest('[data-contrast-demo]')) continue;
+        const ts = t === el ? cs : getComputedStyle(t);
+        const fg = parse(ts.color); const bg = bgOf(t); const r = ratio(fg, bg);
+        const size = Number.parseFloat(ts.fontSize);
+        const bold = (Number.parseInt(ts.fontWeight, 10) || 400) >= 700;
+        const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
+        // A text that fails the same way at rest is reported there already, not again here.
+        if (r >= need || restFail.get(t)?.has(`${ts.color}|${bg.r},${bg.g},${bg.b}`)) continue;
+        // Compared unrounded, so on a tie the control keeps the report (a select over its
+        // shown option, which inherits the select's colours).
+        if (r < worstRatio) {
+          worstRatio = r;
+          worst = { state, element: describe(el) + (t === el ? '' : ` ${describe(t)}`), text: ownText(t).slice(0, 40), fg: ts.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
+        }
+      }
+      return worst;
     };
+
+    // SC 1.4.11 for non-text parts. A translucent colour is measured as it renders,
+    // composited over what lies behind it.
+    const rgb = (c) => `rgb(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)})`;
+    // The colour a pixel of `el` renders as: each ancestor's background under what lies
+    // above it, each ancestor's opacity applied to its whole subtree (a group), over white.
+    // `top` is a colour drawn on that pixel; with `ownBg` false the pixel lies outside el's
+    // box (an outline, an outer ring), where el paints only `top`. Opacity 0 is left out:
+    // such a control is skipped, or measured where it was visible.
+    const paint = (el, top = null, ownBg = true) => {
+      let C = top ? { r: top.r * top.a, g: top.g * top.a, b: top.b * top.a } : { r: 0, g: 0, b: 0 };
+      let A = top ? top.a : 0;
+      for (let e = el, first = true; e; e = e.parentElement, first = false) {
+        const ecs = getComputedStyle(e);
+        if (ecs.display === 'contents') continue;
+        const c = first && !ownBg ? null : parse(ecs.backgroundColor);
+        if (c && c.a > 0) { C = { r: C.r + c.r * c.a * (1 - A), g: C.g + c.g * c.a * (1 - A), b: C.b + c.b * c.a * (1 - A) }; A += c.a * (1 - A); }
+        const o = Number.parseFloat(ecs.opacity);
+        if (o > 0 && o < 1) { C = { r: C.r * o, g: C.g * o, b: C.b * o }; A *= o; }
+      }
+      return { r: C.r + 255 * (1 - A), g: C.g + 255 * (1 - A), b: C.b + 255 * (1 - A), a: 1 };
+    };
+    // Whether a control can be seen and used at all: a closed <dialog>, a display:none or
+    // visibility:hidden ancestor, opacity 0 on the control or an ancestor (a custom switch's
+    // input over its drawn track, a closed popover), a disabled control (also inside
+    // <fieldset disabled>) and a 1px visually hidden form field (its look is drawn by a
+    // sibling) have no visible state. Animations are settled first, so a fade-in counts
+    // at its final opacity. A control at opacity 0 here is measured at the scroll position
+    // where it was visible, or, if there was none, counted in transparentControlsSkipped,
+    // so a skip is visible in the report.
+    window.__transparent = new Set();
+    // Controls at opacity 0 here that were visible at another scroll position: measured
+    // there afterwards.
+    window.__deferred = new Set();
+    const perceivable = (el) => {
+      if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return false;
+      if (!el.checkVisibility({ visibilityProperty: true, checkVisibilityCSS: true })) return false;
+      if (!el.checkVisibility({ opacityProperty: true, checkOpacity: true }) && !el.hasAttribute('data-contrast-audit-at')) {
+        (window.__seenAt?.has(el) ? window.__deferred : window.__transparent).add(el);
+        return false;
+      }
+      if (!el.matches('input, select, textarea')) return true;
+      const b = el.getBoundingClientRect();
+      return b.width > 1 && b.height > 1;
+    };
+    // Chromium writes a computed shadow layer colour first: a function up to its closing
+    // parenthesis, or a single word.
+    const leadingColour = (layer) => {
+      const paren = layer.indexOf('(');
+      const space = layer.indexOf(' ');
+      if (paren > 0 && (space === -1 || paren < space)) {
+        let depth = 0;
+        for (let i = paren; i < layer.length; i++) {
+          if (layer[i] === '(') depth++;
+          if (layer[i] === ')' && --depth === 0) return layer.slice(0, i + 1);
+        }
+        return layer;
+      }
+      return space === -1 ? layer : layer.slice(0, space);
+    };
+    // A box-shadow value split into its layers (commas inside colour functions kept).
+    const shadowLayers = (v) => {
+      if (!v || v === 'none') return [];
+      const out = []; let depth = 0; let cur = '';
+      for (const ch of v) {
+        if (ch === '(') depth++;
+        if (ch === ')') depth--;
+        if (ch === ',' && depth === 0) { out.push(cur.trim()); cur = ''; } else { cur += ch; }
+      }
+      if (cur.trim()) out.push(cur.trim());
+      return out.map((layer) => {
+        const colour = leadingColour(layer);
+        const rest = layer.slice(colour.length).split(/\s+/);
+        const lengths = rest.filter((t) => t.endsWith('px')).map(Number.parseFloat);
+        return { text: layer, colour, inset: rest.includes('inset'), blur: lengths[2] || 0, spread: lengths[3] || 0 };
+      });
+    };
+    // A ring layer's colour at the pixel next to the border: a blur is a Gaussian with a
+    // standard deviation of half the blur radius (CSS Backgrounds 3). At the border edge the
+    // layer reaches Phi(spread / sigma) of its alpha; that pixel's centre lies half a pixel
+    // further out, and an inset ring paints lighter still, so one pixel is taken off the
+    // spread of an outer ring and two off an inset one (matched to Chromium screenshots).
+    const erf = (x) => { const t = 1 / (1 + 0.3275911 * x);
+      return 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); };
+    const ringColour = (layer, c) => (layer.blur > 0 ? { ...c, a: c.a * 0.5 * (1 + erf(Math.max(0, (2 * layer.spread - (layer.inset ? 2 : 1)) / layer.blur) / Math.SQRT2)) } : c);
+    const SIDES = ['Top', 'Right', 'Bottom', 'Left'];
+    const ringState = (el) => {
+      const cs = getComputedStyle(el);
+      return {
+        outline: `${cs.outlineStyle}|${cs.outlineWidth}|${cs.outlineColor}`,
+        offset: cs.outlineOffset,
+        shadows: shadowLayers(cs.boxShadow).map((l) => l.text),
+        borders: SIDES.map((sd) => ['Style', 'Width', 'Color'].map((p) => cs['border' + sd + p]).join('|')),
+      };
+    };
+    // The focus indicator of ONE element: what changes between its unfocused state
+    // (__ringBefore) and :focus plus :focus-visible. Each changed part is measured where
+    // it is drawn: an outline or an outer ring against the parent's background, an inset
+    // outline or ring against the element's own, a border (painted over the element's
+    // fill) against the parent's. The indicator passes when any changed part reaches 3:1.
+    // A permanent shadow is not an indicator; an element whose focus changes no outline,
+    // ring or border is counted in focusWithoutRing; the browser's own `outline: auto` ring,
+    // which SC 1.4.11 leaves to the user agent, in focusUserAgentRing. A ring drawn on
+    // another element (a sibling label, a :focus-within ancestor) is not seen.
+    // A changed, visible outline: against the parent's background, or the element's own
+    // when it is drawn inside (negative offset).
+    // Whether focus changed the outline. A moved outline counts, except the moves of
+    // Chromium's own focus styles, which would make a permanent outline look like a focus
+    // indicator: 0 to 1px on a link, 0 to 2px on a checkbox or radio.
+    const UA_OFFSET = [[':any-link', '1px'], ['input[type=checkbox], input[type=radio]', '2px']];
+    const outlineChanged = (el, before, after) => {
+      if (after.outline !== before.outline) return true;
+      if (after.offset === before.offset) return false;
+      return !(before.offset === '0px' && UA_OFFSET.some(([sel, px]) => el.matches(sel) && after.offset === px));
+    };
+    const outlinePart = (el, cs, before, after) => {
+      const width = Number.parseFloat(cs.outlineWidth);
+      if (!outlineChanged(el, before, after) || cs.outlineStyle === 'none' || Number.isNaN(width) || width <= 0) return [];
+      const c = parse(cs.outlineColor);
+      if (!c || c.a === 0) return [];
+      const inside = (Number.parseFloat(cs.outlineOffset) || 0) < 0;
+      return [{ indicator: 'outline', shown: paint(el, c, inside), against: inside ? paint(el) : paint(el.parentElement) }];
+    };
+    // Each new shadow layer with a spread (a ring): inset against the element's own
+    // background, outer against the parent's.
+    const shadowParts = (el, cs, before) => shadowLayers(cs.boxShadow)
+      .filter((layer) => !before.shadows.includes(layer.text) && layer.spread > 0)
+      .map((layer) => ({ layer, c: parse(layer.colour) }))
+      .filter(({ c }) => c && c.a > 0)
+      .map(({ layer, c }) => ({ indicator: 'box-shadow', shown: paint(el, ringColour(layer, c), layer.inset), against: layer.inset ? paint(el) : paint(el.parentElement) }));
+    // Each changed, visible border side, painted over the element's fill unless
+    // background-clip stops the fill short of it, against the parent's background.
+    const borderParts = (el, cs, before, after) => SIDES.flatMap((sd, k) => {
+      const p = 'border' + sd;
+      if (after.borders[k] === before.borders[k] || cs[p + 'Style'] === 'none') return [];
+      const w = Number.parseFloat(cs[p + 'Width']);
+      const c = parse(cs[p + 'Color']);
+      if (Number.isNaN(w) || w <= 0 || !c || c.a === 0) return [];
+      return [{ indicator: 'border', shown: paint(el, c, cs.backgroundClip === 'border-box'), against: paint(el.parentElement) }];
+    });
+    // An `outline: auto` ring is the browser's own when it has the browser's focus-ring
+    // colour (uaRings, read in a separate page) for el's used color-scheme: its computed
+    // keywords (or the color-scheme meta tag for `normal`) against the scheme the run emulates.
+    const keys = (v) => (v || '').split(/[\s,]+/).filter((x) => x === 'light' || x === 'dark');
+    const isUaRingColour = (el, c) => { let k = keys(getComputedStyle(el).colorScheme);
+      // The meta content is parsed as CSS parses it, on a detached element: keywords
+      // case-insensitive, a comma list invalid (light).
+      if (getComputedStyle(el).colorScheme === 'normal') {
+        for (const m of document.querySelectorAll('meta[name="color-scheme" i][content]')) {
+          const st = document.createElement('span').style; st.colorScheme = m.content;
+          if (st.colorScheme) { k = keys(st.colorScheme); break; }
+        }
+      }
+      const used = !k.length ? 'light' : k.includes(uaRings.scheme) ? uaRings.scheme : k[0];
+      return c === uaRings[used]; };
+    const ringBefore = new WeakMap();
+    window.__focusWithoutRing = 0;
+    window.__focusUserAgentRing = 0;
+    window.__focusRingUnverified = 0;
+    window.__ringBefore = (el) => {
+      if (el) { ringBefore.set(el, ringState(el)); }
+      return null;
+    };
+    window.__measureFocusRing = (el) => {
+      if (!el || el.closest('[data-contrast-demo]') || !perceivable(el)) return null;
+      const before = ringBefore.get(el);
+      if (!before) return null;
+      const cs = getComputedStyle(el);
+      const after = ringState(el);
+      if (outlineChanged(el, before, after) && cs.outlineStyle === 'auto' && isUaRingColour(el, cs.outlineColor)) { window.__focusUserAgentRing++; return null; }
+      const parts = [
+        ...outlinePart(el, cs, before, after),
+        ...shadowParts(el, cs, before),
+        ...borderParts(el, cs, before, after),
+      ];
+      if (!parts.length) { window.__focusWithoutRing++; return null; }
+      const best = parts.map((p) => ({ ...p, r: ratio(p.shown, p.against) })).sort((a, b) => b.r - a.r)[0];
+      // A pass is checked again on pixels (judgeFocus). `pin`: an outline offset that moved
+      // only as Chromium's own focus style moves it, kept at its unfocused value there.
+      if (best.r >= 3) return { pass: true, element: describe(el), indicator: best.indicator, pin: !outlineChanged(el, before, after) && after.offset !== before.offset ? before.offset : null };
+      return { element: describe(el), indicator: best.indicator, color: rgb(best.shown), against: rgb(best.against), ratio: +best.r.toFixed(2), required: 3, measuredBy: 'model' };
+    };
+    // Where the pixel checks look. How far outside the border box this element paints an
+    // outline or an outer shadow.
+    const reach = (cs) => {
+      let m = cs.outlineStyle === 'none' ? 0 : (Number.parseFloat(cs.outlineWidth) || 0) + Math.max(0, Number.parseFloat(cs.outlineOffset) || 0);
+      for (const l of shadowLayers(cs.boxShadow)) {
+        if (l.inset) continue;
+        const len = l.text.slice(l.colour.length).split(/\s+/).filter((t) => t.endsWith('px')).map(Number.parseFloat);
+        m = Math.max(m, Math.max(Math.abs(len[0] || 0), Math.abs(len[1] || 0)) + Math.max(0, l.spread) + l.blur);
+      }
+      return m;
+    };
+    // The border box, in viewport coordinates; an element without a box of its own (an
+    // inline link around a float) takes the union of its descendants' boxes.
+    const boxOf = (el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) return [r.left, r.top, r.right, r.bottom];
+      let b = null;
+      for (const d of el.querySelectorAll('*')) {
+        const q = d.getBoundingClientRect();
+        if (!q.width || !q.height) continue;
+        b = b ? [Math.min(b[0], q.left), Math.min(b[1], q.top), Math.max(b[2], q.right), Math.max(b[3], q.bottom)] : [q.left, q.top, q.right, q.bottom];
+      }
+      return b || [r.left, r.top, r.right, r.bottom];
+    };
+    // Areas whose change is not an indicator: an icon or image inside, and the content box of
+    // a select (its shown value). Text is hidden during the focus screenshots (TEXT_OFF).
+    const holesOf = (el, cs) => {
+      const out = [];
+      const n = (p) => Number.parseFloat(cs[p]) || 0;
+      if (el.matches('select')) {
+        const r = el.getBoundingClientRect();
+        out.push([r.left + n('borderLeftWidth') + n('paddingLeft'), r.top + n('borderTopWidth') + n('paddingTop'),
+          r.right - n('borderRightWidth') - n('paddingRight'), r.bottom - n('borderBottomWidth') - n('paddingBottom')]);
+      }
+
+      return out;
+    };
+    // Whether the pixel at (x, y) shows el. An outline or a shadow is not hit-testable, and a
+    // sibling whose box lies under an outline is painted below it, so a pixel outside the
+    // border box takes the verdict of the control's own edge next to it (the point clamped
+    // 1 px inside the box): covered when the topmost hit there is neither inside el nor an
+    // ancestor of it (a fixed header). A cover over the ring only is not seen.
+    const ownsPixel = (el, box, x, y) => {
+      const cx = Math.min(Math.max(x, box[0] + 1), box[2] - 1); const cy = Math.min(Math.max(y, box[1] + 1), box[3] - 1);
+      const h = document.elementFromPoint(cx, cy); if (!h) return false; if (el.contains(h) || h.contains(el)) return true;
+      const hc = getComputedStyle(h);
+      return !h.matches('iframe, img, video, canvas, embed, object, svg, input, select, textarea, picture') && hc.backdropFilter === 'none' && (hc.outlineStyle === 'none' || Number.parseFloat(hc.outlineWidth) === 0)
+        && ['::before', '::after'].every((pe) => { const pc = getComputedStyle(h, pe); return ['none', 'normal'].includes(pc.content) || (pc.content === '""' && parse(pc.backgroundColor)?.a === 0 && pc.backgroundImage === 'none' && pc.boxShadow === 'none' && pc.backdropFilter === 'none' && SIDES.every((sd) => pc['border' + sd + 'Style'] === 'none' || Number.parseFloat(pc['border' + sd + 'Width']) === 0)); })
+        && parse(hc.backgroundColor)?.a === 0 && hc.backgroundImage === 'none' && hc.boxShadow === 'none'
+        && SIDES.every((sd) => hc['border' + sd + 'Style'] === 'none' || Number.parseFloat(hc['border' + sd + 'Width']) === 0) && !h.childElementCount && !h.textContent.trim(); };
+    window.__geometry = (el, clip) => {
+      const cs = getComputedStyle(el);
+      const n = (p) => Number.parseFloat(cs[p]) || 0;
+      const g = {
+        box: boxOf(el), bw: SIDES.map((sd) => (cs['border' + sd + 'Style'] === 'none' ? 0 : n('border' + sd + 'Width'))), pad: SIDES.map((sd) => n('padding' + sd)),
+        reach: reach(cs), sx: scrollX, sy: scrollY, vw: document.documentElement.clientWidth, vh: document.documentElement.clientHeight,
+      };
+      // Whether a scrolling or clipping ancestor (not the window) hides part of the border box.
+      // Only the containing-block chain counts: an absolute box escapes an overflow box below
+      // its positioned ancestor, a fixed one every ancestor but a transformed, filtered or
+      // contained one.
+      g.clipped = false;
+      let pos = cs.position;
+      for (let a = el.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) {
+        const ac = getComputedStyle(a);
+        const fixedCb = ac.transform !== 'none' || ac.perspective !== 'none' || ac.filter !== 'none' || /paint|layout|strict|content/.test(ac.contain) || ac.contentVisibility !== 'visible';
+        const cb = pos === 'fixed' ? fixedCb : pos === 'absolute' ? ac.position !== 'static' || fixedCb : true;
+        if (!cb) continue;
+        pos = ac.position;
+        if (ac.overflowX === 'visible' && ac.overflowY === 'visible' && !/paint|strict|content/.test(ac.contain) && ac.clipPath === 'none' && ac.contentVisibility === 'visible') continue;
+        const q = a.getBoundingClientRect();
+        if (g.box[0] < q.left - 0.5 || g.box[1] < q.top - 0.5 || g.box[2] > q.right + 0.5 || g.box[3] > q.bottom + 0.5) { g.clipped = true; break; }
+      }
+      const rr = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map((c) => { const v = cs[`border${c}Radius`].split(' ')[0];
+        return v.endsWith('%') ? Number.parseFloat(v) / 100 * Math.min(g.box[2] - g.box[0], g.box[3] - g.box[1]) : Number.parseFloat(v) || 0; });
+      g.radius = Math.max(...rr);
+      // A rotated, skewed or 3D-transformed control is not sampled on axis-aligned lines.
+      for (let a = el; a; a = a.parentElement) { const ro = getComputedStyle(a).rotate; if (ro && ro !== 'none' && Number.parseFloat(ro.split(' ').pop()) !== 0) { g.clipped = true; break; } const t = getComputedStyle(a).transform; if (t && t !== 'none') { const mx = new DOMMatrix(t); if (Math.abs(mx.b) > 1e-6 || Math.abs(mx.c) > 1e-6 || !mx.is2D) { g.clipped = true; break; } } }
+      // How far inside the border edge a ring may lie: a border, an inset outline that paints.
+      const paintsOutline = cs.outlineStyle !== 'none' && Number.parseFloat(cs.outlineWidth) > 0 && (parse(cs.outlineColor)?.a ?? 1) > 0;
+      g.inset = Math.max(...g.bw, paintsOutline ? Math.max(0, -(Number.parseFloat(cs.outlineOffset) || 0)) : 0);
+      // How far a shadow's blur and spread reach along a side from a corner, where two sides' shadows overlap.
+      g.soft = Math.max(0, ...shadowLayers(cs.boxShadow).map((l) => l.blur + Math.abs(l.spread)));
+      g.tf = [cs.transform, cs.translate, cs.scale, cs.rotate].join('|');
+      g.atf = ''; for (let a = el.parentElement; a; a = a.parentElement) { const ac = getComputedStyle(a); g.atf += [ac.transform, ac.translate, ac.scale, ac.rotate].join('|') + ';'; }
+      if (clip) {
+        g.holes = holesOf(el, cs);
+        // One bit per 2x2 block of the clip (a pixel-exact grid costs four times the hit tests).
+        const own = []; const memo = new Map();
+        for (let y = 0; y < clip.height; y += 2) for (let x = 0; x < clip.width; x += 2) {
+          const vx = clip.x - scrollX + x + 1; const vy = clip.y - scrollY + y + 1;
+          const key = `${Math.min(Math.max(vx, g.box[0] + 1), g.box[2] - 1)},${Math.min(Math.max(vy, g.box[1] + 1), g.box[3] - 1)}`;
+          if (!memo.has(key)) memo.set(key, ownsPixel(el, g.box, vx, vy) ? 1 : 0);
+          own.push(memo.get(key));
+        }
+        g.own = own.join('');
+      }
+      return g;
+    };
+    // A style sheet of the audit's own, by id (replaced if present).
+    window.__auditStyle = (id, css) => { document.getElementById(id)?.remove();
+      const st = Object.assign(document.createElement('style'), { id, textContent: css }); (document.head || document.documentElement).append(st); };
+    // The same with pointer-events on everywhere, so a cover with pointer-events: none is hit.
+    window.__geometryAll = (el, clip) => {
+      window.__auditStyle('contrast-audit-hit-all', '*,*::before,*::after{pointer-events:auto !important}');
+      try { return window.__geometry(el, clip); } finally { document.getElementById('contrast-audit-hit-all')?.remove(); }
+    };
+    window.__iconsOff = (el) => { let k = 0; for (const d of el.querySelectorAll('svg, img, video, canvas, picture, iframe')) { d.setAttribute('data-contrast-audit-icon', ''); k++; } return k; };
+    window.__iconsOn = (el) => { for (const d of el.querySelectorAll('[data-contrast-audit-icon]')) d.removeAttribute('data-contrast-audit-icon'); return null; };
+    const TFP = ['transform', 'translate', 'scale', 'rotate'];
+    window.__pinTf = (el, v) => { const prev = TFP.map((q) => [el.style.getPropertyValue(q), el.style.getPropertyPriority(q)]); v.split('|').forEach((x, k) => el.style.setProperty(TFP[k], x, 'important')); return prev; };
+    window.__unpinTf = (el, prev) => { TFP.forEach((q, k) => { if (prev[k][0]) el.style.setProperty(q, prev[k][0], prev[k][1]); else el.style.removeProperty(q); }); return null; };
+    window.__pinOffset = (el, v) => { const prev = [el.style.getPropertyValue('outline-offset'), el.style.getPropertyPriority('outline-offset')];
+      el.style.setProperty('outline-offset', v, 'important'); return prev; };
+    window.__hideSelf = (el) => { const prev = [el.style.getPropertyValue('opacity'), el.style.getPropertyPriority('opacity')]; el.style.setProperty('opacity', '0', 'important'); return prev; };
+    window.__showSelf = (el, prev) => { if (prev[0]) el.style.setProperty('opacity', prev[0], prev[1]); else el.style.removeProperty('opacity'); return null; };
+    window.__unpinOffset = (el, prev) => { if (prev[0]) el.style.setProperty('outline-offset', prev[0], prev[1]); else el.style.removeProperty('outline-offset'); };
+    window.__bringIntoView = async (el) => {
+      const at = [scrollX, scrollY]; const inner = [];
+      for (let a = el.parentElement; a; a = a.parentElement) inner.push([a, a.scrollLeft, a.scrollTop]);
+      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      await window.__auditFrame();
+      window.__auditScrolled = inner.filter(([a, l, t]) => a.scrollLeft !== l || a.scrollTop !== t);
+      return at;
+    };
+    window.__scrollBack = async (at) => {
+      for (const [a, l, t] of window.__auditScrolled || []) a.scrollTo({ left: l, top: t, behavior: 'instant' });
+      window.__auditScrolled = [];
+      scrollTo({ left: at[0], top: at[1], behavior: 'instant' }); await window.__auditFrame(); };
+
+    // The visible boundary of a form control: its border, a box-shadow ring with a spread,
+    // or its own fill where that differs enough from the surface around it. Disabled
+    // controls are exempt (SC 1.4.11), and native checkboxes and radios draw their own
+    // boundary.
+    const NO_BOUNDARY = new Set(['hidden', 'submit', 'button', 'reset', 'image', 'range', 'color', 'file']);
+    window.__boundaryOf = (el) => {
+      if (NO_BOUNDARY.has(el.type) || el.closest('[data-contrast-demo]') || !perceivable(el)) return null;
+      const cs = getComputedStyle(el);
+      if ((el.type === 'checkbox' || el.type === 'radio') && cs.appearance !== 'none') return null;
+      const outer = paint(el.parentElement);
+      const fill = paint(el);
+      let best = ratio(fill, outer); let border = null;
+      for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
+        const w = Number.parseFloat(cs[`border${side}Width`]);
+        if (cs[`border${side}Style`] === 'none' || Number.isNaN(w) || w <= 0) continue;
+        const c = parse(cs[`border${side}Color`]);
+        if (!c) continue;
+        // The background is painted under the border unless background-clip stops it.
+        const shown = paint(el, c, cs.backgroundClip === 'border-box'); const r = ratio(shown, outer);
+        if (r > best) { best = r; border = rgb(shown); }
+      }
+      for (const layer of shadowLayers(cs.boxShadow)) {
+        const c = parse(layer.colour);
+        if (layer.spread <= 0 || !c || c.a === 0) continue;
+        const shown = paint(el, ringColour(layer, c), layer.inset); const r = ratio(shown, outer);
+        if (r > best) { best = r; border = rgb(shown); }
+      }
+      const out = { element: describe(el), border, fill: rgb(fill), against: rgb(outer), ratio: +best.toFixed(2), required: 3, measuredBy: 'model' };
+      return best < 3 ? out : { pass: true, model: out };
+    };
+    // The model's boundary failures among `els`; the controls it passes are kept in
+    // __bndPass for the pixel check (verifyBoundaries).
+    window.__boundaries = (els) => {
+      window.__bndPass = [];
+      const fails = [];
+      for (const el of els) {
+        const b = window.__boundaryOf(el);
+        if (b?.pass) window.__bndPass.push({ el, model: b.model }); else if (b) fails.push(b);
+      }
+      return fails;
+    };
+    const boundaryFailures = window.__boundaries(document.querySelectorAll('input, select, textarea'));
 
     return {
       contrastFailures: [...seen.values()],
@@ -369,19 +1764,94 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       tablesWithCaption: `${document.querySelectorAll('table caption').length} of ${document.querySelectorAll('table').length}`,
       smallestFontPx: +smallest.toFixed(1),
       decorativeSvgWithoutAriaHidden: [...document.querySelectorAll('a svg, button svg, .badge svg')].filter((s) => s.getAttribute('aria-hidden') !== 'true' && !s.getAttribute('role')).length,
-      darkScheme: [...document.styleSheets].some((ss) => { try { return [...ss.cssRules].some((r) => /prefers-color-scheme|data-theme/.test(r.cssText)); } catch (e) { return false; } }),
-      // Stylesheets the page linked but the browser could not read (cross-origin, or not
-      // served). Rules inside them are invisible to `darkScheme`, so report the count
-      // rather than letting it read as "no dark theme".
+      controlBoundaryFailures: boundaryFailures,
+      // Stylesheets whose rules the browser does not expose to scripts (cross-origin, or
+      // any external sheet of a file:// page). Informational: `darkScheme` is measured
+      // from computed colours and does not depend on them.
       unreadableStylesheets: [...document.styleSheets].filter((ss) => { try { return !ss.cssRules; } catch (e) { return true; } }).length,
     };
-  });
-  result.stateFailures = await measureInteractiveStates(page);
+  }, uaRings);
+  const bnd = await verifyBoundaries(page);
+  result.controlBoundaryFailures.push(...bnd.failures);
+  let boundaryUnverified = bnd.unverified;
+  const reported = new Set();
+  const states = await measureInteractiveStates(page, '', reported);
+  result.stateFailures = states.failures;
+  result.focusRingFailures = states.focusFailures;
+  // Controls visible only at another scroll position, measured there: one position at a
+  // time, each control marked with an attribute that scopes the state passes to it.
+  // Positions in ascending order, as the scroll pass visited them (a header that reacts to
+  // the scroll direction looks as it did then).
+  const positions = await page.evaluate((sel) => {
+    window.__topSet = new WeakSet(document.querySelectorAll(sel));
+    // Controls the text pass could not see at the top: hidden by display or visibility,
+    // their own or an ancestor's.
+    window.__textSkipped = new WeakSet([...document.querySelectorAll(sel)].filter((el) => !window.__painted(el)));
+    window.__mountedMeasured = new WeakSet();
+    const ys = new Set([...window.__deferred].map((el) => window.__seenAt.get(el)));
+    for (const y of window.__mountedAt) ys.add(y);
+    return [...ys].sort((a, b) => a - b);
+  }, INTERACTIVE);
+  for (const y of positions) {
+    await page.evaluate(async ({ top, sel }) => {
+      scrollTo({ top, behavior: 'instant' });
+      await window.__auditFrame();
+      // Marked even if it is at opacity 0 again (a carousel slide whose animation was
+      // cancelled): it was seen, and opacity does not change the colours measured.
+      for (const el of window.__deferred) if (window.__seenAt.get(el) === top) el.setAttribute('data-contrast-audit-at', '');
+      // Controls that are not in the page at the top, each measured once.
+      for (const el of document.querySelectorAll(sel)) {
+        if (window.__topSet.has(el) || window.__mountedMeasured.has(el)) continue;
+        if (!el.checkVisibility({ opacityProperty: true, checkOpacity: true, visibilityProperty: true })) continue;
+        window.__mountedMeasured.add(el);
+        el.setAttribute('data-contrast-audit-at', '');
+      }
+    }, { top: y, sel: INTERACTIVE });
+    // A scroll can start an animation again (a header that animates to its scrolled
+    // colours): it is settled like the ones on load.
+    await page.evaluate(settleAnimations);
+    result.controlBoundaryFailures.push(...await page.evaluate(() => window.__boundaries([...document.querySelectorAll('[data-contrast-audit-at]')]
+      .filter((el) => el.matches('input, select, textarea')))));
+    const bndAt = await verifyBoundaries(page);
+    result.controlBoundaryFailures.push(...bndAt.failures);
+    boundaryUnverified += bndAt.unverified;
+    // Resting text of a control the text pass could not see at the top: the same text
+    // pass, on the control's subtree, into the same results (reported once per element
+    // and colour pair, also for a row a virtualised list renders anew at each position).
+    await page.evaluate(() => {
+      for (const el of document.querySelectorAll('[data-contrast-audit-at]')) {
+        if (window.__textSkipped.has(el) || !window.__topSet.has(el)) window.__textIn([el, ...el.querySelectorAll('*')]);
+      }
+    });
+    const at = await measureInteractiveStates(page, '[data-contrast-audit-at]', reported);
+    result.stateFailures.push(...at.failures);
+    result.focusRingFailures.push(...at.focusFailures);
+    await page.evaluate(() => { for (const el of document.querySelectorAll('[data-contrast-audit-at]')) el.removeAttribute('data-contrast-audit-at'); });
+  }
+  if (positions.length) await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  Object.assign(result, await page.evaluate(() => window.__textSummary()));
+  result.focusWithoutRing = await page.evaluate(() => window.__focusWithoutRing);
+  result.focusUserAgentRing = await page.evaluate(() => window.__focusUserAgentRing);
+  result.focusRingUnverified = await page.evaluate(() => window.__focusRingUnverified);
+  result.controlBoundaryUnverified = boundaryUnverified;
+  result.transparentControlsSkipped = await page.evaluate(() => window.__transparent.size);
+  if (result.transparentControlsSkipped) {
+    console.error(`note: ${result.transparentControlsSkipped} control(s) at opacity 0 at the top were not measured: not visible as the same element at any position the scroll pass reached (the window's own scroll, at most 200 viewports); a control a framework replaces on scroll is measured as the new element`);
+  }
+  result.darkSchemeBy = darkSchemeBy;
+  result.darkScheme = darkSchemeBy.length > 0;
+  result.dataThemeSet = dataThemeSet ? scheme : null;
+  result.dataThemeKept = !dataThemeSet && ownTheme !== null ? ownTheme : null;
+  if (result.dataThemeKept && darkSchemeBy.includes('data-theme')) {
+    console.error(`note: data-theme="${result.dataThemeKept}" was kept; the page's data-theme light and dark palettes were not measured`);
+  }
 
   result.scheme = scheme;
   result.failedRequests = badRequests;
   const blocking = badRequests.filter((r) => r.gating);
   console.log(JSON.stringify(result, null, 1));
   await browser.close();
-  process.exit(result.contrastFailures.length || result.stateFailures.length || blocking.length ? 1 : 0);
+  const failed = result.contrastFailures.length || result.stateFailures.length
+    || result.focusRingFailures.length || result.controlBoundaryFailures.length || blocking.length;
+  process.exit(failed ? 1 : 0);
 })().catch((e) => { console.error(e.message); process.exit(2); });
