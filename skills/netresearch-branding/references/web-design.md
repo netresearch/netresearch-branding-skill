@@ -213,7 +213,10 @@ a box-shadow ring or the fill; disabled and hidden controls skipped), plus skip 
 labelled `nav`, `main`, table captions, the smallest font, decorative SVGs without
 `aria-hidden` and whether the page switches colours under `prefers-color-scheme` or
 `data-theme`; exit 1 on any text failure (at rest or under forced `:hover` and
-`:focus-visible`), focus-indicator failure or control-boundary failure. Focus indicators
+`:focus-visible`), focus-indicator failure or control-boundary failure. These are the
+failures it measured: controls it cannot read are counted in `focusRingUnverified`,
+`controlBoundaryUnverified`, `focusUserAgentRing` and `focusWithoutRing` without failing,
+so check those by hand; exit 0 is no complete SC 1.4.11 result. Focus indicators
 and boundaries are judged first by a colour model of the computed styles, under the
 opacity of the control and its ancestors. Where that model passes a ring or a boundary,
 the control is judged again on screenshots, unfocused and focused for a ring, so a blur,
