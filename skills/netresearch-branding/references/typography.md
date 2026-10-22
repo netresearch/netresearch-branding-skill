@@ -289,7 +289,7 @@ body, p {
 /* Lead Paragraph */
 .lead {
   font-family: 'Open Sans', sans-serif;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 1.6;
   color: #585961;
@@ -298,37 +298,18 @@ body, p {
 
 ### Responsive Typography
 
+`templates/styles.css` scales the headings fluidly with the viewport instead of
+stepping at breakpoints; the bounds keep each heading below the one above it at
+every width:
+
 ```css
-/* Mobile First Approach */
-
-/* Base (Mobile) */
-h1 { font-size: 32px; }
-h2 { font-size: 26px; }
-h3 { font-size: 22px; }
-h4 { font-size: 18px; }
+h1 { font-size: clamp(36px, 4.2vw, 56px); }
+h2 { font-size: clamp(28px, 3vw, 36px); }
+h3 { font-size: clamp(22px, 2.3vw, 28px); }
+h4 { font-size: clamp(20px, 1.8vw, 22px); }
+h5 { font-size: 18px; }
+h6 { font-size: 16px; font-weight: 700; }
 body, p { font-size: 16px; }
-
-/* Tablet (768px+) */
-@media (min-width: 768px) {
-  h1 { font-size: 40px; }
-  h2 { font-size: 32px; }
-  h3 { font-size: 26px; }
-  h4 { font-size: 20px; }
-}
-
-/* Desktop (1024px+) */
-@media (min-width: 1024px) {
-  h1 { font-size: 48px; }
-  h2 { font-size: 36px; }
-  h3 { font-size: 28px; }
-  h4 { font-size: 22px; }
-}
-
-/* Large Desktop (1440px+) */
-@media (min-width: 1440px) {
-  h1 { font-size: 56px; }
-  h2 { font-size: 40px; }
-}
 ```
 
 ---
