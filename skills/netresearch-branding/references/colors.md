@@ -375,6 +375,15 @@ It needs resolved CSS and a compositing model, so it belongs in a browser:
   colours over white, reporting failures that are not there and missing ones
   that are.
 
+Keep unresolved automated checks as a manual worklist: record the rule ID,
+node target, reason or failure summary, route, viewport and colour scheme.
+An axe `incomplete` result is neither a pass nor a confirmed failure. For text
+on gradients, also inspect decorative borders, motifs and pseudo-elements
+behind the glyphs: a passing gradient stop alone does not establish the painted
+background. Measure that background or demonstrate that decoration cannot
+intersect the text. State the assessed scope; a contrast pass is not whole-page
+WCAG certification.
+
 ### Social Media
 - **Header images:** Turquoise primary with orange accents
 - **Profile elements:** Turquoise logo on white
