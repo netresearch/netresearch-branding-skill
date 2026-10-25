@@ -786,44 +786,78 @@
     "assertions": [
       {
         "type": "content_regex",
-        "value": "^[[:space:]]*(#+[[:space:]]+)?[*]*A:[[:space:]*]*UNRESOLVED([^[:alnum:]_]|$)",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*A[[:space:]_*]*:[[:space:]_*]*UNRESOLVED[_*]*([^[:alnum:]_]|$)",
         "description": "An unresolved composite is neither a pass from zero violations nor an established failure"
       },
       {
         "type": "content_regex",
-        "value": "^[[:space:]]*(#+[[:space:]]+)?[*]*A:[[:space:]*]*.*color-contrast.*[.]hero[[:space:]]+p",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*A[[:space:]_*]*:[[:space:]_*]*.*color-contrast.*[.]hero[[:space:]]+p",
         "description": "Keeps the unresolved rule and actual target rather than only an incomplete count"
       },
       {
         "type": "content_regex",
-        "value": "^[[:space:]]*(#+[[:space:]]+)?[*]*B:[[:space:]*]*FAIL([^[:alnum:]_]|$)",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*B[[:space:]_*]*:[[:space:]_*]*FAIL[_*]*([^[:alnum:]_]|$)",
         "description": "The actual 6.9:1 measurement fails requested AAA contrast for normal text"
       },
       {
         "type": "content_regex",
-        "value": "^[[:space:]]*(#+[[:space:]]+)?[*]*C:[[:space:]*]*PASS([^[:alnum:]_]|$)",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*C[[:space:]_*]*:[[:space:]_*]*PASS[_*]*([^[:alnum:]_]|$)",
         "description": "Manual resolution at 7.3:1 permits the scoped contrast result; incomplete is not an automatic failure"
       },
       {
         "type": "content_regex",
-        "value": "^[[:space:]]*(#+[[:space:]]+)?[*]*SCOPE:[[:space:]*]*CONTRAST-ONLY([^[:alnum:]_]|$)",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*SCOPE[[:space:]_*]*:[[:space:]_*]*CONTRAST-ONLY[_*]*([^[:alnum:]_]|$)",
         "description": "Text-contrast evidence does not establish whole-page WCAG conformity"
+      },
+      {
+        "type": "must_not",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*A[[:space:]_*]*:[[:space:]_*]*(FAIL|PASS)[_*]*([^[:alnum:]_]|$)",
+        "description": "Rejects an incompatible additional A verdict even when the required correct verdict is also present"
+      },
+      {
+        "type": "must_not",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*B[[:space:]_*]*:[[:space:]_*]*(UNRESOLVED|PASS)[_*]*([^[:alnum:]_]|$)",
+        "description": "Rejects an incompatible additional B verdict even when the required correct verdict is also present"
+      },
+      {
+        "type": "must_not",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*C[[:space:]_*]*:[[:space:]_*]*(UNRESOLVED|FAIL)[_*]*([^[:alnum:]_]|$)",
+        "description": "Rejects an incompatible additional C verdict even when the required correct verdict is also present"
+      },
+      {
+        "type": "must_not",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*SCOPE[[:space:]_*]*:[[:space:]_*]*(FULL-WCAG)[_*]*([^[:alnum:]_]|$)",
+        "description": "Rejects an incompatible additional SCOPE verdict even when the required correct verdict is also present"
       }
     ],
     "expectations": [
       "For A, keeps color-contrast, .hero p, /de/, 390x844, dark scheme and the background-determination reason in the manual worklist; proposes measuring the composited painted background or proving that the motif cannot cross the glyphs.",
       "Does not infer the paragraph's contrast from a passing base gradient stop or interpret an axe incomplete as either confirmed failure or pass.",
-      "Uses the user's requested AAA normal-text threshold of 7:1 for B and C; permits the scoped C pass while refusing whole-page certification. Does not change the skill's default AA policy."
+      "Uses the user's requested AAA normal-text threshold of 7:1 for B and C; permits the scoped C pass while refusing whole-page certification. Does not change the skill's default AA policy.",
+      "Rejects mutually incompatible verdict lines for the same observation even when every required correct verdict is also present; repeated consistent verdicts remain acceptable."
     ],
     "samples": {
-      "passing": "A: **UNRESOLVED**. Worklist: color-contrast at .hero p, /de/, 390x844, dark; reason: the gradient background could not be determined. Measure the painted composite including the motif, or prove that it cannot intersect the glyphs.\nB: **FAIL**. The actual worst ratio 6.9:1 is below the requested 7:1 AAA threshold for normal text.\nC: **PASS**. The manually resolved worst ratio 7.3:1 supports the requested text-contrast result within the measured views.\nSCOPE: **CONTRAST-ONLY**. The other WCAG criteria were not assessed, so whole-page certification is not established.",
+      "passing": "* _A_: _UNRESOLVED_. Worklist: color-contrast at .hero p, /de/, 390x844, dark; reason: the gradient background could not be determined. Measure the painted composite including the motif, or prove that it cannot intersect the glyphs.\n1. **B**: **FAIL**. The actual worst ratio 6.9:1 is below the requested 7:1 AAA threshold for normal text.\n1) _C_: _PASS_. The manually resolved worst ratio 7.3:1 supports the requested text-contrast result within the measured views.\n__SCOPE__: __CONTRAST-ONLY__. The other WCAG criteria were not assessed, so whole-page certification is not established.",
       "failing": [
         "A: PASS — color-contrast at .hero p, /de/, 390x844, dark; reason: the gradient background could not be determined, but zero axe violations and the base stop suffice. Keep the node in the manual worklist and measure the motif later.\nB: FAIL — 6.9:1 is below 7:1.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed.",
         "A: FAIL — color-contrast at .hero p, /de/, 390x844, dark; the undetermined background proves failure, even before measuring the motif. Keep the node in the manual worklist.\nB: FAIL — 6.9:1 is below 7:1.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed.",
         "A: UNRESOLVED — color-contrast at .hero p, /de/, 390x844, dark; background unknown. Measure the motif composite.\nB: PASS — 6.9:1 is enough for the requested AAA normal text.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed.",
         "A: UNRESOLVED — color-contrast at .hero p, /de/, 390x844, dark; background unknown. Measure the motif composite.\nB: FAIL — 6.9:1 is below 7:1.\nC: FAIL — every result initially marked incomplete must fail even after manual resolution at 7.3:1.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed.",
         "A: UNRESOLVED — color-contrast at .hero p, /de/, 390x844, dark; background unknown. Measure the motif composite.\nB: FAIL — 6.9:1 is below 7:1.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: FULL-WCAG — all criteria are certified by the text-contrast work.",
-        "A: UNRESOLVED — color-contrast has one incomplete result; its target and viewing context were discarded. Measure the motif composite.\nB: FAIL — 6.9:1 is below 7:1.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed."
+        "A: UNRESOLVED — color-contrast has one incomplete result; its target and viewing context were discarded. Measure the motif composite.\nB: FAIL — 6.9:1 is below 7:1.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed.",
+        "A: **UNRESOLVED**. Worklist: color-contrast at .hero p, /de/, 390x844, dark; reason: the gradient background could not be determined. Measure the painted composite including the motif, or prove that it cannot intersect the glyphs.\nB: **FAIL**. The actual worst ratio 6.9:1 is below the requested 7:1 AAA threshold for normal text.\nC: **PASS**. The manually resolved worst ratio 7.3:1 supports the requested text-contrast result within the measured views.\nSCOPE: **CONTRAST-ONLY**. The other WCAG criteria were not assessed, so whole-page certification is not established.\nA: FAIL",
+        "A: **UNRESOLVED**. Worklist: color-contrast at .hero p, /de/, 390x844, dark; reason: the gradient background could not be determined. Measure the painted composite including the motif, or prove that it cannot intersect the glyphs.\nB: **FAIL**. The actual worst ratio 6.9:1 is below the requested 7:1 AAA threshold for normal text.\nC: **PASS**. The manually resolved worst ratio 7.3:1 supports the requested text-contrast result within the measured views.\nSCOPE: **CONTRAST-ONLY**. The other WCAG criteria were not assessed, so whole-page certification is not established.\nA: PASS",
+        "A: **UNRESOLVED**. Worklist: color-contrast at .hero p, /de/, 390x844, dark; reason: the gradient background could not be determined. Measure the painted composite including the motif, or prove that it cannot intersect the glyphs.\nB: **FAIL**. The actual worst ratio 6.9:1 is below the requested 7:1 AAA threshold for normal text.\nC: **PASS**. The manually resolved worst ratio 7.3:1 supports the requested text-contrast result within the measured views.\nSCOPE: **CONTRAST-ONLY**. The other WCAG criteria were not assessed, so whole-page certification is not established.\nB: UNRESOLVED",
+        "A: **UNRESOLVED**. Worklist: color-contrast at .hero p, /de/, 390x844, dark; reason: the gradient background could not be determined. Measure the painted composite including the motif, or prove that it cannot intersect the glyphs.\nB: **FAIL**. The actual worst ratio 6.9:1 is below the requested 7:1 AAA threshold for normal text.\nC: **PASS**. The manually resolved worst ratio 7.3:1 supports the requested text-contrast result within the measured views.\nSCOPE: **CONTRAST-ONLY**. The other WCAG criteria were not assessed, so whole-page certification is not established.\nB: PASS",
+        "A: **UNRESOLVED**. Worklist: color-contrast at .hero p, /de/, 390x844, dark; reason: the gradient background could not be determined. Measure the painted composite including the motif, or prove that it cannot intersect the glyphs.\nB: **FAIL**. The actual worst ratio 6.9:1 is below the requested 7:1 AAA threshold for normal text.\nC: **PASS**. The manually resolved worst ratio 7.3:1 supports the requested text-contrast result within the measured views.\nSCOPE: **CONTRAST-ONLY**. The other WCAG criteria were not assessed, so whole-page certification is not established.\nC: UNRESOLVED",
+        "A: **UNRESOLVED**. Worklist: color-contrast at .hero p, /de/, 390x844, dark; reason: the gradient background could not be determined. Measure the painted composite including the motif, or prove that it cannot intersect the glyphs.\nB: **FAIL**. The actual worst ratio 6.9:1 is below the requested 7:1 AAA threshold for normal text.\nC: **PASS**. The manually resolved worst ratio 7.3:1 supports the requested text-contrast result within the measured views.\nSCOPE: **CONTRAST-ONLY**. The other WCAG criteria were not assessed, so whole-page certification is not established.\nC: FAIL",
+        "A: **UNRESOLVED**. Worklist: color-contrast at .hero p, /de/, 390x844, dark; reason: the gradient background could not be determined. Measure the painted composite including the motif, or prove that it cannot intersect the glyphs.\nB: **FAIL**. The actual worst ratio 6.9:1 is below the requested 7:1 AAA threshold for normal text.\nC: **PASS**. The manually resolved worst ratio 7.3:1 supports the requested text-contrast result within the measured views.\nSCOPE: **CONTRAST-ONLY**. The other WCAG criteria were not assessed, so whole-page certification is not established.\nSCOPE: FULL-WCAG",
+        "A: UNRESOLVED — color-contrast at .hero p, /de/, 390x844, dark; background unknown, so measure the painted composite.\nB: FAIL — 6.9:1 is below 7:1.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed.\n_A: PASS_",
+        "A: UNRESOLVED — color-contrast at .hero p, /de/, 390x844, dark; background unknown, so measure the painted composite.\nB: FAIL — 6.9:1 is below 7:1.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed.\n* A: PASS",
+        "A: UNRESOLVED — color-contrast at .hero p, /de/, 390x844, dark; background unknown, so measure the painted composite.\nB: FAIL — 6.9:1 is below 7:1.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed.\n1. A: PASS",
+        "A: UNRESOLVED — color-contrast at .hero p, /de/, 390x844, dark; background unknown, so measure the painted composite.\nB: FAIL — 6.9:1 is below 7:1.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed.\n1) A: PASS",
+        "A: UNRESOLVED — color-contrast at .hero p, /de/, 390x844, dark; background unknown, so measure the painted composite.\nB: FAIL — 6.9:1 is below 7:1.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed.\n**A**: PASS",
+        "A: UNRESOLVED — color-contrast at .hero p, /de/, 390x844, dark; background unknown, so measure the painted composite.\nB: FAIL — 6.9:1 is below 7:1.\nC: PASS — 7.3:1 supports the measured text contrast.\nSCOPE: CONTRAST-ONLY — other WCAG criteria were not assessed.\n_A_: PASS"
       ]
     }
   },
@@ -834,32 +868,57 @@
     "assertions": [
       {
         "type": "content_regex",
-        "value": "^[[:space:]]*(#+[[:space:]]+)?[*]*A:[[:space:]*]*HOLD([^[:alnum:]_]|$)",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*A[[:space:]_*]*:[[:space:]_*]*HOLD[_*]*([^[:alnum:]_]|$)",
         "description": "Rejects completion despite green builds/axe and equal hashes when the rendered family still contradicts the requested outcome"
       },
       {
         "type": "content_regex",
-        "value": "^[[:space:]]*(#+[[:space:]]+)?[*]*B:[[:space:]*]*ACCEPT_SCOPED([^[:alnum:]_]|$)",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*B[[:space:]_*]*:[[:space:]_*]*ACCEPT_SCOPED[_*]*([^[:alnum:]_]|$)",
         "description": "Accepts the requested consistency/interaction scope when all actual page views support it; does not hold a fully evidenced result indefinitely"
       },
       {
         "type": "content_regex",
-        "value": "^[[:space:]]*(#+[[:space:]]+)?[*]*HOSTED:[[:space:]*]*PRESERVE_NATIVE([^[:alnum:]_]|$)",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*HOSTED[[:space:]_*]*:[[:space:]_*]*PRESERVE_NATIVE[_*]*([^[:alnum:]_]|$)",
         "description": "The standalone-family request does not replace the hosted TYPO3 theme"
+      },
+      {
+        "type": "must_not",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*A[[:space:]_*]*:[[:space:]_*]*(ACCEPT_SCOPED)[_*]*([^[:alnum:]_]|$)",
+        "description": "Rejects an incompatible additional A verdict even when the required correct verdict is also present"
+      },
+      {
+        "type": "must_not",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*B[[:space:]_*]*:[[:space:]_*]*(HOLD)[_*]*([^[:alnum:]_]|$)",
+        "description": "Rejects an incompatible additional B verdict even when the required correct verdict is also present"
+      },
+      {
+        "type": "must_not",
+        "value": "^[[:space:]]*(([-+*]|[0-9]+[.)])[[:space:]]+)?(#+[[:space:]]+)?[_*]*HOSTED[[:space:]_*]*:[[:space:]_*]*(APPLY_STANDALONE)[_*]*([^[:alnum:]_]|$)",
+        "description": "Rejects an incompatible additional HOSTED verdict even when the required correct verdict is also present"
       }
     ],
     "expectations": [
       "For A, names the local-navigation footprint, short-viewport focus clipping and NoJS header/body mismatch as user-visible integration defects, and requires a new actual joint rendered comparison after correction.",
       "Treats equal source hashes as component-parity evidence and axe as scoped automated evidence, not proof of cross-page visual or interaction parity. Corrects the shared component or the affected integration according to the observed cause while preserving product navigation/search.",
       "For B, accepts only the requested standalone consistency and interaction scope. Does not infer hosted publication or complete WCAG conformity, and preserves the separately hosted TYPO3 manual's official theme.",
-      "Does not promote this task's viewport sizes, dimensions or a particular theme-widget design into universal Netresearch requirements."
+      "Does not promote this task's viewport sizes, dimensions or a particular theme-widget design into universal Netresearch requirements.",
+      "Rejects mutually incompatible verdict lines for the same observation even when every required correct verdict is also present; repeated consistent verdicts remain acceptable."
     ],
     "samples": {
-      "passing": "A: **HOLD** — joint rendered evidence contradicts completion: the local-navigation footprint is too large, short-viewport theme focus is clipped, and the NoJS header/body palette disagrees. Fix the responsible shared component or page integration, retain product links/search, then inspect all six actual pages jointly again. Equal source hashes prove component parity; green axe checks do not prove rendered family consistency.\nB: **ACCEPT_SCOPED** — the supplied joint comparisons and keyboard/theme evidence support the requested standalone consistency and interactions, including compact local navigation, visible short-viewport focus and coherent NoJS palettes. This does not certify all WCAG criteria or prove publication.\nHOSTED: **PRESERVE_NATIVE** — keep the separately hosted TYPO3 manual's official theme.",
+      "passing": "_A_: _HOLD_ — joint rendered evidence contradicts completion: the local-navigation footprint is too large, short-viewport theme focus is clipped, and the NoJS header/body palette disagrees. Fix the responsible shared component or page integration, retain product links/search, then inspect all six actual pages jointly again. Equal source hashes prove component parity; green axe checks do not prove rendered family consistency.\n* **B**: **ACCEPT_SCOPED** — the supplied joint comparisons and keyboard/theme evidence support the requested standalone consistency and interactions, including compact local navigation, visible short-viewport focus and coherent NoJS palettes. This does not certify all WCAG criteria or prove publication.\n1) __HOSTED__: __PRESERVE_NATIVE__ — keep the separately hosted TYPO3 manual's official theme.",
       "failing": [
         "A: ACCEPT_SCOPED — joint rendered evidence shows a large local-navigation footprint, clipped short-viewport focus and a NoJS palette mismatch, but green axe checks and equal source hashes prove consistency. Product links/search can remain; no later comparison is needed.\nB: ACCEPT_SCOPED — the supplied joint comparison supports the requested scope, without full WCAG or publication claims.\nHOSTED: PRESERVE_NATIVE — keep the official TYPO3 theme.",
         "A: HOLD — fix local-navigation density, clipped short-viewport focus and the NoJS palette mismatch, then compare the six actual pages jointly.\nB: HOLD — even complete actual joint comparisons and passing keyboard/theme evidence can never establish the requested scoped consistency.\nHOSTED: PRESERVE_NATIVE — keep the official TYPO3 theme.",
-        "A: HOLD — fix local-navigation density, clipped short-viewport focus and the NoJS palette mismatch, then compare the six actual pages jointly.\nB: ACCEPT_SCOPED — the supplied joint comparison supports the requested scope, without full WCAG or publication claims.\nHOSTED: APPLY_STANDALONE — replace the official TYPO3 header with the same standalone header for consistency."
+        "A: HOLD — fix local-navigation density, clipped short-viewport focus and the NoJS palette mismatch, then compare the six actual pages jointly.\nB: ACCEPT_SCOPED — the supplied joint comparison supports the requested scope, without full WCAG or publication claims.\nHOSTED: APPLY_STANDALONE — replace the official TYPO3 header with the same standalone header for consistency.",
+        "A: **HOLD** — joint rendered evidence contradicts completion: the local-navigation footprint is too large, short-viewport theme focus is clipped, and the NoJS header/body palette disagrees. Fix the responsible shared component or page integration, retain product links/search, then inspect all six actual pages jointly again. Equal source hashes prove component parity; green axe checks do not prove rendered family consistency.\nB: **ACCEPT_SCOPED** — the supplied joint comparisons and keyboard/theme evidence support the requested standalone consistency and interactions, including compact local navigation, visible short-viewport focus and coherent NoJS palettes. This does not certify all WCAG criteria or prove publication.\nHOSTED: **PRESERVE_NATIVE** — keep the separately hosted TYPO3 manual's official theme.\nA: ACCEPT_SCOPED",
+        "A: **HOLD** — joint rendered evidence contradicts completion: the local-navigation footprint is too large, short-viewport theme focus is clipped, and the NoJS header/body palette disagrees. Fix the responsible shared component or page integration, retain product links/search, then inspect all six actual pages jointly again. Equal source hashes prove component parity; green axe checks do not prove rendered family consistency.\nB: **ACCEPT_SCOPED** — the supplied joint comparisons and keyboard/theme evidence support the requested standalone consistency and interactions, including compact local navigation, visible short-viewport focus and coherent NoJS palettes. This does not certify all WCAG criteria or prove publication.\nHOSTED: **PRESERVE_NATIVE** — keep the separately hosted TYPO3 manual's official theme.\nB: HOLD",
+        "A: **HOLD** — joint rendered evidence contradicts completion: the local-navigation footprint is too large, short-viewport theme focus is clipped, and the NoJS header/body palette disagrees. Fix the responsible shared component or page integration, retain product links/search, then inspect all six actual pages jointly again. Equal source hashes prove component parity; green axe checks do not prove rendered family consistency.\nB: **ACCEPT_SCOPED** — the supplied joint comparisons and keyboard/theme evidence support the requested standalone consistency and interactions, including compact local navigation, visible short-viewport focus and coherent NoJS palettes. This does not certify all WCAG criteria or prove publication.\nHOSTED: **PRESERVE_NATIVE** — keep the separately hosted TYPO3 manual's official theme.\nHOSTED: APPLY_STANDALONE",
+        "A: HOLD — fix local-navigation density, clipped focus and the NoJS palette, then compare jointly.\nB: ACCEPT_SCOPED — supplied evidence supports the requested scope, without full WCAG or publication claims.\nHOSTED: PRESERVE_NATIVE — keep the official TYPO3 theme.\n_A: ACCEPT_SCOPED_",
+        "A: HOLD — fix local-navigation density, clipped focus and the NoJS palette, then compare jointly.\nB: ACCEPT_SCOPED — supplied evidence supports the requested scope, without full WCAG or publication claims.\nHOSTED: PRESERVE_NATIVE — keep the official TYPO3 theme.\n* A: ACCEPT_SCOPED",
+        "A: HOLD — fix local-navigation density, clipped focus and the NoJS palette, then compare jointly.\nB: ACCEPT_SCOPED — supplied evidence supports the requested scope, without full WCAG or publication claims.\nHOSTED: PRESERVE_NATIVE — keep the official TYPO3 theme.\n1. A: ACCEPT_SCOPED",
+        "A: HOLD — fix local-navigation density, clipped focus and the NoJS palette, then compare jointly.\nB: ACCEPT_SCOPED — supplied evidence supports the requested scope, without full WCAG or publication claims.\nHOSTED: PRESERVE_NATIVE — keep the official TYPO3 theme.\n1) A: ACCEPT_SCOPED",
+        "A: HOLD — fix local-navigation density, clipped focus and the NoJS palette, then compare jointly.\nB: ACCEPT_SCOPED — supplied evidence supports the requested scope, without full WCAG or publication claims.\nHOSTED: PRESERVE_NATIVE — keep the official TYPO3 theme.\n**A**: ACCEPT_SCOPED",
+        "A: HOLD — fix local-navigation density, clipped focus and the NoJS palette, then compare jointly.\nB: ACCEPT_SCOPED — supplied evidence supports the requested scope, without full WCAG or publication claims.\nHOSTED: PRESERVE_NATIVE — keep the official TYPO3 theme.\n_A_: ACCEPT_SCOPED"
       ]
     }
   }
