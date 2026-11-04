@@ -50,6 +50,10 @@ No Makefile or npm scripts. Available commands:
 6. **White space**: High white space design principle throughout
 7. **TYPO3 extensions**: Icon at `Resources/Public/Icons/Extension.svg`, vendor `netresearch/`
 
+## Review scope
+
+This is a branding skill, not a contrast-audit research project. A review loop "until zero findings" means zero findings that a real page hits: fix what the shipped templates, examples or a real branded page would show, then stop. Synthetic edge cases constructed for the audit itself (for example hand-built focus-ring or halo pixel cases) are out of scope: do not keep iterating on them and do not file issues for them; close such issues as not planned.
+
 ## References
 
 - [SKILL.md](skills/netresearch-branding/SKILL.md) — full brand guidelines and auto-trigger rules
