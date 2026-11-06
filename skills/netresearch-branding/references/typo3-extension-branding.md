@@ -152,7 +152,7 @@ Why the sprite provider: TYPO3 v14.3 renders an icon in the markup the template 
 - **Inline markup.** The module menu (`EXT:backend/Resources/Private/Partials/Backend/ModuleMenu.fluid.html`), the submodule overview cards (`Templates/SubmoduleOverview/Cards.fluid.html`) and the user toolbar dropdown request `alternativeMarkupIdentifier="inline"`. `SvgSpriteIconProvider::generateInlineMarkup()` returns `<svg class="icon-color"><use xlink:href="..."/></svg>` when no `source` is registered; `SvgIconProvider` embeds the sanitized SVG. Both follow the colour scheme here.
 - **Default markup.** A template without `alternativeMarkupIdentifier` gets the default markup. `SvgSpriteIconProvider` renders the same `<svg><use>`, and `currentColor` inherits through `<use>`. `SvgIconProvider` renders `<img src="...">`, where `currentColor` resolves in the image's own document, so the glyph does not follow the colour scheme. In v14.3 the About module's module cards (`Partials/About/Modules.fluid.html`) render module icons this way.
 
-Do not add a `source` next to `sprite`: the sprite provider then inlines that file for the inline markup instead of using the sprite. The reference extensions pin in a functional test that both markups of the module icon are `<svg><use>` of the sprite and never `<img>`.
+On TYPO3 v13.4 and v14, do not add a `source` next to `sprite`: the sprite provider then inlines that file for the inline markup instead of using the sprite. TYPO3 v12.4 is different: its `SvgSpriteIconProvider::generateInlineMarkup()` throws `InvalidArgumentException` (1603439146) when `source` is empty, so an extension that still supports v12.4 registers both `sprite` and `source` (the same file); the module menu then gets the inlined SVG, which follows the colour scheme as well. The reference extensions require `^14.3` and pin in a functional test that both markups of the module icon are `<svg><use>` of the sprite and never `<img>`.
 
 ### Accent colour
 
@@ -281,6 +281,7 @@ $EM_CONF[$_EXTKEY] = [
 5. **Backend modules** (if any; TYPO3 v14)
    - [ ] Every entry in `Configuration/Backend/Modules.php` has a `parent`: a core group, or another module of the extension for its third-level modules; no `netresearch_module` group
    - [ ] Module icon glyph in `currentColor`, accent turquoise `#2F99A4` (the reference extensions write it as `var(--nr-icon-accent, #2F99A4)`, see "Module Placement and Icon Registration")
+   - [ ] Module icon registered with `SvgSpriteIconProvider` and a `sprite` whose fragment is a `<symbol>` id in the SVG (plus `source` only while TYPO3 v12.4 is supported), not with `SvgIconProvider`
 
 6. **README.md**
    - [ ] Mentions "Netresearch DTT GmbH" in credits/author section
