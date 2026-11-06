@@ -7,9 +7,32 @@
 
 ## Extension Icon
 
-**Standard:** Use the Netresearch symbol-only logo as the extension icon.
-
 **File Location:** `Resources/Public/Icons/Extension.svg`
+
+The extension icon takes one of two forms. Both identify the package as a Netresearch extension; neither is a backend module icon (see "Module Icon").
+
+### Feature tile (TYPO3 v14 style)
+
+TYPO3 v14 draws its own extension icons as a filled square tile with a white glyph (for example `EXT:redirects/Resources/Public/Icons/Extension.svg`). A Netresearch extension for v14 may follow that style, as the reference extensions [netresearch/t3x-nr-textdb](https://github.com/netresearch/t3x-nr-textdb) and [netresearch/t3x-universal-messenger](https://github.com/netresearch/t3x-universal-messenger) do:
+
+- a rounded square tile filled in turquoise `#2F99A4`, covering the whole 64×64 viewBox;
+- the extension's feature glyph in white `#FFFFFF`, the same glyph its module icon uses;
+- an orange `#FF4D00` dot in the top-right corner as the Netresearch marker;
+- a `<title>` naming the extension and `Netresearch DTT GmbH`;
+- fixed colours as presentation attributes, no `currentColor`: the Extension Manager shows the file as an `<img>`, where `currentColor` has no backend colour to inherit.
+
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+    <title>TextDB - Netresearch DTT GmbH</title>
+    <path fill="#2F99A4" d="M8 0h48a8 8 0 0 1 8 8v48a8 8 0 0 1-8 8H8a8 8 0 0 1-8-8V8a8 8 0 0 1 8-8Z"/>
+    <path fill="#FFFFFF" d="..."/>                         <!-- feature glyph -->
+    <circle cx="51" cy="13" r="5" fill="#FF4D00"/>          <!-- Netresearch marker -->
+</svg>
+```
+
+### Symbol-only logo
+
+The Netresearch symbol-only `[n]` logo, unchanged. It suits an extension without a single feature to depict and every extension that has not moved to the tile.
 
 **SVG Source:**
 ```xml
@@ -39,24 +62,27 @@
 
 ## Module Icon
 
-The backend **module** icon should differ from the **extension** icon: the extension icon (`Extension.svg`, the symbol-only `[n]` logo) identifies the package, while the module icon identifies the *feature* (e.g. a passkey, a dashboard). Do not reuse the `[n]` logo for a feature module.
+The backend **module** icon should differ from the **extension** icon: the extension icon (`Extension.svg`, a feature tile or the `[n]` logo) identifies the package in the Extension Manager, while the module icon identifies the *feature* (e.g. a passkey, a dashboard) in the backend's own colours. Do not reuse the `[n]` logo or the filled tile for a feature module.
 
 **Standard:**
-- Use the feature glyph in brand turquoise **`#2F99A4`** combined with `currentColor`, so the icon adapts to the v14 light/dark backend.
-- Use SVG **presentation attributes** (`fill="#2F99A4"`, `fill="currentColor"`, `fill-rule="evenodd"`), **never the `style="..."` attribute** — the `style` attribute breaks under a hardened TYPO3 backend CSP (`style-src-attr`).
-- Register in `Configuration/Icons.php`. When the colored v12/v13 variant (e.g. teal tile) and the flat v14 variant differ, version-split the source via `Typo3Version`.
+- Draw the feature glyph in `currentColor` and its accent in brand turquoise, written as **`var(--nr-icon-accent, #2F99A4)`** (see "Accent colour" below), so the icon adapts to the v14 light/dark backend.
+- Use SVG **presentation attributes** (`fill="var(--nr-icon-accent, #2F99A4)"`, `fill="currentColor"`, `fill-rule="evenodd"`), **never the `style="..."` attribute** — the `style` attribute breaks under a hardened TYPO3 backend CSP (`style-src-attr`).
+- Wrap the paths in a `<symbol>` and register the icon with `SvgSpriteIconProvider` in `Configuration/Icons.php` (see "Icon registration" below). When the colored v12/v13 variant (e.g. teal tile) and the flat v14 variant differ, version-split the source via `Typo3Version`.
 
-**Example** (v14 flat variant — teal key + `currentColor` body):
+**Example** (v14 flat variant — `currentColor` glyph + turquoise accent):
 ```xml
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <path fill="#2F99A4" fill-rule="evenodd" d="..."/>      <!-- feature accent -->
-  <path fill="currentColor" d="..."/>                      <!-- adapts to light/dark -->
+  <symbol id="module-glossary" viewBox="0 0 64 64">
+    <path fill="currentColor" d="..."/>                                   <!-- adapts to light/dark -->
+    <path fill="var(--nr-icon-accent, #2F99A4)" fill-rule="evenodd" d="..."/>  <!-- feature accent -->
+  </symbol>
+  <use href="#module-glossary"/>
 </svg>
 ```
 
 ## Module Placement and Icon Registration
 
-Reference implementations: [netresearch/t3x-nr-textdb#226](https://github.com/netresearch/t3x-nr-textdb/pull/226) and [netresearch/t3x-universal-messenger#203](https://github.com/netresearch/t3x-universal-messenger/pull/203). Source references below are TYPO3 v14.3.10.
+Reference implementations: [netresearch/t3x-nr-textdb#226](https://github.com/netresearch/t3x-nr-textdb/pull/226) and [netresearch/t3x-universal-messenger#203](https://github.com/netresearch/t3x-universal-messenger/pull/203) (placement), [netresearch/t3x-nr-textdb#230](https://github.com/netresearch/t3x-nr-textdb/pull/230) and [netresearch/t3x-universal-messenger#205](https://github.com/netresearch/t3x-universal-messenger/pull/205) (sprite module icon). Source references below are TYPO3 v14.3.10.
 
 ### Placement: a core group, no Netresearch group
 
@@ -96,29 +122,41 @@ When moving a module out of a former Netresearch group, keep its identifier and 
 
 ### Icon registration
 
-The reference extensions register the module icon with `SvgIconProvider` and a plain SVG (no `<symbol>`):
+Register the module icon, like the record icons, with `SvgSpriteIconProvider`, the provider core uses for all of its own icons. The SVG wraps its paths in a `<symbol>` whose id is the icon identifier (core names its module sprites the same way, e.g. `module.svg#module-web`), followed by a `<use>` of that symbol so the file also renders when opened on its own:
 
 ```php
 // Configuration/Icons.php
-use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
+use TYPO3\CMS\Core\Imaging\IconProvider\SvgSpriteIconProvider;
 
 return [
     'extension-netresearch-textdb' => [
-        'provider' => SvgIconProvider::class,
-        'source'   => 'EXT:nr_textdb/Resources/Public/Icons/Module.svg',
+        'provider' => SvgSpriteIconProvider::class,
+        'sprite'   => 'EXT:nr_textdb/Resources/Public/Icons/Module.svg#extension-netresearch-textdb',
     ],
 ];
 ```
 
-How TYPO3 v14.3 renders a module icon depends on the markup the template asks for, not only on the provider:
+```xml
+<!-- Resources/Public/Icons/Module.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 64 64">
+    <symbol id="extension-netresearch-textdb" viewBox="0 0 64 64">
+        <path fill="currentColor" d="..."/>
+        <path fill="var(--nr-icon-accent, #2F99A4)" fill-rule="evenodd" d="..."/>
+    </symbol>
+    <use href="#extension-netresearch-textdb"/>
+</svg>
+```
 
-- **Inline markup.** The module menu (`EXT:backend/Resources/Private/Partials/Backend/ModuleMenu.fluid.html`), the submodule overview cards (`Templates/SubmoduleOverview/Cards.fluid.html`) and the user toolbar dropdown request `alternativeMarkupIdentifier="inline"`. `SvgIconProvider` then embeds the sanitized SVG in the page, so `fill="currentColor"` takes the surrounding text colour and follows the light/dark backend. The reference extensions pin in a functional test that the inline markup keeps both `fill="currentColor"` and `fill="var(--nr-icon-accent, #2F99A4)"`.
-- **Default markup.** A template without `alternativeMarkupIdentifier` gets `SvgIconProvider`'s default markup, `<img src="...">`. `currentColor` inside an `<img>` resolves in the image's own document, not in the backend, so the glyph does not follow the colour scheme. In v14.3 the About module's module cards (`Partials/About/Modules.fluid.html`) render module icons this way.
-- **Sprite provider.** `SvgSpriteIconProvider`, which core uses for all of its own icons, is registered with `'sprite' => 'EXT:<ext>/Resources/Public/Icons/<file>.svg#<symbol-id>'` and renders `<svg class="icon-color"><use xlink:href="..."/></svg>` in both markups (the inline markup embeds the file instead when a `source` is also given). `currentColor` inherits through `<use>`, so a sprite icon follows the colour scheme in the About module as well. The SVG must then wrap its paths in a `<symbol id="<symbol-id>">`, as the reference extensions' record icons do.
+Why the sprite provider: TYPO3 v14.3 renders an icon in the markup the template asks for, and the two SVG providers differ in one of them.
+
+- **Inline markup.** The module menu (`EXT:backend/Resources/Private/Partials/Backend/ModuleMenu.fluid.html`), the submodule overview cards (`Templates/SubmoduleOverview/Cards.fluid.html`) and the user toolbar dropdown request `alternativeMarkupIdentifier="inline"`. `SvgSpriteIconProvider::generateInlineMarkup()` returns `<svg class="icon-color"><use xlink:href="..."/></svg>` when no `source` is registered; `SvgIconProvider` embeds the sanitized SVG. Both follow the colour scheme here.
+- **Default markup.** A template without `alternativeMarkupIdentifier` gets the default markup. `SvgSpriteIconProvider` renders the same `<svg><use>`, and `currentColor` inherits through `<use>`. `SvgIconProvider` renders `<img src="...">`, where `currentColor` resolves in the image's own document, so the glyph does not follow the colour scheme. In v14.3 the About module's module cards (`Partials/About/Modules.fluid.html`) render module icons this way.
+
+Do not add a `source` next to `sprite`: the sprite provider then inlines that file for the inline markup instead of using the sprite. The reference extensions pin in a functional test that both markups of the module icon are `<svg><use>` of the sprite and never `<img>`.
 
 ### Accent colour
 
-The reference icons draw the feature glyph in `fill="currentColor"` and the turquoise accent as `fill="var(--nr-icon-accent, #2F99A4)"`, both as presentation attributes. Neither TYPO3 nor the reference extensions set `--nr-icon-accent`, so the accent always renders the fallback `#2F99A4`, the turquoise the "Module Icon" section names. The custom property gives a backend stylesheet one place to change the accent of icons embedded inline in the page; an icon rendered as `<img>` does not see the page's custom properties and always keeps the fallback.
+The reference icons draw the feature glyph in `fill="currentColor"` and the turquoise accent as `fill="var(--nr-icon-accent, #2F99A4)"`, both as presentation attributes. Neither TYPO3 nor the reference extensions set `--nr-icon-accent`, so the accent always renders the fallback `#2F99A4`, the turquoise the "Module Icon" section names. The custom property gives a backend stylesheet one place to change the accent of the module icons, which `<use>` draws in the page's context; an icon rendered as `<img>` does not see the page's custom properties and always keeps the fallback.
 
 ## Description Field Requirements
 
@@ -218,8 +256,8 @@ $EM_CONF[$_EXTKEY] = [
 
 1. **Extension Icon**
    - [ ] `Resources/Public/Icons/Extension.svg` exists
-   - [ ] Uses official Netresearch symbol-only logo
-   - [ ] Colors: Frame `#2F99A4`, Letter `#585961`
+   - [ ] Either the feature tile: turquoise `#2F99A4` tile, white `#FFFFFF` feature glyph, orange `#FF4D00` marker dot
+   - [ ] Or the official Netresearch symbol-only logo: Frame `#2F99A4`, Letter `#585961`
 
 2. **composer.json**
    - [ ] `name` starts with `netresearch/`
