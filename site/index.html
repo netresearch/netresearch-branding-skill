@@ -723,9 +723,9 @@
       </div>
 
       <div class="grid grid-2">
-        <div class="rule" data-issue-title="[Branding] TYPO3 extension icon" data-issue-body="Re: typo3-extension-branding.md — Resources/Public/Icons/Extension.svg, teal #2F99A4 frame + #585961 letter.%0A%0AQuestion / proposal:">
-          <div class="rule-head"><h4>Extension icon</h4><span class="rule-id">NB-01/02</span></div>
-          <p><code>Resources/Public/Icons/Extension.svg</code> — the symbol-only mark, teal frame <code>#2F99A4</code>, letter <code>#585961</code>. No PNG on v12+ (NB-03).</p>
+        <div class="rule" data-issue-title="[Branding] TYPO3 extension icon" data-issue-body="Re: typo3-extension-branding.md — Resources/Public/Icons/Extension.svg, TYPO3 v14 feature tile or the symbol-only mark.%0A%0AQuestion / proposal:">
+          <div class="rule-head"><h4>Extension icon</h4><span class="rule-id">NB-01/02/34</span></div>
+          <p><code>Resources/Public/Icons/Extension.svg</code> — either the TYPO3 v14 feature tile (teal <code>#2F99A4</code> tile, white feature glyph, orange <code>#FF4D00</code> marker dot) or the symbol-only mark (teal frame <code>#2F99A4</code>, letter <code>#585961</code>). No PNG on v12+ (NB-03).</p>
         </div>
         <div class="rule" data-issue-title="[Branding] composer.json vendor & author" data-issue-body="Re: typo3-extension-branding.md — composer.json vendor netresearch/, author homepage netresearch.de, email typo3@netresearch.de.%0A%0AQuestion / proposal:">
           <div class="rule-head"><h4>composer.json</h4><span class="rule-id">NB-09/10</span></div>
@@ -744,7 +744,7 @@
       <div class="rule" data-issue-title="[Branding] README badge ordering" data-issue-body="Re: typo3-extension-branding.md 'README Badge Standards' — 4-row badge order (CI/Quality, Security, Standards, TER).%0A%0AQuestion / proposal:">
         <div class="rule-head"><h4>README badge ordering</h4><span class="rule-id">Standard</span></div>
         <p>Four rows, in order: <strong>1)</strong> CI/Quality (CI, codecov) · <strong>2)</strong> Security (OpenSSF Scorecard, Best Practices, SLSA 3) · <strong>3)</strong> Standards (PHPStan, PHP, TYPO3, License, Release, Covenant) · <strong>4)</strong> TER badges if published.</p>
-        <span class="src">references/typo3-extension-branding.md:253–344</span>
+        <span class="src">references/typo3-extension-branding.md:291–382</span>
       </div>
     </div>
   </section>
@@ -1038,7 +1038,7 @@
       ["NB-18", "warning", "Published HTML pages include the Netresearch logo"],
       ["NB-19", "warning", "Page footer includes exact 'Netresearch DTT GmbH'"],
       ["NB-20", "error", "Repo description ends '- by Netresearch' (LLM)"],
-      ["NB-21", "warning", "Extension icon is the [n] mark, module icons show the feature (LLM)"],
+      ["NB-21", "warning", "Extension icon is the feature tile or the [n] mark, module icons show the feature (LLM)"],
       ["NB-22", "warning", "Brand colors used consistently (LLM)"],
       ["NB-23", "error", "README properly credits Netresearch (LLM)"],
       ["NB-24", "info", "[n] logo used where appropriate (LLM)"],
@@ -1076,7 +1076,7 @@
         body: "logo.md:41 states #2F99A4 and #585961 are the 'only valid brand color values for the symbol' and that any deviation 'even close approximations' is a brand-debt violation. But the canonical asset shipped fill=\"#2999a4\" (not #2F99A4) and fill=\"#595a62\" (not #585961). The source of truth violated its own rule. Both that asset and assets/markdown-pdf-logo.svg, which carried the same two values, now use #2F99A4 and #585961; the geometry is unchanged. Build/Scripts/check-brand-colours.py fails CI when a tracked CSS, SCSS, SVG, HTML, Markdown, JSON or YAML file uses a near miss of a brand colour again; its header lists the notations and places it reads.",
         ask: "Done. Kept as the record." },
       { id: "F4", kind: "Inconsistency", title: "Two different viewBoxes for the same logo",
-        cite: "references/logo-svg.md:17 (-75 -75 440 440) · references/typo3-extension-branding.md:17 (0 0 300 300)",
+        cite: "references/logo-svg.md:17 (-75 -75 440 440) · references/typo3-extension-branding.md:40 (0 0 300 300)",
         body: "The logo-svg.md fallback uses viewBox='-75 -75 440 440' (padded), while the TYPO3 extension-icon snippet uses viewBox='0 0 300 300' (tight). Same paths, different coordinate framing — the icon gets different visual padding depending on which snippet an implementer copies.",
         ask: "Document which viewBox is canonical for which context (padded for standalone, tight for the BE icon?) or unify them." },
       { id: "F5", kind: "Ambiguity", title: "'Recommended' logo size is given two different numbers",
@@ -1100,7 +1100,7 @@
         body: "The rule 'accent orange is highlight-only and must not dominate surfaces' is qualitative — no percentage, area budget, or element allow-list. Two reviewers can disagree on whether a layout complies, and LLM checkpoints NB-22/NB-25 have no objective bar to test against.",
         ask: "Add a concrete heuristic (e.g. 'orange <= ~10% of visible surface; never a section/background fill; allowed on borders, small CTAs, badges')." },
       { id: "F10", kind: "Resolved", resolved: true, title: "License guidance was inconsistent across the skill",
-        cite: "SKILL.md \u00a7 Licensing by artifact type \u00b7 typo3-extension-branding.md:177 \u00b7 README-branding.md:76",
+        cite: "SKILL.md \u00a7 Licensing by artifact type \u00b7 typo3-extension-branding.md:215 \u00b7 README-branding.md:76",
         body: "TYPO3 extension branding recommended AGPL-3.0-or-later (or GPL-2.0-or-later) while the skill repo and README-branding examples use split MIT + CC-BY-SA-4.0, with no statement of which applies to what. SKILL.md now carries the policy by artifact type: TYPO3 extensions AGPL-3.0-or-later (GPL-2.0-or-later beside GPL-2.0-only code, since TYPO3 core is GPL-2.0-or-later and an extension inherits that); skills, libraries, CLIs and internal tools split MIT for code and CC-BY-SA-4.0 for content, SPDX (MIT AND CC-BY-SA-4.0); brand assets CC-BY-SA-4.0 plus the trademark rules in logo.md, because a licence does not permit recolouring. Both reference files point at that table.",
         ask: "Done. Kept as the record of what was ambiguous." },
       { id: "F11", kind: "Minor inconsistency", title: "Footer URL trailing slash: required vs optional",
