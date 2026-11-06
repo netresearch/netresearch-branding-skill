@@ -921,5 +921,43 @@
         "A: HOLD — fix local-navigation density, clipped focus and the NoJS palette, then compare jointly.\nB: ACCEPT_SCOPED — supplied evidence supports the requested scope, without full WCAG or publication claims.\nHOSTED: PRESERVE_NATIVE — keep the official TYPO3 theme.\n_A_: ACCEPT_SCOPED"
       ]
     }
+  },
+  {
+    "name": "typo3-backend-module-placement",
+    "prompt": "Write Configuration/Backend/Modules.php and Configuration/Icons.php for a new Netresearch TYPO3 extension 'nr_glossary' (requires TYPO3 ^14.3). It has one backend module in which editors maintain glossary terms shown on the website, and a module icon Resources/Public/Icons/Module.svg. Also give the Module.svg markup.",
+    "assertions": [
+      {
+        "type": "content_regex",
+        "value": "'parent'[[:space:]]*=>[[:space:]]*'content'",
+        "description": "Places the module in the core content group by its v14 identifier"
+      },
+      {
+        "type": "must_not",
+        "value": "'netresearch_module'[[:space:]]*=>|'parent'[[:space:]]*=>[[:space:]]*'netresearch_module'",
+        "description": "Registers no Netresearch top-level group and does not attach the module to one"
+      },
+      {
+        "type": "content_contains",
+        "value": "IconProvider::class",
+        "description": "Registers the module icon with an SVG icon provider in Configuration/Icons.php"
+      },
+      {
+        "type": "content_contains",
+        "value": "fill=\"currentColor\"",
+        "description": "Draws the glyph in currentColor so it follows the backend colour scheme"
+      },
+      {
+        "type": "content_contains",
+        "value": "nr-icon-accent, #2F99A4",
+        "description": "Draws the accent as var(--nr-icon-accent, #2F99A4)"
+      }
+    ],
+    "samples": {
+      "passing": "Configuration/Backend/Modules.php:\nreturn [\n    'netresearch_glossary' => [\n        'parent' => 'content',\n        'access' => 'user',\n        'iconIdentifier' => 'extension-netresearch-glossary',\n        'path' => '/module/netresearch/glossary',\n    ],\n];\n\nConfiguration/Icons.php:\nreturn [\n    'extension-netresearch-glossary' => [\n        'provider' => SvgIconProvider::class,\n        'source' => 'EXT:nr_glossary/Resources/Public/Icons/Module.svg',\n    ],\n];\n\nModule.svg:\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><path fill=\"currentColor\" d=\"...\"/><path fill=\"var(--nr-icon-accent, #2F99A4)\" d=\"...\"/></svg>\n\nNo own top-level group: the module sits in the core group, so no netresearch_module entry is needed.",
+      "failing": [
+        "Configuration/Backend/Modules.php:\nreturn [\n    'netresearch_module' => [\n        'labels' => 'LLL:EXT:nr_glossary/Resources/Private/Language/locallang_mod.xlf',\n        'position' => ['after' => 'content'],\n    ],\n    'netresearch_glossary' => [\n        'parent' => 'netresearch_module',\n        'iconIdentifier' => 'extension-netresearch-glossary',\n    ],\n];\n\nConfiguration/Icons.php:\nreturn [\n    'extension-netresearch-glossary' => [\n        'provider' => SvgIconProvider::class,\n        'source' => 'EXT:nr_glossary/Resources/Public/Icons/Module.svg',\n    ],\n];\n\nModule.svg:\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><path fill=\"currentColor\" d=\"...\"/><path fill=\"var(--nr-icon-accent, #2F99A4)\" d=\"...\"/></svg>",
+        "Configuration/Backend/Modules.php:\nreturn [\n    'netresearch_glossary' => [\n        'parent' => 'content',\n        'iconIdentifier' => 'extension-netresearch-glossary',\n    ],\n];\n\nConfiguration/Icons.php:\nreturn [\n    'extension-netresearch-glossary' => [\n        'provider' => SvgIconProvider::class,\n        'source' => 'EXT:nr_glossary/Resources/Public/Icons/Module.svg',\n    ],\n];\n\nModule.svg:\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><path fill=\"#585961\" d=\"...\"/><path fill=\"#2F99A4\" d=\"...\"/></svg>"
+      ]
+    }
   }
 ]
