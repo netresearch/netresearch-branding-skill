@@ -60,7 +60,7 @@ Reference implementations: [netresearch/t3x-nr-textdb#226](https://github.com/ne
 
 ### Placement: a core group, no Netresearch group
 
-A Netresearch extension does not register a top-level backend module group of its own (formerly `netresearch_module` with `labels`, `iconIdentifier` and `position`, but no `parent`). Each module is a submodule of the core group whose task it serves, like the modules of any other extension:
+A Netresearch extension does not register a top-level backend module group of its own (formerly `netresearch_module` with `labels`, `iconIdentifier` and `position`, but no `parent`). Each module is a submodule of the core group whose task it serves, like the modules of any other extension; a module's own third-level modules keep that module as their `parent`:
 
 ```php
 // Configuration/Backend/Modules.php
@@ -241,7 +241,7 @@ $EM_CONF[$_EXTKEY] = [
    - [ ] Contains full license text matching composer.json license
 
 5. **Backend modules** (if any)
-   - [ ] Every entry in `Configuration/Backend/Modules.php` has a `parent` naming a core group; no `netresearch_module` group
+   - [ ] Every entry in `Configuration/Backend/Modules.php` has a `parent`: a core group, or another module of the extension for its third-level modules; no `netresearch_module` group
    - [ ] Module icon glyph in `currentColor`, accent `var(--nr-icon-accent, #2F99A4)` (see "Module Placement and Icon Registration")
 
 6. **README.md**
