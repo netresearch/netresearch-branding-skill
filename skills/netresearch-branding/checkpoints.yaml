@@ -166,13 +166,14 @@ mechanical:
   # shared group used the identifier `netresearch_module`; this check fails
   # when an extension that installs on v14 still declares it. It is narrow on
   # purpose: "every entry has a `parent`" needs a PHP parser, because
-  # Modules.php may build its array in code. Guards: composer.json must require
-  # typo3/cms-core with a constraint naming 14 (a v13-only extension is out of
-  # scope), and an extension without Modules.php is N/A.
+  # Modules.php may build its array in code. Guards: the `require` entry for
+  # typo3/cms-core must name 14 other than as an upper bound `<14` (a v13-only
+  # extension is out of scope; `conflict` is not read), and an extension
+  # without Modules.php is N/A.
   - id: NB-35
     type: script
     command: |
-      grep -qE '"typo3/cms-core"[[:space:]]*:[[:space:]]*"([^"]*[^"0-9.])?14([^"0-9][^"]*)?"' composer.json 2>/dev/null || exit 0
+      jq -e '(.require["typo3/cms-core"] // "") | test("(^|[^<0-9.])14([^0-9]|$)")' composer.json > /dev/null 2>&1 || exit 0
       test -f Configuration/Backend/Modules.php || exit 0
       ! grep -qE "['\"]netresearch_module['\"][[:space:]]*=>" Configuration/Backend/Modules.php
     severity: warning

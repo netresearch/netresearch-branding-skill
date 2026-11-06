@@ -928,7 +928,7 @@
     "assertions": [
       {
         "type": "content_regex",
-        "value": "'parent'[[:space:]]*=>[[:space:]]*'content'",
+        "value": "['\"]parent['\"][[:space:]]*=>[[:space:]]*['\"]content['\"]",
         "description": "Places the module in the core content group by its v14 identifier"
       },
       {
