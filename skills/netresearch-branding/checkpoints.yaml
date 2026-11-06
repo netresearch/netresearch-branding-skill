@@ -419,10 +419,15 @@ llm_reviews:
          var(--nr-icon-accent, #2F99A4)), so it adapts to the light/dark
          backend. A coloured v12/v13 variant selected via Typo3Version in
          Configuration/Icons.php is allowed to differ.
+      6. Its entry in Configuration/Icons.php uses SvgSpriteIconProvider with a
+         `sprite` whose fragment is the id of a <symbol> in that SVG. An entry
+         with SvgIconProvider renders as <img> outside the module menu, where
+         currentColor does not follow the backend scheme.
 
       Report FAIL if the extension icon is neither form (for example a bare
-      glyph without tile, or a tile without the marker dot), or if a module
-      icon reuses the [n] mark or the filled tile.
+      glyph without tile, or a tile without the marker dot), if a module
+      icon reuses the [n] mark or the filled tile, or if a module icon is
+      registered with SvgIconProvider.
     severity: warning
     desc: "Extension icon is the feature tile or the [n] mark; module icons show the feature (references/typo3-extension-branding.md)"
 
