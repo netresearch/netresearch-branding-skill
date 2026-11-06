@@ -933,7 +933,7 @@
       },
       {
         "type": "must_not",
-        "value": "'netresearch_module'[[:space:]]*=>|'parent'[[:space:]]*=>[[:space:]]*'netresearch_module'",
+        "value": "['\"]netresearch_module['\"][[:space:]]*=>|['\"]parent['\"][[:space:]]*=>[[:space:]]*['\"]netresearch_module['\"]",
         "description": "Registers no Netresearch top-level group and does not attach the module to one"
       },
       {
@@ -948,15 +948,16 @@
       },
       {
         "type": "content_contains",
-        "value": "nr-icon-accent, #2F99A4",
-        "description": "Draws the accent as var(--nr-icon-accent, #2F99A4)"
+        "value": "#2F99A4",
+        "description": "Draws the accent in turquoise #2F99A4 (as var(--nr-icon-accent, #2F99A4) in the reference extensions)"
       }
     ],
     "samples": {
       "passing": "Configuration/Backend/Modules.php:\nreturn [\n    'netresearch_glossary' => [\n        'parent' => 'content',\n        'access' => 'user',\n        'iconIdentifier' => 'extension-netresearch-glossary',\n        'path' => '/module/netresearch/glossary',\n    ],\n];\n\nConfiguration/Icons.php:\nreturn [\n    'extension-netresearch-glossary' => [\n        'provider' => SvgIconProvider::class,\n        'source' => 'EXT:nr_glossary/Resources/Public/Icons/Module.svg',\n    ],\n];\n\nModule.svg:\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><path fill=\"currentColor\" d=\"...\"/><path fill=\"var(--nr-icon-accent, #2F99A4)\" d=\"...\"/></svg>\n\nNo own top-level group: the module sits in the core group, so no netresearch_module entry is needed.",
       "failing": [
         "Configuration/Backend/Modules.php:\nreturn [\n    'netresearch_module' => [\n        'labels' => 'LLL:EXT:nr_glossary/Resources/Private/Language/locallang_mod.xlf',\n        'position' => ['after' => 'content'],\n    ],\n    'netresearch_glossary' => [\n        'parent' => 'netresearch_module',\n        'iconIdentifier' => 'extension-netresearch-glossary',\n    ],\n];\n\nConfiguration/Icons.php:\nreturn [\n    'extension-netresearch-glossary' => [\n        'provider' => SvgIconProvider::class,\n        'source' => 'EXT:nr_glossary/Resources/Public/Icons/Module.svg',\n    ],\n];\n\nModule.svg:\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><path fill=\"currentColor\" d=\"...\"/><path fill=\"var(--nr-icon-accent, #2F99A4)\" d=\"...\"/></svg>",
-        "Configuration/Backend/Modules.php:\nreturn [\n    'netresearch_glossary' => [\n        'parent' => 'content',\n        'iconIdentifier' => 'extension-netresearch-glossary',\n    ],\n];\n\nConfiguration/Icons.php:\nreturn [\n    'extension-netresearch-glossary' => [\n        'provider' => SvgIconProvider::class,\n        'source' => 'EXT:nr_glossary/Resources/Public/Icons/Module.svg',\n    ],\n];\n\nModule.svg:\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><path fill=\"#585961\" d=\"...\"/><path fill=\"#2F99A4\" d=\"...\"/></svg>"
+        "Configuration/Backend/Modules.php:\nreturn [\n    'netresearch_glossary' => [\n        'parent' => 'content',\n        'iconIdentifier' => 'extension-netresearch-glossary',\n    ],\n];\n\nConfiguration/Icons.php:\nreturn [\n    'extension-netresearch-glossary' => [\n        'provider' => SvgIconProvider::class,\n        'source' => 'EXT:nr_glossary/Resources/Public/Icons/Module.svg',\n    ],\n];\n\nModule.svg:\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><path fill=\"#585961\" d=\"...\"/><path fill=\"#2F99A4\" d=\"...\"/></svg>",
+        "Configuration/Backend/Modules.php:\nreturn [\n    \"netresearch_module\" => [\n        \"labels\" => \"LLL:EXT:nr_glossary/Resources/Private/Language/locallang_mod.xlf\",\n    ],\n    'netresearch_glossary' => [\n        'parent' => 'content',\n        'iconIdentifier' => 'extension-netresearch-glossary',\n    ],\n];\n\nConfiguration/Icons.php:\nreturn [\n    'extension-netresearch-glossary' => [\n        'provider' => SvgIconProvider::class,\n        'source' => 'EXT:nr_glossary/Resources/Public/Icons/Module.svg',\n    ],\n];\n\nModule.svg:\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><path fill=\"currentColor\" d=\"...\"/><path fill=\"var(--nr-icon-accent, #2F99A4)\" d=\"...\"/></svg>"
       ]
     }
   }

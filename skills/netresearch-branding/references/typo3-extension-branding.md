@@ -92,7 +92,7 @@ Which identifier to write in `'parent'`:
 - Extension requires `^14.3` only: the v14 identifier, e.g. `'parent' => 'content'` (the reference extensions).
 - Extension supports `^13.4 || ^14.3`: the v13 identifier, e.g. `'parent' => 'web'`. TYPO3 v13.4 knows only `web`, and v14 rewrites a `parent`, `position.before` or `position.after` that names an alias to the v14 identifier before it builds the module tree (`ModuleFactory::adaptAliasMappingFromModuleConfiguration()`, called from `EXT:backend` `ServiceProvider::getModuleRegistry()`).
 
-When moving a module out of a former Netresearch group, keep its identifier and `path`: backend group permissions and bookmarks refer to them. Remove the group entry, its labels file (`locallang_mod.xlf` and translations) and its icon registration, and update every document that names the "Netresearch" group (README, `Documentation/`, screenshots).
+When moving a module out of a former Netresearch group, keep its identifier and `path`: backend group permissions and bookmarks refer to them. Remove the extension's own copy of the group entry, its labels file (`locallang_mod.xlf` and translations) and its icon registration (each Netresearch extension registered its own copy, so removing one does not hide the modules of another), and update every document that names the "Netresearch" group (README, `Documentation/`, screenshots).
 
 ### Icon registration
 
@@ -118,7 +118,7 @@ How TYPO3 v14.3 renders a module icon depends on the markup the template asks fo
 
 ### Accent colour
 
-The reference icons draw the feature glyph in `fill="currentColor"` and the turquoise accent as `fill="var(--nr-icon-accent, #2F99A4)"`, both as presentation attributes. Neither TYPO3 nor the reference extensions set `--nr-icon-accent`, so the accent always renders the fallback `#2F99A4`, the turquoise the "Module Icon" section names. The custom property gives a stylesheet one place to change the accent of every icon that uses it.
+The reference icons draw the feature glyph in `fill="currentColor"` and the turquoise accent as `fill="var(--nr-icon-accent, #2F99A4)"`, both as presentation attributes. Neither TYPO3 nor the reference extensions set `--nr-icon-accent`, so the accent always renders the fallback `#2F99A4`, the turquoise the "Module Icon" section names. The custom property gives a backend stylesheet one place to change the accent of icons embedded inline in the page; an icon rendered as `<img>` does not see the page's custom properties and always keeps the fallback.
 
 ## Description Field Requirements
 
@@ -240,9 +240,9 @@ $EM_CONF[$_EXTKEY] = [
    - [ ] LICENSE or LICENSE.txt exists in extension root
    - [ ] Contains full license text matching composer.json license
 
-5. **Backend modules** (if any)
+5. **Backend modules** (if any; TYPO3 v14)
    - [ ] Every entry in `Configuration/Backend/Modules.php` has a `parent`: a core group, or another module of the extension for its third-level modules; no `netresearch_module` group
-   - [ ] Module icon glyph in `currentColor`, accent `var(--nr-icon-accent, #2F99A4)` (see "Module Placement and Icon Registration")
+   - [ ] Module icon glyph in `currentColor`, accent turquoise `#2F99A4` (the reference extensions write it as `var(--nr-icon-accent, #2F99A4)`, see "Module Placement and Icon Registration")
 
 6. **README.md**
    - [ ] Mentions "Netresearch DTT GmbH" in credits/author section
