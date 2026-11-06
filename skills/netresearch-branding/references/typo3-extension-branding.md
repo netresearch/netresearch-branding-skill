@@ -54,6 +54,72 @@ The backend **module** icon should differ from the **extension** icon: the exten
 </svg>
 ```
 
+## Module Placement and Icon Registration
+
+Reference implementations: [netresearch/t3x-nr-textdb#226](https://github.com/netresearch/t3x-nr-textdb/pull/226) and [netresearch/t3x-universal-messenger#203](https://github.com/netresearch/t3x-universal-messenger/pull/203). Source references below are TYPO3 v14.3.10.
+
+### Placement: a core group, no Netresearch group
+
+A Netresearch extension does not register a top-level backend module group of its own (formerly `netresearch_module` with `labels`, `iconIdentifier` and `position`, but no `parent`). Each module is a submodule of the core group whose task it serves, like the modules of any other extension; a module's own third-level modules keep that module as their `parent`:
+
+```php
+// Configuration/Backend/Modules.php
+return [
+    'netresearch_textdb' => [
+        'parent'         => 'content',
+        'access'         => 'user',
+        'iconIdentifier' => 'extension-netresearch-textdb',
+        'path'           => '/module/netresearch/textdb',
+        // labels, routes, ...
+    ],
+];
+```
+
+The top-level groups are defined in `EXT:core/Configuration/Backend/Modules.php`. TYPO3 v14 renamed three of them and declares the v13 name as an alias (`'aliases' => ['web']` and so on); `site` and `system` kept their names:
+
+| v14 identifier | v13 identifier | Core modules in it (examples) |
+|---|---|---|
+| `content` | `web` (alias in v14) | `web_layout`, `records`, `content_status` |
+| `media` | `file` (alias in v14) | modules that navigate the file storage tree |
+| `site` | `site` | `site_configuration`, `pagetsconfig`, `link_management` |
+| `admin` | `tools` (alias in v14) | admin tools; `integrations` is a submodule of `admin` |
+| `system` | `system` | `content_security_policy` |
+
+`user` and `help` are top-level groups as well, but are not rendered in the module menu (`renderInModuleMenu => false`).
+
+Which identifier to write in `'parent'`:
+
+- Extension requires `^14.3` only: the v14 identifier, e.g. `'parent' => 'content'` (the reference extensions).
+- Extension supports `^13.4 || ^14.3`: the v13 identifier, e.g. `'parent' => 'web'`. TYPO3 v13.4 knows only `web`, and v14 rewrites a `parent`, `position.before` or `position.after` that names an alias to the v14 identifier before it builds the module tree (`ModuleFactory::adaptAliasMappingFromModuleConfiguration()`, called from `EXT:backend` `ServiceProvider::getModuleRegistry()`).
+
+When moving a module out of a former Netresearch group, keep its identifier and `path`: backend group permissions and bookmarks refer to them. Remove the extension's own copy of the group entry, its labels file (`locallang_mod.xlf` and translations) and its icon registration (each Netresearch extension registered its own copy, so removing one does not hide the modules of another), and update every document that names the "Netresearch" group (README, `Documentation/`, screenshots).
+
+### Icon registration
+
+The reference extensions register the module icon with `SvgIconProvider` and a plain SVG (no `<symbol>`):
+
+```php
+// Configuration/Icons.php
+use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
+
+return [
+    'extension-netresearch-textdb' => [
+        'provider' => SvgIconProvider::class,
+        'source'   => 'EXT:nr_textdb/Resources/Public/Icons/Module.svg',
+    ],
+];
+```
+
+How TYPO3 v14.3 renders a module icon depends on the markup the template asks for, not only on the provider:
+
+- **Inline markup.** The module menu (`EXT:backend/Resources/Private/Partials/Backend/ModuleMenu.fluid.html`), the submodule overview cards (`Templates/SubmoduleOverview/Cards.fluid.html`) and the user toolbar dropdown request `alternativeMarkupIdentifier="inline"`. `SvgIconProvider` then embeds the sanitized SVG in the page, so `fill="currentColor"` takes the surrounding text colour and follows the light/dark backend. The reference extensions pin in a functional test that the inline markup keeps both `fill="currentColor"` and `fill="var(--nr-icon-accent, #2F99A4)"`.
+- **Default markup.** A template without `alternativeMarkupIdentifier` gets `SvgIconProvider`'s default markup, `<img src="...">`. `currentColor` inside an `<img>` resolves in the image's own document, not in the backend, so the glyph does not follow the colour scheme. In v14.3 the About module's module cards (`Partials/About/Modules.fluid.html`) render module icons this way.
+- **Sprite provider.** `SvgSpriteIconProvider`, which core uses for all of its own icons, is registered with `'sprite' => 'EXT:<ext>/Resources/Public/Icons/<file>.svg#<symbol-id>'` and renders `<svg class="icon-color"><use xlink:href="..."/></svg>` in both markups (the inline markup embeds the file instead when a `source` is also given). `currentColor` inherits through `<use>`, so a sprite icon follows the colour scheme in the About module as well. The SVG must then wrap its paths in a `<symbol id="<symbol-id>">`, as the reference extensions' record icons do.
+
+### Accent colour
+
+The reference icons draw the feature glyph in `fill="currentColor"` and the turquoise accent as `fill="var(--nr-icon-accent, #2F99A4)"`, both as presentation attributes. Neither TYPO3 nor the reference extensions set `--nr-icon-accent`, so the accent always renders the fallback `#2F99A4`, the turquoise the "Module Icon" section names. The custom property gives a backend stylesheet one place to change the accent of icons embedded inline in the page; an icon rendered as `<img>` does not see the page's custom properties and always keeps the fallback.
+
 ## Description Field Requirements
 
 **CRITICAL:** Both `composer.json` and `ext_emconf.php` description fields MUST mention the company name.
@@ -174,7 +240,11 @@ $EM_CONF[$_EXTKEY] = [
    - [ ] LICENSE or LICENSE.txt exists in extension root
    - [ ] Contains full license text matching composer.json license
 
-5. **README.md**
+5. **Backend modules** (if any; TYPO3 v14)
+   - [ ] Every entry in `Configuration/Backend/Modules.php` has a `parent`: a core group, or another module of the extension for its third-level modules; no `netresearch_module` group
+   - [ ] Module icon glyph in `currentColor`, accent turquoise `#2F99A4` (the reference extensions write it as `var(--nr-icon-accent, #2F99A4)`, see "Module Placement and Icon Registration")
+
+6. **README.md**
    - [ ] Mentions "Netresearch DTT GmbH" in credits/author section
    - [ ] Links to https://www.netresearch.de/
    - [ ] Follows badge ordering standard (see below)

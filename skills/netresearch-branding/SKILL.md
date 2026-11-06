@@ -144,6 +144,7 @@ Applies only when a request explicitly asks to combine Netresearch with a second
 - `author_company`: `Netresearch DTT GmbH`
 - Description suffix: `- by Netresearch`
 - Contact: `typo3@netresearch.de`
+- Backend modules: `'parent'` is a core group (v14 `content`, …), no own Netresearch group; icon registration in `references/typo3-extension-branding.md`
 
 ## Brand Assets
 

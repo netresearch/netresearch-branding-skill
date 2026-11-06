@@ -744,7 +744,7 @@
       <div class="rule" data-issue-title="[Branding] README badge ordering" data-issue-body="Re: typo3-extension-branding.md 'README Badge Standards' — 4-row badge order (CI/Quality, Security, Standards, TER).%0A%0AQuestion / proposal:">
         <div class="rule-head"><h4>README badge ordering</h4><span class="rule-id">Standard</span></div>
         <p>Four rows, in order: <strong>1)</strong> CI/Quality (CI, codecov) · <strong>2)</strong> Security (OpenSSF Scorecard, Best Practices, SLSA 3) · <strong>3)</strong> Standards (PHPStan, PHP, TYPO3, License, Release, Covenant) · <strong>4)</strong> TER badges if published.</p>
-        <span class="src">references/typo3-extension-branding.md:183–274</span>
+        <span class="src">references/typo3-extension-branding.md:253–344</span>
       </div>
     </div>
   </section>
@@ -1100,7 +1100,7 @@
         body: "The rule 'accent orange is highlight-only and must not dominate surfaces' is qualitative — no percentage, area budget, or element allow-list. Two reviewers can disagree on whether a layout complies, and LLM checkpoints NB-22/NB-25 have no objective bar to test against.",
         ask: "Add a concrete heuristic (e.g. 'orange <= ~10% of visible surface; never a section/background fill; allowed on borders, small CTAs, badges')." },
       { id: "F10", kind: "Resolved", resolved: true, title: "License guidance was inconsistent across the skill",
-        cite: "SKILL.md \u00a7 Licensing by artifact type \u00b7 typo3-extension-branding.md:111 \u00b7 README-branding.md:76",
+        cite: "SKILL.md \u00a7 Licensing by artifact type \u00b7 typo3-extension-branding.md:177 \u00b7 README-branding.md:76",
         body: "TYPO3 extension branding recommended AGPL-3.0-or-later (or GPL-2.0-or-later) while the skill repo and README-branding examples use split MIT + CC-BY-SA-4.0, with no statement of which applies to what. SKILL.md now carries the policy by artifact type: TYPO3 extensions AGPL-3.0-or-later (GPL-2.0-or-later beside GPL-2.0-only code, since TYPO3 core is GPL-2.0-or-later and an extension inherits that); skills, libraries, CLIs and internal tools split MIT for code and CC-BY-SA-4.0 for content, SPDX (MIT AND CC-BY-SA-4.0); brand assets CC-BY-SA-4.0 plus the trademark rules in logo.md, because a licence does not permit recolouring. Both reference files point at that table.",
         ask: "Done. Kept as the record of what was ambiguous." },
       { id: "F11", kind: "Minor inconsistency", title: "Footer URL trailing slash: required vs optional",

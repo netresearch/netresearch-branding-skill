@@ -54,7 +54,7 @@ mechanical:
     desc: "Extension icon must use Netresearch teal #2F99A4 (TYPO3 extensions only)"
 
   # NB-02 alone is satisfied by any teal SVG. The mark is pinned by the PAIR:
-  # the checklist in references/typo3-extension-branding.md (line 156) requires
+  # the checklist in references/typo3-extension-branding.md (line 222) requires
   # both brand colours — "Colors: Frame `#2F99A4`, Letter `#585961`" — and the
   # SVG source it prescribes (same file, lines 16-34) carries `.nr-frame`
   # `#2F99A4` and `.nr-letter` `#585961`. NB-11/NB-12 stay retired (see below);
@@ -158,6 +158,26 @@ mechanical:
   # to reconstruct the mark for generated output (SKILL.md lines 29/39,
   # references/logo.md lines 10/14) — never a path required of an audited
   # extension.
+
+  # === BACKEND MODULE PLACEMENT (TYPO3 v14) ===
+  # references/typo3-extension-branding.md, "Module Placement and Icon
+  # Registration": on TYPO3 v14 a Netresearch extension sorts its modules into
+  # a core group and registers no top-level group of its own. The former
+  # shared group used the identifier `netresearch_module`; this check fails
+  # when an extension that installs on v14 still declares it. It is narrow on
+  # purpose: "every entry has a `parent`" needs a PHP parser, because
+  # Modules.php may build its array in code. Guards: the `require` entry for
+  # typo3/cms-core must name 14 other than as an upper bound `<14` (a v13-only
+  # extension is out of scope; `conflict` is not read), and an extension
+  # without Modules.php is N/A.
+  - id: NB-35
+    type: script
+    command: |
+      jq -e '(.require["typo3/cms-core"] // "") | test("(^|[^<0-9.])14([^0-9]|$)")' composer.json > /dev/null 2>&1 || exit 0
+      test -f Configuration/Backend/Modules.php || exit 0
+      ! grep -qE "['\"]netresearch_module['\"][[:space:]]*=>" Configuration/Backend/Modules.php
+    severity: warning
+    desc: "On TYPO3 v14, backend modules sit in a core group; Configuration/Backend/Modules.php must not declare the netresearch_module group (TYPO3 extensions only)"
 
   # === EXT_EMCONF BRANDING (TYPO3-only) ===
   - id: NB-13
