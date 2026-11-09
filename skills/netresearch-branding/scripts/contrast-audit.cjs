@@ -38,6 +38,18 @@
  * contents (no box, but its text is painted; its own background is not painted and is
  * not composited). A single-line <select> is measured on the shown value in its own
  * colour.
+ * Text is measured as it renders: its colour and the backgrounds behind it composited, with
+ * the opacity of the element and each ancestor applied to its whole subtree. A gradient
+ * behind the text is measured at each of its colour stops, and the worst ratio is
+ * reported: the audit does not know which part of the gradient lies under the text, so a
+ * gradient whose light end the text never reaches still fails. Limits: an image layer
+ * (url(), image-set()) cannot be read, so the colours under it are measured and the element
+ * is counted in `textOnImageElements`; between two stops of different hue a gradient can
+ * render slightly darker than both, which is not measured; a gradient sized or positioned to
+ * cover part of its box is measured at all its stops; background-blend-mode is not applied;
+ * a gradient on a pseudo-element (::before, ::after) is not seen. Text inside a
+ * disabled control is exempt (SC 1.4.3 inactive components) and counted in
+ * `disabledTextExemptElements`.
  * Exits non-zero on a contrast failure (text or non-text) OR on a stylesheet/script
  * the page failed to load: an unstyled page has no contrast failures and would otherwise
  * pass for the wrong reason. Other failed requests (a template's placeholder images) are
@@ -1219,20 +1231,78 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     };
     const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
     const lum = (c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
-    // Composite the translucent layers instead of taking the first one at face value:
-    // rgba(255,255,255,.18) over a teal hero is NOT white, and reading it as white both
-    // invents failures and hides them.
-    const bgOf = (el) => {
-      const stack = [];
-      while (el) { const ecs = getComputedStyle(el); const c = ecs.display === 'contents' ? null : parse(ecs.backgroundColor);
-        if (c && c.a > 0) { stack.push(c); if (c.a >= 1) break; }
-        el = el.parentElement; }
-      let out = { r: 255, g: 255, b: 255 };
-      for (let i = stack.length - 1; i >= 0; i--) { const c = stack[i];
-        out = { r: c.r * c.a + out.r * (1 - c.a), g: c.g * c.a + out.g * (1 - c.a), b: c.b * c.a + out.b * (1 - c.a) }; }
-      return { r: Math.round(out.r), g: Math.round(out.g), b: Math.round(out.b), a: 1 };
-    };
     const ratio = (f, b) => { const l1 = lum(f), l2 = lum(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
+    // The colour a pixel of `el` renders as: each ancestor's background under what lies
+    // above it, each ancestor's opacity applied to its whole subtree (a group), over white.
+    // `top` is a colour drawn on that pixel; with `ownBg` false the pixel lies outside el's
+    // box (an outline, an outer ring), where el paints only `top`. Opacity 0 is left out:
+    // such a control is skipped, or measured where it was visible.
+    const paint = (el, top = null, ownBg = true) => {
+      let C = top ? { r: top.r * top.a, g: top.g * top.a, b: top.b * top.a } : { r: 0, g: 0, b: 0 };
+      let A = top ? top.a : 0;
+      for (let e = el, first = true; e; e = e.parentElement, first = false) {
+        const ecs = getComputedStyle(e);
+        if (ecs.display === 'contents') continue;
+        const c = first && !ownBg ? null : parse(ecs.backgroundColor);
+        if (c && c.a > 0) { C = { r: C.r + c.r * c.a * (1 - A), g: C.g + c.g * c.a * (1 - A), b: C.b + c.b * c.a * (1 - A) }; A += c.a * (1 - A); }
+        const o = Number.parseFloat(ecs.opacity);
+        if (o > 0 && o < 1) { C = { r: C.r * o, g: C.g * o, b: C.b * o }; A *= o; }
+      }
+      return { r: C.r + 255 * (1 - A), g: C.g + 255 * (1 - A), b: C.b + 255 * (1 - A), a: 1 };
+    };
+    // The comma-separated layers of a computed background-image, top layer first.
+    const layersOf = (img) => { const out = []; let depth = 0; let start = 0;
+      for (let i = 0; i < img.length; i++) { const ch = img[i];
+        if (ch === '(') depth++; else if (ch === ')') depth--;
+        else if (ch === ',' && depth === 0) { out.push(img.slice(start, i).trim()); start = i + 1; } }
+      out.push(img.slice(start).trim()); return out; };
+    const COLOUR_TOKEN = /(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\([^()]*\)|\bcurrentcolor\b|\btransparent\b/gi;
+    // The colour stops of a gradient layer. Points between two stops are not sampled: at a
+    // hard stop (`#000 50%, #fff 50%`) the gradient never shows the colours between them.
+    const gradientColours = (layer, current) => (layer.match(COLOUR_TOKEN) ?? [])
+      .map((t) => (/^currentcolor$/i.test(t) ? current : parse(t))).filter(Boolean);
+    // Text colour and background as they render, rounded to whole channels: the text colour
+    // and every background on the way up composited (translucent layers are not taken at
+    // face value: rgba(255,255,255,.18) over a teal hero is NOT white), each ancestor's
+    // opacity applied to its whole subtree as paint() does, over white. A gradient on the way
+    // up is measured at each colour it can show and the worst ratio kept: the audit does not
+    // know which part of the gradient lies under the text. An image layer (url(), image-set)
+    // cannot be read; the colours under it are measured and `image` reports that.
+    const over = (p, c) => ({ C: { r: p.C.r + c.r * c.a * (1 - p.A), g: p.C.g + c.g * c.a * (1 - p.A), b: p.C.b + c.b * c.a * (1 - p.A) }, A: p.A + c.a * (1 - p.A) });
+    const fade = (p, o) => ({ C: { r: p.C.r * o, g: p.C.g * o, b: p.C.b * o }, A: p.A * o });
+    const onWhite = (p) => ({ r: Math.round(p.C.r + 255 * (1 - p.A)), g: Math.round(p.C.g + 255 * (1 - p.A)), b: Math.round(p.C.b + 255 * (1 - p.A)), a: 1 });
+    const textColours = (el, cs = getComputedStyle(el)) => {
+      const t = parse(cs.color) ?? { r: 0, g: 0, b: 0, a: 1 };
+      let pairs = [{ F: over({ C: { r: 0, g: 0, b: 0 }, A: 0 }, t), B: { C: { r: 0, g: 0, b: 0 }, A: 0 } }];
+      let image = false;
+      const under = (c) => { pairs = pairs.map((p) => ({ F: over(p.F, c), B: over(p.B, c) })); };
+      for (let e = el; e; e = e.parentElement) {
+        const ecs = e === el ? cs : getComputedStyle(e);
+        if (ecs.display === 'contents') continue;
+        if (ecs.backgroundImage !== 'none') for (const layer of layersOf(ecs.backgroundImage)) {
+          // An image under an opaque card is hidden and not counted.
+          if (!/gradient\(/i.test(layer)) { if (pairs.some((p) => p.B.A <= 0.9999)) image = true; continue; }
+          const cols = gradientColours(layer, parse(ecs.color));
+          // A candidate that is already opaque hides this layer and is not multiplied by it.
+          if (cols.length) { const prev = pairs; pairs = [];
+            for (const p of prev) { if (p.B.A > 0.9999) { pairs.push(p); continue; }
+              for (const c of cols) pairs.push({ F: over(p.F, c), B: over(p.B, c) }); } }
+        }
+        const c = parse(ecs.backgroundColor);
+        if (c && c.a > 0) under(c);
+        const o = Number.parseFloat(ecs.opacity);
+        if (o > 0 && o < 1) pairs = pairs.map((p) => ({ F: fade(p.F, o), B: fade(p.B, o) }));
+        // Nested gradients multiply the candidates; equal ones are kept once.
+        if (pairs.length > 1) { const m = new Map();
+          for (const p of pairs) m.set([p.F.C.r, p.F.C.g, p.F.C.b, p.F.A, p.B.C.r, p.B.C.g, p.B.C.b, p.B.A].map((v) => v.toFixed(2)).join(), p);
+          pairs = [...m.values()]; }
+      }
+      let worst = null;
+      for (const p of pairs) { const fg = onWhite(p.F); const bg = onWhite(p.B); const r = ratio(fg, bg);
+        if (!worst || r < worst.r) worst = { fg, bg, r }; }
+      return { ...worst, image };
+    };
+    const rgbOf = (c) => `rgb(${c.r}, ${c.g}, ${c.b})`;
 
     // --- APCA-W3 0.1.9, verbatim constants and steps (W3 licence) -------------
     const SA98G = { mainTRC: 2.4, sRco: 0.2126729, sGco: 0.7151522, sBco: 0.0721750,
@@ -1295,6 +1365,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     const apcaSeen = new Map();
     let smallest = Infinity;
     let exempt = 0;
+    let disabledExempt = 0;
+    // Text elements measured on a background image, once each, at rest or in a state.
+    const onImage = new Set();
     // <title>/<desc> inside an SVG are accessible names, never painted; script/style/
     // template hold source text. None of them have a rendered contrast.
     // An SVG element's className is an SVGAnimatedString; its baseVal is the class list.
@@ -1319,10 +1392,15 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     const shownText = (el) => (singleSelect(el) ? el.selectedOptions[0]?.textContent ?? '' : el.textContent).trim().slice(0, 40);
     // An option of a single-line <select> that shows a value, in the select's own colours,
     // is measured on the select; with no value shown, the options are measured themselves.
-    const isShownOption = (el, cs, bg) => {
+    const isShownOption = (el, cs, tc) => {
       const box = el.tagName === 'OPTION' && el.closest('select');
-      return !!box && singleSelect(box) && !!ownText(box) && getComputedStyle(box).color === cs.color && JSON.stringify(bgOf(box)) === JSON.stringify(bg);
+      if (!box || !singleSelect(box) || !ownText(box)) return false;
+      const bc = textColours(box);
+      return rgbOf(bc.fg) === rgbOf(tc.fg) && rgbOf(bc.bg) === rgbOf(tc.bg);
     };
+    // Text inside a disabled control is part of an inactive component, which SC 1.4.3
+    // exempts; a disabled button faded to opacity .5 is not a failure.
+    const inactive = (el) => !!el.closest(':disabled, [aria-disabled="true"]');
     // The text pass over a set of elements, each with its own text in its own colour. Run
     // on the whole page here, and later on the subtree of each control measured at another
     // scroll position, into the same results.
@@ -1335,31 +1413,33 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       // A style guide legitimately shows failing pairs as specimens. They must be declared
       // with data-contrast-demo, and the count is reported so the exemption is visible.
       if (el.closest('[data-contrast-demo]')) { exempt++; continue; }
+      if (inactive(el)) { disabledExempt++; continue; }
       const size = Number.parseFloat(cs.fontSize); smallest = Math.min(smallest, size);
-      const fg = parse(cs.color); const bg = bgOf(el); const r = ratio(fg, bg);
+      const tc = textColours(el, cs); const { fg, bg, r } = tc; const fgS = rgbOf(fg);
+      if (tc.image) onImage.add(el);
       const weight = Number.parseInt(cs.fontWeight, 10) || 400;
       const bold = weight >= 700; const large = size >= 24 || (size >= 18.66 && bold);
       const need = large ? 3 : 4.5;
-      if (isShownOption(el, cs, bg)) {
+      if (isShownOption(el, cs, tc)) {
         // Its failure is the select's; recorded so the state pass does not repeat it.
-        if (r < need) { if (!restFail.has(el)) restFail.set(el, new Set()); restFail.get(el).add(`${cs.color}|${bg.r},${bg.g},${bg.b}`); }
+        if (r < need) { if (!restFail.has(el)) restFail.set(el, new Set()); restFail.get(el).add(`${fgS}|${bg.r},${bg.g},${bg.b}`); }
         continue;
       }
       const lc = apcaLc(fg, bg);
       const lcNeed = apcaRequired(size, weight);
       if (lcNeed !== null && Math.abs(lc) < lcNeed) {
-        const akey = `apca|${el.tagName}.${cls(el)}|${cs.color}|${bg.r},${bg.g},${bg.b}|${size}`;
-        if (!apcaSeen.has(akey)) apcaSeen.set(akey, { element: describe(el), text: shownText(el), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, lc: +lc.toFixed(1), lcRequired: +lcNeed.toFixed(1), fontSize: size, fontWeight: cs.fontWeight });
+        const akey = `apca|${el.tagName}.${cls(el)}|${fgS}|${bg.r},${bg.g},${bg.b}|${size}`;
+        if (!apcaSeen.has(akey)) apcaSeen.set(akey, { element: describe(el), text: shownText(el), fg: fgS, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, lc: +lc.toFixed(1), lcRequired: +lcNeed.toFixed(1), fontSize: size, fontWeight: cs.fontWeight });
       }
       if (r < need) {
-        const key = `${el.tagName}.${cls(el)}|${cs.color}|${bg.r},${bg.g},${bg.b}`;
+        const key = `${el.tagName}.${cls(el)}|${fgS}|${bg.r},${bg.g},${bg.b}`;
         if (!restFail.has(el)) restFail.set(el, new Set());
-        restFail.get(el).add(`${cs.color}|${bg.r},${bg.g},${bg.b}`);
-        if (!seen.has(key)) seen.set(key, { element: describe(el), text: shownText(el), fg: cs.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
+        restFail.get(el).add(`${fgS}|${bg.r},${bg.g},${bg.b}`);
+        if (!seen.has(key)) seen.set(key, { element: describe(el), text: shownText(el), fg: fgS, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size });
       }
     } };
     window.__textIn(document.querySelectorAll('body *'));
-    window.__textSummary = () => ({ contrastFailures: [...seen.values()], apcaWarnings: [...apcaSeen.values()], demoExemptElements: exempt, smallestFontPx: +smallest.toFixed(1) });
+    window.__textSummary = () => ({ contrastFailures: [...seen.values()], apcaWarnings: [...apcaSeen.values()], demoExemptElements: exempt, disabledTextExemptElements: disabledExempt, textOnImageElements: onImage.size, smallestFontPx: +smallest.toFixed(1) });
     // Re-used by the interactive-state pass, which runs after this evaluate returns.
     // Measures ONE element — the one currently forced into `state`. The caller hands
     // it over by object reference (CDP DOM.resolveNode + Runtime.callFunctionOn), so
@@ -1381,19 +1461,20 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       for (const t of [el, ...el.querySelectorAll('*')]) {
         if (NOT_PAINTED.has(t.tagName.toUpperCase()) || !ownText(t)) continue;
         if (!window.__painted(t)) continue;
-        if (t.closest('[data-contrast-demo]')) continue;
+        if (t.closest('[data-contrast-demo]') || inactive(t)) continue;
         const ts = t === el ? cs : getComputedStyle(t);
-        const fg = parse(ts.color); const bg = bgOf(t); const r = ratio(fg, bg);
+        const { fg, bg, r, image } = textColours(t, ts); const fgS = rgbOf(fg);
+        if (image) onImage.add(t);
         const size = Number.parseFloat(ts.fontSize);
         const bold = (Number.parseInt(ts.fontWeight, 10) || 400) >= 700;
         const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
         // A text that fails the same way at rest is reported there already, not again here.
-        if (r >= need || restFail.get(t)?.has(`${ts.color}|${bg.r},${bg.g},${bg.b}`)) continue;
+        if (r >= need || restFail.get(t)?.has(`${fgS}|${bg.r},${bg.g},${bg.b}`)) continue;
         // Compared unrounded, so on a tie the control keeps the report (a select over its
         // shown option, which inherits the select's colours).
         if (r < worstRatio) {
           worstRatio = r;
-          worst = { state, element: describe(el) + (t === el ? '' : ` ${describe(t)}`), text: ownText(t).slice(0, 40), fg: ts.color, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
+          worst = { state, element: describe(el) + (t === el ? '' : ` ${describe(t)}`), text: ownText(t).slice(0, 40), fg: fgS, bg: `rgb(${bg.r}, ${bg.g}, ${bg.b})`, ratio: +r.toFixed(2), required: need, fontSize: size };
         }
       }
       return worst;
@@ -1402,24 +1483,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     // SC 1.4.11 for non-text parts. A translucent colour is measured as it renders,
     // composited over what lies behind it.
     const rgb = (c) => `rgb(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)})`;
-    // The colour a pixel of `el` renders as: each ancestor's background under what lies
-    // above it, each ancestor's opacity applied to its whole subtree (a group), over white.
-    // `top` is a colour drawn on that pixel; with `ownBg` false the pixel lies outside el's
-    // box (an outline, an outer ring), where el paints only `top`. Opacity 0 is left out:
-    // such a control is skipped, or measured where it was visible.
-    const paint = (el, top = null, ownBg = true) => {
-      let C = top ? { r: top.r * top.a, g: top.g * top.a, b: top.b * top.a } : { r: 0, g: 0, b: 0 };
-      let A = top ? top.a : 0;
-      for (let e = el, first = true; e; e = e.parentElement, first = false) {
-        const ecs = getComputedStyle(e);
-        if (ecs.display === 'contents') continue;
-        const c = first && !ownBg ? null : parse(ecs.backgroundColor);
-        if (c && c.a > 0) { C = { r: C.r + c.r * c.a * (1 - A), g: C.g + c.g * c.a * (1 - A), b: C.b + c.b * c.a * (1 - A) }; A += c.a * (1 - A); }
-        const o = Number.parseFloat(ecs.opacity);
-        if (o > 0 && o < 1) { C = { r: C.r * o, g: C.g * o, b: C.b * o }; A *= o; }
-      }
-      return { r: C.r + 255 * (1 - A), g: C.g + 255 * (1 - A), b: C.b + 255 * (1 - A), a: 1 };
-    };
+    // paint() is defined with the text helpers above.
     // Whether a control can be seen and used at all: a closed <dialog>, a display:none or
     // visibility:hidden ancestor, opacity 0 on the control or an ancestor (a custom switch's
     // input over its drawn track, a closed popover), a disabled control (also inside
@@ -1758,6 +1822,8 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       // Advisory only: readability, not conformance. Never gates the exit code.
       apcaWarnings: [...apcaSeen.values()],
       demoExemptElements: exempt,
+      disabledTextExemptElements: disabledExempt,
+      textOnImageElements: onImage.size,
       skipLink: !!document.querySelector('a[href^="#"].skip, a[href="#main"], a[href="#content"], a[href="#inhalt"]'),
       mainLandmark: !!document.querySelector('main'),
       navLabelled: [...document.querySelectorAll('nav')].every((n) => n.getAttribute('aria-label') || n.getAttribute('aria-labelledby')),
@@ -1837,6 +1903,9 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
   result.transparentControlsSkipped = await page.evaluate(() => window.__transparent.size);
   if (result.transparentControlsSkipped) {
     console.error(`note: ${result.transparentControlsSkipped} control(s) at opacity 0 at the top were not measured: not visible as the same element at any position the scroll pass reached (the window's own scroll, at most 200 viewports); a control a framework replaces on scroll is measured as the new element`);
+  }
+  if (result.textOnImageElements) {
+    console.error(`note: ${result.textOnImageElements} text element(s) lie on a background image (url(), image-set()), which the audit cannot read; each was measured against the colours under the image`);
   }
   result.darkSchemeBy = darkSchemeBy;
   result.darkScheme = darkSchemeBy.length > 0;

@@ -1325,3 +1325,61 @@ test('a fill tinted on focus is read against its old fill, not the control borde
     sectiontint: { failures: ['button pixels 2.35'], code: 1 },
   });
 });
+
+// Writes `name`.html as given and returns its path: the pages below are the reproductions
+// from the issues, copied as filed.
+function rawPage(name, html) {
+  fs.writeFileSync(path.join(dir, `${name}.html`), html);
+  return path.join(dir, `${name}.html`);
+}
+
+test('text on a gradient is measured against the gradient, not the white behind it (#124)', async () => {
+  const hero = await run(rawPage('gradienthero', `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>grad</title>
+<style>body{margin:0;background:#fff;color:#222;font:16px sans-serif}
+.hero{background:linear-gradient(135deg,#15585E,#0b3d42);color:#fff;padding:4rem}</style></head>
+<body><main><div class="hero"><h1>Welcome</h1><p>White text on a dark gradient.</p></div></main></body></html>`));
+  assert.deepStrictEqual(hero.json.contrastFailures, []);
+  assert.strictEqual(hero.code, 0);
+  // The worst colour of the gradient decides: white text on a gradient that ends light fails
+  // at its light end, also when the first stop alone would pass and is the background-color.
+  const light = await run(fixture('gradientlight',
+    '.g{background-color:#15585E;background-image:linear-gradient(90deg,#15585E,#E0F0F2);color:#fff;padding:2rem}', '<div class="g"><p>White text on a gradient that ends light.</p></div>'));
+  assert.strictEqual(light.code, 1);
+  const f = light.json.contrastFailures.find((x) => x.element === 'p');
+  assert.ok(f, JSON.stringify(light.json.contrastFailures));
+  assert.strictEqual(f.bg, 'rgb(224, 240, 242)');
+  assert.strictEqual(f.ratio, +contrastOf(f.fg, f.bg).toFixed(2));
+  // A hard stop shows no colour between its two sides: large #777 text passes 3:1 on both.
+  const hard = await run(fixture('gradienthard',
+    '.h{background-image:linear-gradient(90deg,#000 0% 50%,#fff 50% 100%);color:#777;font-size:32px;padding:2rem}', '<div class="h"><p>Grey on a split.</p></div>'));
+  assert.deepStrictEqual(hard.json.contrastFailures, []);
+  // An image layer is not read: the text is measured against the colour under it, and counted.
+  const img = await run(fixture('gradientimage',
+    '.i{background:#0b3d42 url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E");color:#fff;padding:2rem}.card{background:#fff;color:#000}',
+    '<div class="i"><p>White text on an image.</p><div class="card"><p>Black text on a white card over the image.</p></div></div>'));
+  assert.deepStrictEqual(img.json.contrastFailures, []);
+  assert.strictEqual(img.json.textOnImageElements, 1);
+});
+
+test('text under a partial opacity is measured as it renders; disabled text is exempt (#125)', async () => {
+  const faded = await run(rawPage('fadedtext', `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>faded</title>
+<style>body{margin:0;background:#fff;color:#000;font:16px sans-serif}.faded{opacity:.15}</style></head>
+<body><main><p class="faded">Black text in a group at opacity .15.</p></main></body></html>`));
+  assert.strictEqual(faded.code, 1);
+  assert.deepStrictEqual(faded.json.contrastFailures.map((x) => `${x.element} ${x.fg} ${x.bg} ${x.ratio}`),
+    ['p.faded rgb(217, 217, 217) rgb(255, 255, 255) 1.41']);
+  // The group is composited as a whole: the dark card inside it fades too, and white text on
+  // it ends up on a light grey. An opacity that leaves enough contrast passes.
+  const group = await run(fixture('fadedgroup',
+    '.g{opacity:.3}.card{background:#000;color:#fff;padding:1rem}.ok{opacity:.9}',
+    '<div class="g"><div class="card"><p>White on black, faded.</p></div></div><p class="ok">Black at opacity .9.</p>'));
+  assert.deepStrictEqual(group.json.contrastFailures.map((x) => `${x.element} ${x.fg} ${x.bg}`),
+    ['p rgb(255, 255, 255) rgb(179, 179, 179)']);
+  // SC 1.4.3 exempts inactive components: a disabled button faded to .5, as site/index.html
+  // ships one, is not a failure; the same button enabled is.
+  const disabled = await run(fixture('fadeddisabled',
+    'button{background:#257880;color:#fff;border:0;padding:8px 16px;font:16px sans-serif}button:disabled{opacity:.5}.weak{opacity:.5}',
+    '<button type="button" disabled>Disabled</button> <button type="button" class="weak">Enabled</button>'));
+  assert.deepStrictEqual(disabled.json.contrastFailures.map((x) => x.element), ['button.weak']);
+  assert.strictEqual(disabled.json.disabledTextExemptElements, 1);
+});

@@ -147,8 +147,7 @@ Class definitions live in `templates/styles.css`; a full assembled page is in
   rather than colouring it by hand.
 - **Chips on the gradient**: border-only (`1px solid rgba(255,255,255,.45)`)
   with white text. A translucent white fill lightens the stop under the text
-  (white on `#257880` plus 15% white is 3.9:1), and the audit cannot measure a
-  composited fill. Inline code, `kbd` and `.chip` on any gradient surface are
+  (white on `#257880` plus 15% white is 3.9:1, which the audit reports). Inline code, `kbd` and `.chip` on any gradient surface are
   styled this way (`--nr-code-bg` / `--nr-code-border`).
 - **Tables** (`.table-wrap`, `.table`): hairline frame with 16px radius,
   14px uppercase header in `--nr-text` on `#F5F5F5`, row hover tint, `.num` for right-aligned
