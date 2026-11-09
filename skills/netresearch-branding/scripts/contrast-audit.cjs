@@ -40,13 +40,14 @@
  * colour.
  * Text is measured as it renders: its colour and the backgrounds behind it composited, with
  * the opacity of the element and each ancestor applied to its whole subtree. A gradient
- * behind the text is measured at each of its stops and at points between them, and the
- * worst ratio is reported: the audit does not know which part of the gradient lies under
- * the text, so a gradient whose light end the text never reaches still fails. Limits: an
- * image layer (url(), image-set()) cannot be read, so the colours under it are measured and
- * the element is counted in `textOnImageElements`; a gradient sized or positioned to cover
- * part of its box, or interpolated in another colour space, is still measured at its sRGB
- * colours; a gradient on a pseudo-element (::before, ::after) is not seen. Text inside a
+ * behind the text is measured at each of its colour stops, and the worst ratio is
+ * reported: the audit does not know which part of the gradient lies under the text, so a
+ * gradient whose light end the text never reaches still fails. Limits: an image layer
+ * (url(), image-set()) cannot be read, so the colours under it are measured and the element
+ * is counted in `textOnImageElements`; between two stops of different hue a gradient can
+ * render slightly darker than both, which is not measured; a gradient sized or positioned to
+ * cover part of its box is measured at all its stops; background-blend-mode is not applied;
+ * a gradient on a pseudo-element (::before, ::after) is not seen. Text inside a
  * disabled control is exempt (SC 1.4.3 inactive components) and counted in
  * `disabledTextExemptElements`.
  * Exits non-zero on a contrast failure (text or non-text) OR on a stylesheet/script
@@ -1256,18 +1257,10 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         else if (ch === ',' && depth === 0) { out.push(img.slice(start, i).trim()); start = i + 1; } }
       out.push(img.slice(start).trim()); return out; };
     const COLOUR_TOKEN = /(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\([^()]*\)|\bcurrentcolor\b|\btransparent\b/gi;
-    // The colours a gradient layer can show: its stops and three points between each pair
-    // of neighbours, interpolated in premultiplied sRGB as Chromium paints them. Luminance
-    // is convex along such a segment, so its darkest point can lie between two stops.
-    const gradientColours = (layer, current) => {
-      const stops = (layer.match(COLOUR_TOKEN) ?? []).map((t) => (/^currentcolor$/i.test(t) ? current : parse(t))).filter(Boolean);
-      const out = [...stops];
-      for (let i = 1; i < stops.length; i++) { const a = stops[i - 1]; const b = stops[i];
-        for (const t of [0.25, 0.5, 0.75]) { const A = a.a * (1 - t) + b.a * t;
-          const mix = (k) => (A > 0 ? (a[k] * a.a * (1 - t) + b[k] * b.a * t) / A : 0);
-          out.push({ r: mix('r'), g: mix('g'), b: mix('b'), a: A }); } }
-      return out;
-    };
+    // The colour stops of a gradient layer. Points between two stops are not sampled: at a
+    // hard stop (`#000 50%, #fff 50%`) the gradient never shows the colours between them.
+    const gradientColours = (layer, current) => (layer.match(COLOUR_TOKEN) ?? [])
+      .map((t) => (/^currentcolor$/i.test(t) ? current : parse(t))).filter(Boolean);
     // Text colour and background as they render, rounded to whole channels: the text colour
     // and every background on the way up composited (translucent layers are not taken at
     // face value: rgba(255,255,255,.18) over a teal hero is NOT white), each ancestor's
@@ -1289,8 +1282,10 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         if (ecs.backgroundImage !== 'none') for (const layer of layersOf(ecs.backgroundImage)) {
           if (!/gradient\(/i.test(layer)) { image = true; continue; }
           const cols = gradientColours(layer, parse(ecs.color));
+          // A candidate that is already opaque hides this layer and is not multiplied by it.
           if (cols.length) { const prev = pairs; pairs = [];
-            for (const p of prev) for (const c of cols) pairs.push({ F: over(p.F, c), B: over(p.B, c) }); }
+            for (const p of prev) { if (p.B.A > 0.9999) { pairs.push(p); continue; }
+              for (const c of cols) pairs.push({ F: over(p.F, c), B: over(p.B, c) }); } }
         }
         const c = parse(ecs.backgroundColor);
         if (c && c.a > 0) under(c);
@@ -1370,7 +1365,8 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
     let smallest = Infinity;
     let exempt = 0;
     let disabledExempt = 0;
-    let onImage = 0;
+    // Text elements measured on a background image, once each, at rest or in a state.
+    const onImage = new Set();
     // <title>/<desc> inside an SVG are accessible names, never painted; script/style/
     // template hold source text. None of them have a rendered contrast.
     // An SVG element's className is an SVGAnimatedString; its baseVal is the class list.
@@ -1419,7 +1415,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       if (inactive(el)) { disabledExempt++; continue; }
       const size = Number.parseFloat(cs.fontSize); smallest = Math.min(smallest, size);
       const tc = textColours(el, cs); const { fg, bg, r } = tc; const fgS = rgbOf(fg);
-      if (tc.image) onImage++;
+      if (tc.image) onImage.add(el);
       const weight = Number.parseInt(cs.fontWeight, 10) || 400;
       const bold = weight >= 700; const large = size >= 24 || (size >= 18.66 && bold);
       const need = large ? 3 : 4.5;
@@ -1442,7 +1438,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       }
     } };
     window.__textIn(document.querySelectorAll('body *'));
-    window.__textSummary = () => ({ contrastFailures: [...seen.values()], apcaWarnings: [...apcaSeen.values()], demoExemptElements: exempt, disabledTextExemptElements: disabledExempt, textOnImageElements: onImage, smallestFontPx: +smallest.toFixed(1) });
+    window.__textSummary = () => ({ contrastFailures: [...seen.values()], apcaWarnings: [...apcaSeen.values()], demoExemptElements: exempt, disabledTextExemptElements: disabledExempt, textOnImageElements: onImage.size, smallestFontPx: +smallest.toFixed(1) });
     // Re-used by the interactive-state pass, which runs after this evaluate returns.
     // Measures ONE element — the one currently forced into `state`. The caller hands
     // it over by object reference (CDP DOM.resolveNode + Runtime.callFunctionOn), so
@@ -1466,7 +1462,8 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         if (!window.__painted(t)) continue;
         if (t.closest('[data-contrast-demo]') || inactive(t)) continue;
         const ts = t === el ? cs : getComputedStyle(t);
-        const { fg, bg, r } = textColours(t, ts); const fgS = rgbOf(fg);
+        const { fg, bg, r, image } = textColours(t, ts); const fgS = rgbOf(fg);
+        if (image) onImage.add(t);
         const size = Number.parseFloat(ts.fontSize);
         const bold = (Number.parseInt(ts.fontWeight, 10) || 400) >= 700;
         const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
@@ -1825,7 +1822,7 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
       apcaWarnings: [...apcaSeen.values()],
       demoExemptElements: exempt,
       disabledTextExemptElements: disabledExempt,
-      textOnImageElements: onImage,
+      textOnImageElements: onImage.size,
       skipLink: !!document.querySelector('a[href^="#"].skip, a[href="#main"], a[href="#content"], a[href="#inhalt"]'),
       mainLandmark: !!document.querySelector('main'),
       navLabelled: [...document.querySelectorAll('nav')].every((n) => n.getAttribute('aria-label') || n.getAttribute('aria-labelledby')),

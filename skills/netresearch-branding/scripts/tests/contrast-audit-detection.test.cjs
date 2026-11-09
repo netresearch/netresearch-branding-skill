@@ -1349,6 +1349,10 @@ test('text on a gradient is measured against the gradient, not the white behind 
   assert.ok(f, JSON.stringify(light.json.contrastFailures));
   assert.strictEqual(f.bg, 'rgb(224, 240, 242)');
   assert.strictEqual(f.ratio, +contrastOf(f.fg, f.bg).toFixed(2));
+  // A hard stop shows no colour between its two sides: large #777 text passes 3:1 on both.
+  const hard = await run(fixture('gradienthard',
+    '.h{background-image:linear-gradient(90deg,#000 0% 50%,#fff 50% 100%);color:#777;font-size:32px;padding:2rem}', '<div class="h"><p>Grey on a split.</p></div>'));
+  assert.deepStrictEqual(hard.json.contrastFailures, []);
   // An image layer is not read: the text is measured against the colour under it, and counted.
   const img = await run(fixture('gradientimage',
     '.i{background:#0b3d42 url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E");color:#fff;padding:2rem}', '<div class="i"><p>White text on an image.</p></div>'));
