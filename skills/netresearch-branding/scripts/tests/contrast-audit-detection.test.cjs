@@ -1355,7 +1355,8 @@ test('text on a gradient is measured against the gradient, not the white behind 
   assert.deepStrictEqual(hard.json.contrastFailures, []);
   // An image layer is not read: the text is measured against the colour under it, and counted.
   const img = await run(fixture('gradientimage',
-    '.i{background:#0b3d42 url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E");color:#fff;padding:2rem}', '<div class="i"><p>White text on an image.</p></div>'));
+    '.i{background:#0b3d42 url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E");color:#fff;padding:2rem}.card{background:#fff;color:#000}',
+    '<div class="i"><p>White text on an image.</p><div class="card"><p>Black text on a white card over the image.</p></div></div>'));
   assert.deepStrictEqual(img.json.contrastFailures, []);
   assert.strictEqual(img.json.textOnImageElements, 1);
 });

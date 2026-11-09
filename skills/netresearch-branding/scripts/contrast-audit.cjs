@@ -1280,7 +1280,8 @@ if (!CLI) { module.exports = { measureOneNode, measureInteractiveStates, isDetac
         const ecs = e === el ? cs : getComputedStyle(e);
         if (ecs.display === 'contents') continue;
         if (ecs.backgroundImage !== 'none') for (const layer of layersOf(ecs.backgroundImage)) {
-          if (!/gradient\(/i.test(layer)) { image = true; continue; }
+          // An image under an opaque card is hidden and not counted.
+          if (!/gradient\(/i.test(layer)) { if (pairs.some((p) => p.B.A <= 0.9999)) image = true; continue; }
           const cols = gradientColours(layer, parse(ecs.color));
           // A candidate that is already opaque hides this layer and is not multiplied by it.
           if (cols.length) { const prev = pairs; pairs = [];
