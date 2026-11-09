@@ -52,8 +52,7 @@
 
       /* Gradient stops are their own tokens, never the text tokens: in the dark
          scheme --nr-primary-text lifts to #5FC6D2, and white hero text over that
-         is 2.00:1 — a failure no audit can see, because a gradient leaves no
-         backgroundColor to read. Both stops carry white text by construction. */
+         is 2.00:1. Both stops carry white text by construction. */
       --nr-hero-from: #257880;  /* white on it: 5.15:1 */
       --nr-hero-to: #15585E;    /* white on it: 8.11:1 */
       /* Hover for a filled button is a surface too — same reason it may not borrow
@@ -207,8 +206,8 @@
     .navbar-menu a:hover { color: var(--nr-primary-text); font-weight: 600; background: var(--nr-bg-alt); }
     /* ============================== HERO ============================== */
     .hero {
-      /* Both stops carry white text, so both clear 4.5:1. A gradient has no
-         backgroundColor for an audit to read, hence the solid fallback too. */
+      /* Both stops carry white text, so both clear 4.5:1. The solid colour is the
+         fallback where gradients do not paint. */
       background-color: var(--nr-hero-from);
       background-image: linear-gradient(135deg, var(--nr-hero-from) 0%, var(--nr-hero-to) 100%);
       color: #fff; text-align: center;
