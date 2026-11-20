@@ -264,11 +264,14 @@ several `@media` blocks, and each one still assumes the old count: a
 two-column breakpoint leaves the fifth card alone in a third row, and a
 breakpoint that collapses too late squeezes prose into narrow columns. Search
 the stylesheet for the selector (`grep -n '\.loop-row' styles.css`); every hit
-inside an `@media` block is a boundary to check. Load the page at each
-boundary and just below it in a real browser and measure the children with
-`getBoundingClientRect()`: a last child narrower than its row is an orphan
-(span it with `grid-column: 1 / -1`, or pick a count that divides). A
-screenshot at one desktop width shows none of this.
+inside an `@media` block is a boundary to check. Load the page on both sides
+of each boundary (at the breakpoint value and one pixel past it) in a real
+browser and count the children whose `getBoundingClientRect().top` equals the
+last child's. Compare that with the number of tracks
+(`getComputedStyle(grid).gridTemplateColumns.split(' ').length`): a last row
+holding fewer children than tracks is incomplete, and a single child there is
+an orphan (span it with `grid-column: 1 / -1`, or pick a count that divides).
+A screenshot at one desktop width shows none of this.
 
 ---
 
