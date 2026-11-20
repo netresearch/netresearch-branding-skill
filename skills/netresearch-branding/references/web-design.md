@@ -76,6 +76,16 @@ reader needs. Decoration that encodes nothing is left out.
 Honour `prefers-color-scheme` and an explicit `data-theme` attribute; text
 roles lift on dark, non-text roles keep the brand hue.
 
+**Replacing a page keeps what it said.** When a rewrite replaces a branded,
+user-facing page (a landing, product or demo page), the logo, the hero and the
+content that explains the product move to the new page; they are not dropped
+for a bare functional view. Before overwriting, list what the old page carries
+and where each part goes. Anything you mean to remove, name and ask about
+first. Re-theme the product's own chrome (navbar, buttons, inputs) in the same
+pass, not only the page around it: a branded wrapper around generic blue
+controls is half a rewrite. Take colours, fonts and the logo from this skill's
+references and templates, never from memory.
+
 ## Core Design Principles
 
 ### High White Space
@@ -247,6 +257,18 @@ this reference:
   }
 }
 ```
+
+**Changing a grid's track count re-opens every breakpoint.** A grid that goes
+from four cards to five, or from two steps to three, is usually redefined in
+several `@media` blocks, and each one still assumes the old count: a
+two-column breakpoint leaves the fifth card alone in a third row, and a
+breakpoint that collapses too late squeezes prose into narrow columns. Search
+the stylesheet for the selector (`grep -n '\.loop-row' styles.css`); every hit
+inside an `@media` block is a boundary to check. Load the page at each
+boundary and just below it in a real browser and measure the children with
+`getBoundingClientRect()`: a last child narrower than its row is an orphan
+(span it with `grid-column: 1 / -1`, or pick a count that divides). A
+screenshot at one desktop width shows none of this.
 
 ---
 
