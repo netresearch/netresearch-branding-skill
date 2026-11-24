@@ -6,7 +6,7 @@
 # dependencies = [
 #   "coloraide==8.16",
 #   "markdown-it-py==4.3.0",
-#   "pyyaml==6.0.3",
+#   "pyyaml==6.0.4",
 #   "tinycss2==1.5.1",
 # ]
 # ///
